@@ -1,0 +1,15 @@
+analog-hub-root: designs/libs
+imports:
+  analog_behavioral:
+    repo: url to repo
+    ref: branch, tag, or commit hash
+  gf180mcu_stdcell:
+    repo: url to repo
+    ref: branch, tag, or commit hash
+exports:
+  ota:
+    path: ./designs/libs/ota
+    type: design 
+  tb_ota:
+    path: ./designs/tb_ota
+    type: testbench
