@@ -215,7 +215,9 @@ class LibraryInstaller:
         
         # Remove existing library installation
         try:
-            self.path_extractor.remove_library(library_name)
+            # Resolve the library path using the private method
+            library_path = self.path_extractor._resolve_local_path(library_name, import_spec, config.library_root)
+            self.path_extractor.remove_library(library_path)
             print(f"Removed existing installation: {library_name}")
         except Exception as e:
             print(f"Warning: Failed to clean existing installation: {e}")
@@ -357,13 +359,13 @@ class LibraryInstaller:
         
         # Find unused mirrors
         removed_mirrors = []
-        for mirror_info in existing_mirrors:
-            if mirror_info['repo_url'] not in used_repos:
+        for repo_url, metadata in existing_mirrors.items():
+            if repo_url not in used_repos:
                 try:
-                    self.mirror_manager.remove_mirror(mirror_info['repo_url'])
-                    removed_mirrors.append(mirror_info['mirror_path'])
-                    print(f"Removed unused mirror: {mirror_info['repo_url']}")
+                    self.mirror_manager.remove_mirror(repo_url)
+                    removed_mirrors.append(self.mirror_manager.get_mirror_path(repo_url))
+                    print(f"Removed unused mirror: {repo_url}")
                 except Exception as e:
-                    print(f"Warning: Failed to remove mirror {mirror_info['repo_url']}: {e}")
+                    print(f"Warning: Failed to remove mirror {repo_url}: {e}")
         
         return removed_mirrors
