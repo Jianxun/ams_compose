@@ -1,7 +1,47 @@
 """Main CLI entry point for analog-hub."""
 
+import sys
+from pathlib import Path
+from typing import Optional, List
+
 import click
 from analog_hub import __version__
+from analog_hub.core.installer import LibraryInstaller, InstallationError
+from analog_hub.core.config import AnalogHubConfig
+
+
+def _get_installer() -> LibraryInstaller:
+    """Get LibraryInstaller instance for current directory."""
+    return LibraryInstaller(project_root=Path.cwd())
+
+
+def _handle_installation_error(e: InstallationError) -> None:
+    """Handle installation errors with user-friendly messages."""
+    click.echo(f"Error: {e}", err=True)
+    sys.exit(1)
+
+
+def _auto_generate_gitignore() -> None:
+    """Auto-generate .gitignore entries for .mirror/ directory."""
+    gitignore_path = Path.cwd() / ".gitignore"
+    mirror_entry = ".mirror/"
+    
+    # Check if .gitignore exists and already contains mirror entry
+    if gitignore_path.exists():
+        content = gitignore_path.read_text()
+        if mirror_entry in content:
+            return
+        
+        # Add mirror entry
+        if not content.endswith('\n'):
+            content += '\n'
+        content += f"\n# analog-hub mirrors\n{mirror_entry}\n"
+    else:
+        # Create new .gitignore
+        content = f"# analog-hub mirrors\n{mirror_entry}\n"
+    
+    gitignore_path.write_text(content)
+    click.echo(f"Added '{mirror_entry}' to .gitignore")
 
 
 @click.group()
@@ -12,27 +52,169 @@ def main():
 
 
 @main.command()
-def install():
-    """Install libraries from analog-hub.yaml (placeholder)."""
-    click.echo("analog-hub install - Coming soon!")
+@click.argument('libraries', nargs=-1)
+@click.option('--auto-gitignore', is_flag=True, default=True, 
+              help='Automatically add .mirror/ to .gitignore (default: enabled)')
+def install(libraries: tuple, auto_gitignore: bool):
+    """Install libraries from analog-hub.yaml.
+    
+    LIBRARIES: Optional list of specific libraries to install.
+               If not provided, installs all libraries from configuration.
+    """
+    try:
+        installer = _get_installer()
+        
+        # Auto-generate .gitignore if requested
+        if auto_gitignore:
+            _auto_generate_gitignore()
+        
+        # Convert tuple to list for installer
+        library_list = list(libraries) if libraries else None
+        
+        if library_list:
+            click.echo(f"Installing libraries: {', '.join(library_list)}")
+        else:
+            click.echo("Installing all libraries from analog-hub.yaml")
+        
+        installed = installer.install_all(library_list)
+        
+        if installed:
+            click.echo(f"\n✓ Successfully installed {len(installed)} libraries:")
+            for library_name, lock_entry in installed.items():
+                click.echo(f"  - {library_name} (commit: {lock_entry.commit[:8]})")
+        else:
+            click.echo("No libraries to install")
+            
+    except InstallationError as e:
+        _handle_installation_error(e)
 
 
 @main.command()
-def update():
-    """Update installed libraries (placeholder).""" 
-    click.echo("analog-hub update - Coming soon!")
+@click.argument('libraries', nargs=-1)
+def update(libraries: tuple):
+    """Update installed libraries.
+    
+    LIBRARIES: Optional list of specific libraries to update.
+               If not provided, updates all installed libraries.
+    """
+    try:
+        installer = _get_installer()
+        
+        # Convert tuple to list for installer
+        library_list = list(libraries) if libraries else None
+        
+        if library_list:
+            click.echo(f"Updating libraries: {', '.join(library_list)}")
+        else:
+            click.echo("Updating all installed libraries")
+        
+        updated = installer.update_all(library_list)
+        
+        if updated:
+            click.echo(f"\n✓ Successfully updated {len(updated)} libraries:")
+            for library_name, lock_entry in updated.items():
+                click.echo(f"  - {library_name} (commit: {lock_entry.commit[:8]})")
+        else:
+            click.echo("No libraries to update")
+            
+    except InstallationError as e:
+        _handle_installation_error(e)
 
 
-@main.command()
-def list():
-    """List installed libraries (placeholder)."""
-    click.echo("analog-hub list - Coming soon!")
+@main.command('list')
+@click.option('--detailed', is_flag=True, help='Show detailed library information')
+def list_libraries(detailed: bool):
+    """List installed libraries."""
+    try:
+        installer = _get_installer()
+        installed = installer.list_installed_libraries()
+        
+        if not installed:
+            click.echo("No libraries installed")
+            return
+        
+        click.echo(f"Installed libraries ({len(installed)}):\n")
+        
+        for library_name, lock_entry in installed.items():
+            if detailed:
+                click.echo(f"📦 {library_name}")
+                click.echo(f"   Repository: {lock_entry.repo}")
+                click.echo(f"   Reference:  {lock_entry.ref}")
+                click.echo(f"   Commit:     {lock_entry.commit}")
+                click.echo(f"   Path:       {lock_entry.local_path}")
+                click.echo(f"   Installed:  {lock_entry.installed_at}")
+                click.echo()
+            else:
+                click.echo(f"  📦 {library_name:<20} {lock_entry.commit[:8]} ({lock_entry.ref})")
+                
+    except InstallationError as e:
+        _handle_installation_error(e)
 
 
 @main.command()
 def validate():
-    """Validate analog-hub.yaml configuration (placeholder)."""
-    click.echo("analog-hub validate - Coming soon!")
+    """Validate analog-hub.yaml configuration and installation state."""
+    try:
+        installer = _get_installer()
+        
+        # Validate configuration
+        click.echo("Validating configuration...")
+        try:
+            config = installer.load_config()
+            click.echo(f"✓ Configuration valid: {len(config.imports)} libraries defined")
+        except Exception as e:
+            click.echo(f"✗ Configuration error: {e}")
+            sys.exit(1)
+        
+        # Validate installation state
+        click.echo("\nValidating installation state...")
+        valid_libraries, invalid_libraries = installer.validate_installation()
+        
+        if valid_libraries:
+            click.echo(f"✓ Valid libraries ({len(valid_libraries)}):")
+            for library in valid_libraries:
+                click.echo(f"  - {library}")
+        
+        if invalid_libraries:
+            click.echo(f"\n✗ Invalid libraries ({len(invalid_libraries)}):")
+            for issue in invalid_libraries:
+                click.echo(f"  - {issue}")
+            sys.exit(1)
+        else:
+            click.echo(f"\n✓ All {len(valid_libraries)} installed libraries are valid")
+            
+    except InstallationError as e:
+        _handle_installation_error(e)
+
+
+@main.command()
+def clean():
+    """Clean unused mirrors and validate installations."""
+    try:
+        installer = _get_installer()
+        
+        click.echo("Cleaning unused mirrors...")
+        removed_mirrors = installer.clean_unused_mirrors()
+        
+        if removed_mirrors:
+            click.echo(f"✓ Removed {len(removed_mirrors)} unused mirrors")
+        else:
+            click.echo("✓ No unused mirrors found")
+        
+        # Also run validation
+        click.echo("\nValidating installations...")
+        valid_libraries, invalid_libraries = installer.validate_installation()
+        
+        if invalid_libraries:
+            click.echo(f"⚠️  Found {len(invalid_libraries)} invalid libraries:")
+            for issue in invalid_libraries:
+                click.echo(f"  - {issue}")
+            click.echo("\nConsider running 'analog-hub update' to fix these issues.")
+        else:
+            click.echo(f"✓ All {len(valid_libraries)} libraries are valid")
+            
+    except InstallationError as e:
+        _handle_installation_error(e)
 
 
 if __name__ == "__main__":
