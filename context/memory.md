@@ -19,17 +19,18 @@
 - **Consumer Side**: Specify which IPs to import from which repos with version control
 - **Selective Fetching**: Extract only specified library components, not full repositories
 
-## Key Decisions
-- Using `.analog-hub.yaml` as the configuration file format (tentative)
-- Support for branch/tag/release version pinning
-- Shallow copying approach for efficiency
-- Context-based project state management
+## Key Decisions - UPDATED 2025-07-24
+- Using `analog-hub.yaml` as the configuration file format ✅
+- Support for branch/tag/release version pinning ✅
+- **MAJOR CHANGE**: Consumer-only system (no upstream requirements) ✅
+- **MAJOR CHANGE**: Full clone to `.mirror/` instead of sparse checkout ✅
+- Context-based project state management ✅
 
-## Architecture Notes
-### Two-sided system:
-1. **IP Repositories**: Contains `.analog-hub.yaml` defining exportable libraries
-2. **Consumer Projects**: Configuration specifying required IPs and versions
-3. **Core Tool**: Handles fetching, version management, dependency resolution
+## Architecture Notes - REVISED
+### Consumer-only system:
+1. **Consumer Projects**: Configuration specifying required IPs with explicit path mappings
+2. **Core Tool**: Handles mirror management, selective copying, version pinning
+3. **NO upstream requirements**: Works with any Git repository
 
 ### Key Features Needed:
 - Selective library extraction
@@ -38,20 +39,42 @@
 - Update mechanisms
 - Conflict resolution
 
-## Configuration Format
-**File**: `analog-hub.yaml` (confirmed)
+## Configuration Format - REVISED
+**File**: `analog-hub.yaml` (consumer-only)
 
-### Structure:
+### New Structure:
 ```yaml
+library-root: designs/libs
 imports:
   library_name:
-    repo: url_to_repo
-    ref: branch_tag_or_commit
-exports:
-  library_name:
-    path: relative_path_from_root
-    type: library_category (flexible, not predefined)
+    repo: git_repository_url
+    ref: branch_tag_or_commit  
+    source_path: path_within_repo_to_extract
+    local_path: optional_override_path  # if omitted, uses library-root/library_name
 ```
+
+### Path Resolution Behavior:
+1. **No `local_path`**: Install to `{library-root}/{import_key_name}/`
+2. **Has `local_path`**: Install to exactly `{local_path}/` (overrides library-root)
+
+### Example:
+```yaml
+library-root: designs/libs
+imports:
+  my_ota:              # → designs/libs/my_ota/
+    repo: github.com/example/ota
+    source_path: lib/ota
+  pdk_cells:           # → pdk/stdcells/ (overrides library-root)
+    repo: github.com/example/pdk  
+    source_path: cells
+    local_path: pdk/stdcells
+```
+
+### Key Changes:
+- **Removed `exports`**: No upstream requirements
+- **Added `source_path`**: Explicit path specification within repos  
+- **Renamed to `library-root`**: More descriptive than analog-hub-root
+- **Simplified `local_path`**: Clean override behavior
 
 ### Key Design Decisions:
 - **Target Environment**: Open source IC toolchains (IIC-OSIC-TOOLS Docker container)
@@ -140,10 +163,11 @@ import requests
 - Pros: Platform-specific optimization
 - Cons: Limited to GitHub/GitLab, not generic git
 
-### **Recommended Approach**: GitPython + Sparse Checkout
-- Mature, well-maintained library
-- Handles all git ref types (branch/tag/commit)
-- Good balance of simplicity and functionality
+### **NEW APPROACH**: GitPython + Full Clone to Mirror
+- **Security**: Full clone to isolated `.mirror/` directory (gitignored)
+- **Universal**: Works with any Git repository (no upstream requirements)
+- **Flexible**: Easy ref switching and inspection within mirrors
+- **Simple**: Copy specific paths from mirror to project
 
 ### **Update Strategy - Finalized**
 - **Fresh clone every update** - prioritizes reliability over bandwidth
@@ -186,19 +210,25 @@ analog-hub/
 - `analog-hub list [--licenses]` - Show installed libraries with license info
 - `analog-hub validate` - Validate configuration
 
-### **Key Data Models**
-- **AnalogHubConfig**: analog-hub.yaml structure
-- **ImportSpec**: Library import specification
-- **ExportSpec**: Library export specification (+ license metadata)
-- **LockEntry**: Installed library state tracking (+ license snapshots)
+### **Key Data Models - REVISED**
+- **AnalogHubConfig**: analog-hub.yaml structure (consumer-only)
+- **ImportSpec**: Library import specification (repo, ref, source_path, local_path)
+- **LockEntry**: Installed library state tracking (no license fields for MVP)
+- **MetadataFile**: `.analog-hub-meta.yaml` in each installed library
 
-## Implementation Status
+## Implementation Status - UPDATED
 - **Planning Phase**: Complete ✅
 - **Architecture Design**: Complete ✅  
 - **Security Setup**: Complete ✅
 - **Namespace Protection**: Complete ✅
 - **Git Sparse Checkout Prototype**: Complete ✅
-- **Ready for Core Implementation**: Next session
+- **MAJOR ARCHITECTURE REVISION**: Complete ✅
+  - Consumer-only system (no upstream requirements)
+  - Mirror-based approach (full clone to `.mirror/`)
+  - Configuration schema updated (removed exports, added source_path)
+  - Pydantic models updated to match new schema
+  - Renamed to `library-root` with clean path override behavior
+- **Ready for Core Implementation**: Mirror + extractor modules
 
 ## Git Sparse Checkout Prototype Results
 
@@ -291,6 +321,13 @@ analog-hub/
 └── README.md             # Project documentation
 ```
 
+## Development Guidelines - ADDED 2025-07-24
+- **TDD Workflow**: Created CLAUDE.md with test-driven development guidelines ✅
+- **Session Protocols**: Defined start/end procedures for multi-session continuity
+- **Testing Strategy**: Unit tests with mocked git ops, integration tests with real repos
+- **Code Standards**: PEP 8, type hints, Google-style docstrings, analog-specific conventions
+- **Performance Focus**: Mirror optimization, analog design file handling, user-friendly errors
+
 ## Session Summary
 Completed comprehensive planning and security setup for analog-hub:
 - **Planning**: Defined scope, requirements, and architecture
@@ -298,4 +335,5 @@ Completed comprehensive planning and security setup for analog-hub:
 - **Technology**: Chose Python stack (Pydantic, Click, GitPython)
 - **Security**: Secured GitHub repo and PyPI namespace with v0.0.0 placeholder
 - **Structure**: Created package directory structure
-- **Next**: Core implementation of git operations and library management
+- **Guidelines**: Added TDD development workflow in CLAUDE.md
+- **Next**: Core implementation following TDD practices (Priority 1 tasks)

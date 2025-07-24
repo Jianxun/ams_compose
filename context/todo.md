@@ -25,35 +25,49 @@
 - [x] Performance benchmarking vs full clone approach
 - [x] Update context files with findings
 
+## Current Session Status: Development Guidelines Added ✅
+
+### Completed This Session
+- [x] **Context recovery** - Reviewed memory.md and todo.md to understand current state
+- [x] **Development guidelines** - Created CLAUDE.md with TDD workflow and analog-hub conventions
+- [x] **Session protocols** - Defined start/end procedures for multi-session continuity
+- [x] **Testing strategy** - Unit tests with mocked git ops, integration tests with real repos
+- [x] **Context update** - Updated memory.md with development guidelines section
+
 ## Next Session - Core Implementation Phase
 
-### Priority 1: Core Models and Configuration
-- [ ] Implement remaining Pydantic models in core/config.py
-- [ ] Add license fields to ExportSpec and LockEntry models
-- [ ] Add YAML parsing and validation
-- [ ] Create lockfile data structures with license snapshots
-- [ ] Add configuration file discovery logic
+### Priority 1: Mirror Operations (HIGH)
+- [ ] **Create core/mirror.py** - Repository mirroring operations
+  - Full clone to `.mirror/{repo_hash}/` directory
+  - Branch/tag/commit switching within mirrors
+  - Mirror cleanup and maintenance utilities
+  - Error handling for git operations
 
-### Priority 2: Git Operations
-- [ ] Implement sparse checkout in core/git_ops.py
-- [ ] Add ref resolution (branch/tag/commit to hash)
-- [ ] Create provider config fetching
-- [ ] Add error handling for git operations
+### Priority 2: Path Extraction (HIGH)  
+- [ ] **Create core/extractor.py** - Selective path copying
+  - Copy specific source_path from mirror to local project
+  - Handle library-root vs local_path override logic
+  - Generate `.analog-hub-meta.yaml` in each installed library
+  - Preserve file permissions and timestamps
+  - Directory structure management and conflict handling
 
-### Priority 3: Installation Logic  
-- [ ] Implement single library installation
-- [ ] Add license extraction and validation
-- [ ] Add lockfile creation and updates with license snapshots
-- [ ] Create library directory management
-- [ ] Add checksum verification
-- [ ] Implement license change detection on updates
+### Priority 3: Installation Logic (HIGH)
+- [ ] **Create core/installer.py** - Orchestrate mirror + extraction
+  - Coordinate mirror operations with path extraction
+  - Update lockfile with resolved commits and checksums
+  - Handle version pinning and library updates
+  - Checksum validation for installed libraries
 
-### Priority 4: CLI Implementation
-- [ ] Replace placeholder CLI commands with real implementations
-- [ ] Add license change warnings and --allow-license-change flag
-- [ ] Add comprehensive error handling
-- [ ] Create test suite
-- [ ] Add logging and debugging
+### Priority 4: CLI Implementation (MEDIUM)
+- [ ] **Replace placeholder CLI commands** with real implementations
+  - `install` - clone mirrors + extract paths
+  - `update` - refresh mirrors + re-extract  
+  - `list` - show installed libraries with metadata
+  - `validate` - check configuration validity
+  - `clean` - cleanup unused mirrors
+- [ ] **Auto-generate .gitignore** entries for `.mirror/` directory
+- [ ] **Add metadata inspection** (`analog-hub info <library>`)
+- [ ] **Comprehensive error handling** and user-friendly messages
 
 ## Future Phases
 - [ ] Plan multi-file config transition (.analog-hub/ directory)
