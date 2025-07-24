@@ -9,6 +9,7 @@ Test-driven development guidelines for the analog-hub dependency management tool
 - Check `context/todo.md` for current sprint tasks and priorities
 - Select a specific task from Priority 1 (HIGH) items first
 - Use TodoWrite tool to mark selected task as `in_progress`
+- There is a project wide python venv. use it.
 
 ### 2. Test-Driven Development Cycle
 - **Red**: Write failing tests that define expected behavior
