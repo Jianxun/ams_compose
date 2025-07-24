@@ -67,3 +67,6 @@ Thumbs.db
 
 # Analog-hub specific
 .analog-hub.lock
+designs/
+context/
+.mirror/
