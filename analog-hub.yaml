@@ -4,8 +4,22 @@ imports:
     repo: https://github.com/peterkinget/testing-project-template
     ref: PK_PLL_modeling
     source_path: designs/libs/model_pll
+    license: MIT
   switch_matrix_gf180mcu_9t5v0:
     repo: https://github.com/mosbiuschip/switch_matrix_gf180mcu_9t5v0
     ref: main
     source_path: .
-    
+    license: N/A
+
+  core_analog:
+    repo: https://github.com/Jianxun/iic-osic-tools-project-template
+    ref: main
+    source_path: designs/libs/core_analog
+    license: MIT
+
+  devcontainer:
+    repo: https://github.com/Jianxun/iic-osic-tools-project-template
+    ref: devcontainer
+    source_path: .devcontainer
+    local_path: .devcontainer
+    license: MIT
