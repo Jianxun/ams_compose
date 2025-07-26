@@ -139,18 +139,26 @@ class TestLibraryInstaller:
     @patch('analog_hub.core.mirror.MirrorMetadata')
     @patch('analog_hub.core.installer.RepositoryMirror')
     @patch('analog_hub.core.installer.PathExtractor')
-    def test_install_library_success(self, mock_extractor_class, mock_mirror_class, mock_metadata_class, installer, sample_config):
+    def test_install_library_success(self, mock_extractor_class, mock_mirror_class, installer, sample_config):
         """Test successful single library installation."""
         # Mock mirror manager
         mock_mirror = Mock()
         mock_mirror_class.return_value = mock_mirror
         mock_mirror_path = Path("/test/mirror/path")
-        mock_mirror.mirror_repository.return_value = mock_mirror_path
         
-        # Mock mirror metadata
-        mock_metadata = Mock()
-        mock_metadata_class.from_yaml.return_value = mock_metadata
-        mock_metadata.resolved_commit = "abc123def456"
+        # Mock mirror metadata with resolved commit
+        from analog_hub.core.mirror import MirrorMetadata
+        mock_mirror_metadata = MirrorMetadata(
+            repo_url="https://github.com/example/test-repo",
+            repo_hash="hash123",
+            current_ref="main",
+            resolved_commit="abc123def456",
+            created_at="2025-01-01T00:00:00",
+            updated_at="2025-01-01T00:00:00"
+        )
+        mock_mirror.update_mirror.return_value = mock_mirror_metadata
+        mock_mirror.get_mirror_path.return_value = mock_mirror_path
+        mock_mirror._generate_repo_hash.return_value = "hash123"
         
         # Mock path extractor
         mock_extractor = Mock()
@@ -178,7 +186,7 @@ class TestLibraryInstaller:
         lock_entry = installer.install_library("test_library", import_spec, "designs/libs")
         
         # Verify mock calls
-        mock_mirror.mirror_repository.assert_called_once_with(
+        mock_mirror.update_mirror.assert_called_once_with(
             "https://github.com/example/test-repo", "main"
         )
         mock_extractor.extract_library.assert_called_once()
@@ -292,67 +300,6 @@ class TestLibraryInstaller:
             installer.install_all()
     
     @patch('analog_hub.core.installer.LibraryInstaller.install_library')
-    @patch('analog_hub.core.installer.PathExtractor')
-    def test_update_library_success(self, mock_extractor_class, mock_install_library, installer, sample_config, temp_project):
-        """Test successful library update."""
-        # Setup existing lock file
-        existing_lock = LockFile(
-            library_root="designs/libs",
-            libraries={
-                "test_library": LockEntry(
-                    repo="https://github.com/example/test-repo",
-                    ref="main",
-                    commit="old123",
-                    source_path="lib/test",
-                    local_path="designs/libs/test_library",
-                    checksum="oldchecksum",
-                    installed_at="2025-01-01T00:00:00"
-                )
-            }
-        )
-        installer.save_lock_file(existing_lock)
-        
-        # Mock path extractor for removal
-        mock_extractor = Mock()
-        mock_extractor_class.return_value = mock_extractor
-        installer.path_extractor = mock_extractor
-        
-        # Mock new installation
-        updated_lock_entry = LockEntry(
-            repo="https://github.com/example/test-repo",
-            ref="main", 
-            commit="new456",
-            source_path="lib/test",
-            local_path="designs/libs/test_library",
-            checksum="newchecksum",
-            installed_at="2025-01-01T01:00:00"
-        )
-        mock_install_library.return_value = updated_lock_entry
-        
-        # Test update
-        result = installer.update_library("test_library")
-        
-        # Verify removal and installation
-        mock_extractor.remove_library.assert_called_once_with("test_library")
-        mock_install_library.assert_called_once()
-        
-        # Verify result
-        assert result.commit == "new456"
-        assert result.checksum == "newchecksum"
-        
-        # Verify lock file updated
-        lock_file = installer.load_lock_file()
-        assert lock_file.libraries["test_library"].commit == "new456"
-    
-    def test_update_library_not_in_config(self, installer, sample_config):
-        """Test update of library not in configuration."""
-        with pytest.raises(InstallationError, match="Library 'nonexistent' not found in configuration"):
-            installer.update_library("nonexistent")
-    
-    def test_update_library_not_installed(self, installer, sample_config):
-        """Test update of library not currently installed."""
-        with pytest.raises(InstallationError, match="Library 'test_library' is not currently installed"):
-            installer.update_library("test_library")
     
     def test_list_installed_libraries(self, installer, temp_project):
         """Test listing installed libraries."""
@@ -485,17 +432,29 @@ class TestLibraryInstaller:
         mock_mirror_class.return_value = mock_mirror
         installer.mirror_manager = mock_mirror
         
-        # Mock list_mirrors to return active and unused mirrors
-        mock_mirror.list_mirrors.return_value = [
-            {
-                'repo_url': 'https://github.com/example/active-repo',
-                'mirror_path': '/mirrors/active'
-            },
-            {
-                'repo_url': 'https://github.com/example/unused-repo',
-                'mirror_path': '/mirrors/unused'
-            }
-        ]
+        # Mock list_mirrors to return active and unused mirrors (returns dict)
+        from analog_hub.core.mirror import MirrorMetadata
+        mock_mirror.list_mirrors.return_value = {
+            'https://github.com/example/active-repo': MirrorMetadata(
+                repo_url='https://github.com/example/active-repo',
+                repo_hash='hash1',
+                current_ref='main',
+                resolved_commit='abc123',
+                created_at='2025-01-01T00:00:00',
+                updated_at='2025-01-01T00:00:00'
+            ),
+            'https://github.com/example/unused-repo': MirrorMetadata(
+                repo_url='https://github.com/example/unused-repo',
+                repo_hash='hash2',
+                current_ref='main',
+                resolved_commit='def456',
+                created_at='2025-01-01T00:00:00',
+                updated_at='2025-01-01T00:00:00'
+            )
+        }
+        
+        # Mock get_mirror_path for the removed mirror
+        mock_mirror.get_mirror_path.return_value = Path('/mirrors/unused')
         
         # Test cleanup
         removed = installer.clean_unused_mirrors()
@@ -503,4 +462,4 @@ class TestLibraryInstaller:
         # Verify only unused mirror was removed
         mock_mirror.remove_mirror.assert_called_once_with('https://github.com/example/unused-repo')
         assert len(removed) == 1
-        assert '/mirrors/unused' in removed
+        assert Path('/mirrors/unused') in removed

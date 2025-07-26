@@ -55,7 +55,9 @@ def main():
 @click.argument('libraries', nargs=-1)
 @click.option('--auto-gitignore', is_flag=True, default=True, 
               help='Automatically add .mirror/ to .gitignore (default: enabled)')
-def install(libraries: tuple, auto_gitignore: bool):
+@click.option('--force', is_flag=True, default=False,
+              help='Force reinstall all libraries (ignore up-to-date check)')
+def install(libraries: tuple, auto_gitignore: bool, force: bool):
     """Install libraries from analog-hub.yaml.
     
     LIBRARIES: Optional list of specific libraries to install.
@@ -76,7 +78,7 @@ def install(libraries: tuple, auto_gitignore: bool):
         else:
             click.echo("Installing all libraries from analog-hub.yaml")
         
-        installed = installer.install_all(library_list)
+        installed = installer.install_all(library_list, force=force)
         
         if installed:
             click.echo(f"\n✓ Successfully installed {len(installed)} libraries:")
@@ -89,36 +91,6 @@ def install(libraries: tuple, auto_gitignore: bool):
         _handle_installation_error(e)
 
 
-@main.command()
-@click.argument('libraries', nargs=-1)
-def update(libraries: tuple):
-    """Update installed libraries.
-    
-    LIBRARIES: Optional list of specific libraries to update.
-               If not provided, updates all installed libraries.
-    """
-    try:
-        installer = _get_installer()
-        
-        # Convert tuple to list for installer
-        library_list = list(libraries) if libraries else None
-        
-        if library_list:
-            click.echo(f"Updating libraries: {', '.join(library_list)}")
-        else:
-            click.echo("Updating all installed libraries")
-        
-        updated = installer.update_all(library_list)
-        
-        if updated:
-            click.echo(f"\n✓ Successfully updated {len(updated)} libraries:")
-            for library_name, lock_entry in updated.items():
-                click.echo(f"  - {library_name} (commit: {lock_entry.commit[:8]})")
-        else:
-            click.echo("No libraries to update")
-            
-    except InstallationError as e:
-        _handle_installation_error(e)
 
 
 @main.command('list')
@@ -235,9 +207,9 @@ imports:
 # 5. Run 'analog-hub install' to fetch the library
 #
 # Example commands:
-#   analog-hub install           # Install all libraries
-#   analog-hub install my_lib    # Install specific library
-#   analog-hub update           # Update all libraries
+#   analog-hub install           # Install missing libraries, update outdated ones
+#   analog-hub install my_lib    # Install/update specific library  
+#   analog-hub install --force   # Force reinstall all libraries
 #   analog-hub list             # List installed libraries
 #   analog-hub validate         # Validate configuration
 """
@@ -279,7 +251,7 @@ def clean():
             click.echo(f"⚠️  Found {len(invalid_libraries)} invalid libraries:")
             for issue in invalid_libraries:
                 click.echo(f"  - {issue}")
-            click.echo("\nConsider running 'analog-hub update' to fix these issues.")
+            click.echo("\nConsider running 'analog-hub install --force' to fix these issues.")
         else:
             click.echo(f"✓ All {len(valid_libraries)} libraries are valid")
             

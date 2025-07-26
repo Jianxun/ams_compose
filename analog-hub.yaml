@@ -1,9 +1,9 @@
 library-root: designs/libs
 imports:
-  model_pll: 
-    repo: https://github.com/peterkinget/testing-project-template
-    ref: PK_PLL_modeling
-    source_path: designs/libs/model_pll
+  MOSbius_v1: 
+    repo: https://github.com/Jianxun/MOSbius_Xschem_Library
+    ref: main
+    source_path: designs/libs/MOSbius_v1
     license: MIT
   switch_matrix_gf180mcu_9t5v0:
     repo: https://github.com/mosbiuschip/switch_matrix_gf180mcu_9t5v0
@@ -15,6 +15,13 @@ imports:
     repo: https://github.com/Jianxun/iic-osic-tools-project-template
     ref: main
     source_path: designs/libs/core_analog
+    license: MIT
+
+  scripts:
+    repo: https://github.com/Jianxun/iic-osic-tools-project-template
+    ref: main
+    source_path: designs/scripts
+    local_path: designs/scripts
     license: MIT
 
   devcontainer:

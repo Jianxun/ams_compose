@@ -122,15 +122,17 @@ class LibraryInstaller:
         except Exception as e:
             raise InstallationError(f"Failed to install library '{library_name}': {e}")
     
-    def install_all(self, library_names: Optional[List[str]] = None) -> Dict[str, LockEntry]:
-        """Install all libraries or specific subset.
+    def install_all(self, library_names: Optional[List[str]] = None, force: bool = False) -> Dict[str, LockEntry]:
+        """Install all libraries or specific subset with smart skip logic.
         
         Args:
             library_names: Optional list of specific libraries to install.
                           If None, installs all libraries from configuration.
+            force: If True, force reinstall even if libraries are up-to-date.
+                  If False, skip libraries that are already installed at correct version.
             
         Returns:
-            Dictionary mapping library names to their lock entries
+            Dictionary mapping library names to their lock entries (only changed libraries)
             
         Raises:
             InstallationError: If any installation fails
@@ -155,11 +157,57 @@ class LibraryInstaller:
         if not libraries_to_install:
             return {}
         
-        # Install libraries
+        # Load current lock file to check what's already installed
+        lock_file = self.load_lock_file()
+        
+        # Filter libraries that need installation/update (smart skip logic)
+        libraries_needing_work = {}
+        skipped_libraries = []
+        
+        for library_name, import_spec in libraries_to_install.items():
+            if force:
+                # Force mode: always install
+                libraries_needing_work[library_name] = import_spec
+            elif library_name not in lock_file.libraries:
+                # Library not installed: needs installation
+                libraries_needing_work[library_name] = import_spec
+                print(f"📦 Installing {library_name} (new library)")
+            else:
+                # Library installed: check if update needed
+                current_entry = lock_file.libraries[library_name]
+                
+                # Check if configuration changed (repo, ref, or source_path)
+                if (current_entry.repo != import_spec.repo or 
+                    current_entry.ref != import_spec.ref or
+                    current_entry.source_path != import_spec.source_path):
+                    libraries_needing_work[library_name] = import_spec
+                    print(f"🔄 Updating {library_name} (configuration changed)")
+                else:
+                    # Check if library files still exist and are valid
+                    library_path = self.project_root / current_entry.local_path
+                    metadata_path = library_path / ".analog-hub-meta.yaml" if library_path.is_dir() else library_path.parent / f".analog-hub-meta-{library_path.name}.yaml"
+                    
+                    if not library_path.exists() or not metadata_path.exists():
+                        libraries_needing_work[library_name] = import_spec
+                        print(f"🔄 Reinstalling {library_name} (library files missing)")
+                    else:
+                        # Library is up-to-date, skip it
+                        skipped_libraries.append(library_name)
+                        print(f"⏭️  Skipping {library_name} (up-to-date)")
+        
+        # Show summary of what will be processed
+        if skipped_libraries:
+            print(f"Skipped {len(skipped_libraries)} up-to-date libraries")
+        
+        if not libraries_needing_work:
+            print("All libraries are up-to-date")
+            return {}
+        
+        # Install/update libraries that need work
         installed_libraries = {}
         failed_libraries = []
         
-        for library_name, import_spec in libraries_to_install.items():
+        for library_name, import_spec in libraries_needing_work.items():
             try:
                 lock_entry = self.install_library(
                     library_name, 
@@ -167,11 +215,20 @@ class LibraryInstaller:
                     config.library_root
                 )
                 installed_libraries[library_name] = lock_entry
-                print(f"✓ Installed library: {library_name}")
+                
+                # Show what changed if this was an update
+                if library_name in lock_file.libraries:
+                    old_commit = lock_file.libraries[library_name].commit
+                    if old_commit != lock_entry.commit:
+                        print(f"✓ Updated {library_name}: {old_commit[:8]} → {lock_entry.commit[:8]}")
+                    else:
+                        print(f"✓ Reinstalled {library_name}: {lock_entry.commit[:8]}")
+                else:
+                    print(f"✓ Installed {library_name}: {lock_entry.commit[:8]}")
                 
             except Exception as e:
                 failed_libraries.append((library_name, str(e)))
-                print(f"✗ Failed to install library: {library_name} - {e}")
+                print(f"✗ Failed to process library: {library_name} - {e}")
         
         # Handle failures
         if failed_libraries:
@@ -185,114 +242,6 @@ class LibraryInstaller:
         self.save_lock_file(lock_file)
         
         return installed_libraries
-    
-    def update_library(self, library_name: str) -> LockEntry:
-        """Update a specific library.
-        
-        Args:
-            library_name: Name of the library to update
-            
-        Returns:
-            Updated lock entry
-            
-        Raises:
-            InstallationError: If update fails
-        """
-        # Load current configuration and lock file
-        config = self.load_config()
-        lock_file = self.load_lock_file()
-        
-        # Check if library exists in configuration
-        if library_name not in config.imports:
-            raise InstallationError(f"Library '{library_name}' not found in configuration")
-        
-        # Check if library is currently installed
-        if library_name not in lock_file.libraries:
-            raise InstallationError(f"Library '{library_name}' is not currently installed. Use 'install' instead.")
-        
-        import_spec = config.imports[library_name]
-        current_entry = lock_file.libraries[library_name]
-        
-        # Remove existing library installation
-        try:
-            # Resolve the library path using the private method
-            library_path = self.path_extractor._resolve_local_path(library_name, import_spec, config.library_root)
-            self.path_extractor.remove_library(library_path)
-            print(f"Removed existing installation: {library_name}")
-        except Exception as e:
-            print(f"Warning: Failed to clean existing installation: {e}")
-        
-        # Install updated version
-        try:
-            updated_entry = self.install_library(
-                library_name, 
-                import_spec, 
-                config.library_root
-            )
-            
-            # Update lock file
-            lock_file.libraries[library_name] = updated_entry
-            self.save_lock_file(lock_file)
-            
-            print(f"✓ Updated library: {library_name}")
-            if current_entry.commit != updated_entry.commit:
-                print(f"  Commit: {current_entry.commit[:8]} → {updated_entry.commit[:8]}")
-            
-            return updated_entry
-            
-        except Exception as e:
-            raise InstallationError(f"Failed to update library '{library_name}': {e}")
-    
-    def update_all(self, library_names: Optional[List[str]] = None) -> Dict[str, LockEntry]:
-        """Update all libraries or specific subset.
-        
-        Args:
-            library_names: Optional list of specific libraries to update.
-                          If None, updates all installed libraries.
-            
-        Returns:
-            Dictionary mapping library names to their updated lock entries
-            
-        Raises:
-            InstallationError: If any update fails
-        """
-        # Load lock file to see what's installed
-        lock_file = self.load_lock_file()
-        
-        # Determine libraries to update
-        if library_names is None:
-            libraries_to_update = list(lock_file.libraries.keys())
-        else:
-            libraries_to_update = library_names
-            
-            # Check for libraries not currently installed
-            not_installed = set(library_names) - set(lock_file.libraries.keys())
-            if not_installed:
-                raise InstallationError(f"Libraries not currently installed: {not_installed}")
-        
-        if not libraries_to_update:
-            print("No libraries to update")
-            return {}
-        
-        # Update libraries
-        updated_libraries = {}
-        failed_libraries = []
-        
-        for library_name in libraries_to_update:
-            try:
-                updated_entry = self.update_library(library_name)
-                updated_libraries[library_name] = updated_entry
-                
-            except Exception as e:
-                failed_libraries.append((library_name, str(e)))
-                print(f"✗ Failed to update library: {library_name} - {e}")
-        
-        # Handle failures
-        if failed_libraries:
-            failure_summary = "\n".join([f"  - {name}: {error}" for name, error in failed_libraries])
-            raise InstallationError(f"Failed to update {len(failed_libraries)} libraries:\n{failure_summary}")
-        
-        return updated_libraries
     
     def list_installed_libraries(self) -> Dict[str, LockEntry]:
         """List all currently installed libraries.

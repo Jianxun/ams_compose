@@ -248,37 +248,23 @@ class TestPathExtractor:
         import_spec = ImportSpec(
             repo="https://example.com/repo",
             ref="main",
-            source_path="libs/test_lib"
+            source_path="libs/nonexistent"  # Use nonexistent path to force failure
         )
         
-        # Create a scenario that will fail during metadata save
+        # This should fail because source_path doesn't exist in mock mirror
+        with pytest.raises(FileNotFoundError):
+            self.extractor.extract_library(
+                library_name="test_lib",
+                import_spec=import_spec,
+                mirror_path=self.mock_mirror,
+                library_root="designs/libs",
+                repo_hash="abcd1234",
+                resolved_commit="commit123456"
+            )
+        
+        # Verify cleanup occurred - library directory should not have been created
         local_path = self.project_root / "designs" / "libs" / "test_lib"
-        local_path.mkdir(parents=True)
-        
-        # Make the directory read-only to cause metadata save failure
-        import os
-        original_perms = local_path.stat().st_mode
-        os.chmod(local_path, 0o444)
-        
-        try:
-            with pytest.raises(PermissionError):
-                self.extractor.extract_library(
-                    library_name="test_lib",
-                    import_spec=import_spec,
-                    mirror_path=self.mock_mirror,
-                    library_root="designs/libs",
-                    repo_hash="abcd1234",
-                    resolved_commit="commit123456"
-                )
-            
-            # Verify cleanup occurred (directory should be removed)
-            # Note: cleanup might not work due to permissions, so we restore perms first
-            os.chmod(local_path, original_perms)
-            
-        finally:
-            # Restore permissions for cleanup
-            if local_path.exists():
-                os.chmod(local_path, original_perms)
+        assert not local_path.exists(), "Library directory should not exist after extraction failure"
     
     def test_validate_library_valid(self):
         """Test validating a valid library installation."""

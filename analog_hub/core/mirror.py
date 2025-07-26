@@ -3,6 +3,7 @@
 import hashlib
 import shutil
 import tempfile
+import signal
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, Any
@@ -10,6 +11,16 @@ from typing import Optional, Dict, Any
 import git
 import yaml
 from pydantic import BaseModel, Field
+
+
+class GitOperationTimeout(Exception):
+    """Raised when git operation times out."""
+    pass
+
+
+def timeout_handler(signum, frame):
+    """Signal handler for operation timeout."""
+    raise GitOperationTimeout("Git operation timed out")
 
 
 class MirrorMetadata(BaseModel):
@@ -38,14 +49,44 @@ class MirrorMetadata(BaseModel):
 class RepositoryMirror:
     """Manages repository mirroring operations."""
     
-    def __init__(self, mirror_root: Path = Path(".mirror")):
+    def __init__(self, mirror_root: Path = Path(".mirror"), git_timeout: int = 60):
         """Initialize mirror manager.
         
         Args:
             mirror_root: Root directory for all mirrors (default: .mirror)
+            git_timeout: Timeout for git operations in seconds (default: 60)
         """
         self.mirror_root = Path(mirror_root)
         self.mirror_root.mkdir(exist_ok=True)
+        self.git_timeout = git_timeout
+    
+    def _with_timeout(self, operation, timeout=None):
+        """Execute git operation with timeout.
+        
+        Args:
+            operation: Function to execute
+            timeout: Timeout in seconds (uses instance default if None)
+            
+        Returns:
+            Result of operation
+            
+        Raises:
+            GitOperationTimeout: If operation times out
+        """
+        if timeout is None:
+            timeout = self.git_timeout
+            
+        # Set up signal handler
+        old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+        signal.alarm(timeout)
+        
+        try:
+            result = operation()
+            return result
+        finally:
+            # Clean up signal handler
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, old_handler)
     
     def _normalize_repo_url(self, repo_url: str) -> str:
         """Normalize repository URL for consistent hashing.
@@ -165,12 +206,15 @@ class RepositoryMirror:
             with tempfile.TemporaryDirectory() as temp_dir:
                 temp_path = Path(temp_dir) / "repo"
                 
-                # Clone repository
-                repo = git.Repo.clone_from(url=repo_url, to_path=temp_path)
+                # Clone repository with timeout
+                repo = self._with_timeout(
+                    lambda: git.Repo.clone_from(url=repo_url, to_path=temp_path),
+                    timeout=300  # Increase timeout to 5 minutes for problematic repos
+                )
                 
-                # Checkout requested ref
+                # Checkout requested ref with timeout
                 try:
-                    repo.git.checkout(ref)
+                    self._with_timeout(lambda: repo.git.checkout(ref))
                     resolved_commit = repo.head.commit.hexsha
                 except git.GitCommandError as e:
                     if "pathspec" in str(e).lower():
@@ -206,8 +250,25 @@ class RepositoryMirror:
                 shutil.rmtree(mirror_path)
             raise
     
+    def _check_commit_exists_locally(self, repo: git.Repo, ref: str) -> Optional[str]:
+        """Check if a commit/ref exists locally and return its SHA.
+        
+        Args:
+            repo: Git repository object
+            ref: Git reference (branch, tag, or commit SHA)
+            
+        Returns:
+            Commit SHA if ref exists locally, None otherwise
+        """
+        try:
+            # Try to resolve the ref to a commit SHA
+            commit = repo.commit(ref)
+            return commit.hexsha
+        except (git.BadName, git.BadObject, ValueError):
+            return None
+    
     def update_mirror(self, repo_url: str, ref: str) -> MirrorMetadata:
-        """Update existing mirror or create new one.
+        """Update existing mirror or create new one with smart git operations.
         
         Args:
             repo_url: Repository URL
@@ -226,13 +287,30 @@ class RepositoryMirror:
         try:
             repo = git.Repo(mirror_path)
             
-            # Fetch latest changes
-            repo.remotes.origin.fetch()
+            # First, check if we already have the target ref locally
+            resolved_commit = self._check_commit_exists_locally(repo, ref)
             
-            # Checkout requested ref
+            if resolved_commit is None:
+                # We don't have the ref locally, need to fetch
+                print(f"🔄 Fetching updates for {repo_url}")
+                self._with_timeout(lambda: repo.remotes.origin.fetch())
+                
+                # Try to resolve the ref again after fetching
+                resolved_commit = self._check_commit_exists_locally(repo, ref)
+                
+                if resolved_commit is None:
+                    raise ValueError(f"Reference '{ref}' not found in repository after fetch")
+            else:
+                print(f"⚡ Using cached version of {repo_url} (no fetch needed)")
+            
+            # Checkout the target ref (this is fast since we verified it exists)
             try:
-                repo.git.checkout(ref)
-                resolved_commit = repo.head.commit.hexsha
+                current_commit = repo.head.commit.hexsha
+                if current_commit != resolved_commit:
+                    self._with_timeout(lambda: repo.git.checkout('-f', ref))
+                    print(f"🔄 Checked out {ref} ({resolved_commit[:8]})")
+                else:
+                    print(f"⚡ Already on target commit {resolved_commit[:8]}")
             except git.GitCommandError as e:
                 if "pathspec" in str(e).lower():
                     raise ValueError(f"Reference '{ref}' not found in repository")
@@ -259,6 +337,7 @@ class RepositoryMirror:
             
         except Exception as e:
             # If update fails, try fresh clone
+            print(f"⚠️  Mirror update failed, creating fresh clone: {e}")
             return self.create_mirror(repo_url, ref)
     
     def remove_mirror(self, repo_url: str) -> bool:
