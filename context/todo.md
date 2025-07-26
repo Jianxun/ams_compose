@@ -59,13 +59,50 @@ imports:
   devcontainer:                  # Development environment setup
 ```
 
+## Current Sprint: End-to-End Testing ✅
+
+### **Critical Operational Scenario Tests**
+- [x] **Branch Update Detection Tests** (`test_e2e_branch_updates.py`) - Complete ✅
+  - Mock repository creation with git operations
+  - Automatic update detection when source repo branch has new commits
+  - Mixed update scenarios (some libraries update, others skip)
+  - Branch-to-branch reference changes
+- [ ] **Version Pinning Tests** - Next dedicated session
+  - Libraries with pinned commits shouldn't update when upstream changes
+  - Verify "[up to date]" status for pinned versions
+  - Test mix of branch tracking vs commit pinning
+- [ ] **Local Modification Detection Tests** - Next dedicated session  
+  - Validate checksum-based detection of local file changes
+  - Test "checksum mismatch (modified?)" error reporting
+  - Verify validation workflow and error recovery
+- [ ] **Real-World Integration Tests** - Final dedicated session
+  - Use actual analog-hub.yaml configuration for testing
+  - Test complex scenarios with local_path overrides
+  - Validate performance with all 5 configured libraries
+
+### **Test Implementation Strategy**
+- ✅ **Dedicated Session Approach**: Each test case handled individually for focused development
+- ✅ **Mock Git Infrastructure**: Established temporary repository creation for upstream simulation
+- ✅ **State Verification Framework**: Comprehensive lockfile, metadata, and checksum validation
+- ✅ **Real Repository Integration**: Subset testing with actual configured repositories
+
 ## Outstanding Future Enhancements
 
 ### **Version 1.0.0 Release Preparation**
 - [x] **Performance optimization** - Smart install logic delivering 50-100x improvements ✅
+- [x] **End-to-end testing foundation** - Critical operational scenarios identified and first test complete ✅
+- [ ] **Complete end-to-end test suite** - All 3 critical scenarios with comprehensive coverage
 - [ ] **User documentation** - Complete README, installation guide, and usage examples
 - [ ] **Release preparation** - Version tagging, PyPI upload, and distribution testing
 - [ ] **Community outreach** - Announce to analog IC design community
+
+### **Code Quality Improvements (Next Sprint)**
+- [ ] **Checksum Operations Isolation** - Extract checksum logic to dedicated `utils/checksum.py` module
+  - Eliminate code duplication in `extractor.py` (3+ instances of `_calculate_directory_checksum`)
+  - Centralize directory and file checksum calculations in reusable utility class
+  - Move URL hashing from `mirror.py` to unified checksum utilities
+  - Create dedicated test file `test_checksum.py` with comprehensive coverage
+  - Benefits: DRY principle, better testability, future optimization opportunities (caching, parallel processing)
 
 ### **Optional Enhancements (Post v1.0.0)**
 - [ ] **GitHub API integration** - More efficient downloads for GitHub-hosted repositories
