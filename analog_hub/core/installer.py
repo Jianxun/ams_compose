@@ -123,24 +123,23 @@ class LibraryInstaller:
         except Exception as e:
             raise InstallationError(f"Failed to install library '{library_name}': {e}")
     
-    def install_all(self, library_names: Optional[List[str]] = None, force: bool = False) -> Dict[str, LockEntry]:
-        """Install all libraries or specific subset with smart skip logic.
+    def _resolve_target_libraries(self, library_names: Optional[List[str]], config: AnalogHubConfig) -> Dict[str, ImportSpec]:
+        """Resolve which libraries should be processed based on configuration and user input.
         
         Args:
-            library_names: Optional list of specific libraries to install.
-                          If None, installs all libraries from configuration.
-            force: If True, force reinstall even if libraries are up-to-date.
-                  If False, skip libraries that are already installed at correct version.
+            library_names: Optional list of specific libraries to install
+            config: Loaded configuration with all available libraries
             
         Returns:
-            Dictionary mapping library names to their lock entries (only changed libraries)
+            Dictionary of libraries to process with their import specifications
             
         Raises:
-            InstallationError: If any installation fails
+            InstallationError: If specified libraries are not found in configuration
         """
-        # Load configuration
-        config = self.load_config()
-        
+        # Handle case where config has no imports
+        if not config.imports:
+            return {}
+            
         # Determine libraries to install
         if library_names is None:
             libraries_to_install = config.imports
@@ -155,13 +154,19 @@ class LibraryInstaller:
             if missing:
                 raise InstallationError(f"Libraries not found in configuration: {missing}")
         
-        if not libraries_to_install:
-            return {}
+        return libraries_to_install
+
+    def _determine_libraries_needing_work(self, libraries_to_install: Dict[str, ImportSpec], lock_file: LockFile, force: bool) -> Tuple[Dict[str, ImportSpec], List[str]]:
+        """Determine which libraries need installation/update using smart skip logic.
         
-        # Load current lock file to check what's already installed
-        lock_file = self.load_lock_file()
-        
-        # Filter libraries that need installation/update (smart skip logic)
+        Args:
+            libraries_to_install: Libraries that could potentially be installed
+            lock_file: Current lock file state
+            force: If True, force reinstall even if libraries are up-to-date
+            
+        Returns:
+            Tuple of (libraries_needing_work, skipped_libraries)
+        """
         libraries_needing_work = {}
         skipped_libraries = []
         
@@ -194,10 +199,22 @@ class LibraryInstaller:
                         print(f"Library: {library_name} (commit {commit_hash}) [up to date]")
                         skipped_libraries.append(library_name)
         
-        if not libraries_needing_work:
-            return {}
+        return libraries_needing_work, skipped_libraries
+
+    def _install_libraries_batch(self, libraries_needing_work: Dict[str, ImportSpec], config: AnalogHubConfig, lock_file: LockFile) -> Dict[str, LockEntry]:
+        """Install/update a batch of libraries and handle status reporting.
         
-        # Install/update libraries that need work
+        Args:
+            libraries_needing_work: Libraries that need installation/update
+            config: Configuration with library_root setting
+            lock_file: Current lock file for comparison
+            
+        Returns:
+            Dictionary of successfully installed libraries
+            
+        Raises:
+            InstallationError: If any installation fails
+        """
         installed_libraries = {}
         failed_libraries = []
         
@@ -230,11 +247,56 @@ class LibraryInstaller:
             failure_summary = "\n".join([f"  - {name}: {error}" for name, error in failed_libraries])
             raise InstallationError(f"Failed to install {len(failed_libraries)} libraries:\n{failure_summary}")
         
-        # Update lock file
+        return installed_libraries
+
+    def _update_lock_file(self, installed_libraries: Dict[str, LockEntry], config: AnalogHubConfig) -> None:
+        """Update and save the lock file with newly installed libraries.
+        
+        Args:
+            installed_libraries: Libraries that were successfully installed
+            config: Configuration with library_root setting
+        """
         lock_file = self.load_lock_file()
         lock_file.library_root = config.library_root
         lock_file.libraries.update(installed_libraries)
         self.save_lock_file(lock_file)
+
+    def install_all(self, library_names: Optional[List[str]] = None, force: bool = False) -> Dict[str, LockEntry]:
+        """Install all libraries or specific subset with smart skip logic.
+        
+        Args:
+            library_names: Optional list of specific libraries to install.
+                          If None, installs all libraries from configuration.
+            force: If True, force reinstall even if libraries are up-to-date.
+                  If False, skip libraries that are already installed at correct version.
+            
+        Returns:
+            Dictionary mapping library names to their lock entries (only changed libraries)
+            
+        Raises:
+            InstallationError: If any installation fails
+        """
+        # Load configuration and resolve target libraries
+        config = self.load_config()
+        libraries_to_install = self._resolve_target_libraries(library_names, config)
+        
+        if not libraries_to_install:
+            return {}
+        
+        # Load current lock file and determine what needs work
+        lock_file = self.load_lock_file()
+        libraries_needing_work, skipped_libraries = self._determine_libraries_needing_work(
+            libraries_to_install, lock_file, force
+        )
+        
+        if not libraries_needing_work:
+            return {}
+        
+        # Install/update libraries that need work
+        installed_libraries = self._install_libraries_batch(libraries_needing_work, config, lock_file)
+        
+        # Update lock file with new installations
+        self._update_lock_file(installed_libraries, config)
         
         return installed_libraries
     
