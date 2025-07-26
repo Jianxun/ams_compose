@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Set, Tuple
 from .config import AnalogHubConfig, LockFile, LockEntry, ImportSpec
 from .mirror import RepositoryMirror
 from .extractor import PathExtractor
+from ..utils.checksum import ChecksumCalculator
 
 
 class InstallationError(Exception):
@@ -95,7 +96,7 @@ class LibraryInstaller:
             resolved_commit = mirror_metadata.resolved_commit
             
             # Step 2: Extract the library
-            repo_hash = self.mirror_manager._generate_repo_hash(import_spec.repo)
+            repo_hash = ChecksumCalculator.generate_repo_hash(import_spec.repo)
             library_metadata = self.path_extractor.extract_library(
                 library_name=library_name,
                 import_spec=import_spec,
@@ -274,7 +275,7 @@ class LibraryInstaller:
                 metadata = LibraryMetadata.from_yaml(metadata_path)
                 
                 # Verify checksum
-                current_checksum = self.path_extractor._calculate_directory_checksum(library_path)
+                current_checksum = ChecksumCalculator.calculate_directory_checksum(library_path)
                 if current_checksum != lock_entry.checksum:
                     invalid_libraries.append(f"{library_name}: checksum mismatch (modified?)")
                     continue

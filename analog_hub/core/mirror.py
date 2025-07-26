@@ -1,6 +1,5 @@
 """Repository mirroring operations for analog-hub."""
 
-import hashlib
 import shutil
 import tempfile
 import signal
@@ -11,6 +10,8 @@ from typing import Optional, Dict, Any
 import git
 import yaml
 from pydantic import BaseModel, Field
+
+from ..utils.checksum import ChecksumCalculator
 
 
 class GitOperationTimeout(Exception):
@@ -88,40 +89,6 @@ class RepositoryMirror:
             signal.alarm(0)
             signal.signal(signal.SIGALRM, old_handler)
     
-    def _normalize_repo_url(self, repo_url: str) -> str:
-        """Normalize repository URL for consistent hashing.
-        
-        Args:
-            repo_url: Repository URL in various formats
-            
-        Returns:
-            Normalized URL string
-        """
-        # Remove trailing slashes and .git suffixes
-        normalized = repo_url.rstrip('/')
-        if normalized.endswith('.git'):
-            normalized = normalized[:-4]
-        
-        # Convert SSH URLs to HTTPS for consistency
-        if normalized.startswith('git@github.com:'):
-            normalized = normalized.replace('git@github.com:', 'https://github.com/')
-        elif normalized.startswith('git@gitlab.com:'):
-            normalized = normalized.replace('git@gitlab.com:', 'https://gitlab.com/')
-        
-        return normalized.lower()
-    
-    def _generate_repo_hash(self, repo_url: str) -> str:
-        """Generate SHA256 hash for repository URL.
-        
-        Args:
-            repo_url: Repository URL
-            
-        Returns:
-            16-character hex hash (first 64 bits of SHA256)
-        """
-        normalized_url = self._normalize_repo_url(repo_url)
-        hash_bytes = hashlib.sha256(normalized_url.encode('utf-8')).digest()
-        return hash_bytes[:8].hex()  # First 8 bytes = 16 hex chars
     
     def get_mirror_path(self, repo_url: str) -> Path:
         """Get mirror directory path for repository.
@@ -132,7 +99,7 @@ class RepositoryMirror:
         Returns:
             Path to mirror directory
         """
-        repo_hash = self._generate_repo_hash(repo_url)
+        repo_hash = ChecksumCalculator.generate_repo_hash(repo_url)
         return self.mirror_root / repo_hash
     
     def mirror_exists(self, repo_url: str) -> bool:
@@ -227,7 +194,7 @@ class RepositoryMirror:
             
             # Create metadata
             now = datetime.now().isoformat()
-            repo_hash = self._generate_repo_hash(repo_url)
+            repo_hash = ChecksumCalculator.generate_repo_hash(repo_url)
             
             metadata = MirrorMetadata(
                 repo_url=repo_url,
@@ -311,7 +278,7 @@ class RepositoryMirror:
                 raise
             
             # Update metadata
-            repo_hash = self._generate_repo_hash(repo_url)
+            repo_hash = ChecksumCalculator.generate_repo_hash(repo_url)
             created_at = existing_metadata.created_at if existing_metadata else datetime.now().isoformat()
             
             metadata = MirrorMetadata(

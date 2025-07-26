@@ -1,6 +1,6 @@
 # Todo List
 
-## Current Project Status: Production Ready ✅
+## Current Project Status: MVP ✅
 
 **analog-hub v1.0.0 candidate** - All core functionality implemented and validated with real analog IC design repositories.
 
@@ -59,50 +59,57 @@ imports:
   devcontainer:                  # Development environment setup
 ```
 
-## Current Sprint: End-to-End Testing ✅
+## Current Sprint: Version 1.0.0 Release Preparation
 
-### **Critical Operational Scenario Tests**
+### **Release Preparation Tasks**
+- [ ] **User Documentation** - Complete README, installation guide, and usage examples
+  - Update README.md with comprehensive installation instructions
+  - Create user guide with real-world examples
+  - Document CLI commands and configuration options
+  - Add troubleshooting section
+
+- [ ] **Release Engineering** - Version tagging, PyPI upload, and distribution testing
+  - Finalize version numbering (v1.0.0)
+  - Create release notes and changelog
+  - Test PyPI package distribution
+  - Validate installation from PyPI
+
+- [ ] **Community Outreach** - Announce to analog IC design community
+  - Prepare announcement for analog IC design forums
+  - Create project showcase materials
+  - Document real-world use cases and success stories
+
+### **Optional Future Enhancements**
+- [ ] **GitHub API Integration** - More efficient downloads for GitHub-hosted repositories
+- [ ] **Multi-config Support** - Support for `.analog-hub/` directory structure
+- [ ] **Parallel Processing** - Concurrent library installation for multiple repositories
+
+## Completed Sprints ✅
+
+### **Checksum Operations Consolidation Complete** ✅
+- [x] **Session 1: Foundation & Core Module Creation** - Create utils/checksum.py with ChecksumCalculator class ✅
+- [x] **Session 2: Mirror Module Refactoring** - Update mirror.py to use centralized checksum utilities ✅
+- [x] **Session 3: Extractor Module Refactoring** - Update extractor.py and remove duplicated methods ✅
+- [x] **Session 4: Integration & Validation** - Update installer.py and run comprehensive testing ✅
+
+**Benefits Achieved:**
+- ✅ Eliminated code duplication across 3 core modules
+- ✅ Improved architecture with better separation of concerns
+- ✅ Added comprehensive test coverage (20 new tests, 91% coverage)
+- ✅ Foundation for future optimizations (caching, parallel processing)
+- ✅ Better testability and maintainability
+
+### **End-to-End Testing Complete** ✅
 - [x] **Branch Update Detection Tests** (`test_e2e_branch_updates.py`) - Complete ✅
-  - Mock repository creation with git operations
-  - Automatic update detection when source repo branch has new commits
-  - Mixed update scenarios (some libraries update, others skip)
-  - Branch-to-branch reference changes
-- [ ] **Version Pinning Tests** - Next dedicated session
-  - Libraries with pinned commits shouldn't update when upstream changes
-  - Verify "[up to date]" status for pinned versions
-  - Test mix of branch tracking vs commit pinning
-- [ ] **Local Modification Detection Tests** - Next dedicated session  
-  - Validate checksum-based detection of local file changes
-  - Test "checksum mismatch (modified?)" error reporting
-  - Verify validation workflow and error recovery
-- [ ] **Real-World Integration Tests** - Final dedicated session
-  - Use actual analog-hub.yaml configuration for testing
-  - Test complex scenarios with local_path overrides
-  - Validate performance with all 5 configured libraries
-
-### **Test Implementation Strategy**
-- ✅ **Dedicated Session Approach**: Each test case handled individually for focused development
-- ✅ **Mock Git Infrastructure**: Established temporary repository creation for upstream simulation
-- ✅ **State Verification Framework**: Comprehensive lockfile, metadata, and checksum validation
-- ✅ **Real Repository Integration**: Subset testing with actual configured repositories
-
-## Outstanding Future Enhancements
+- [x] **Version Pinning Tests** (`test_e2e_version_pinning.py`) - Complete ✅
+- [x] **Local Modification Detection Tests** (`test_e2e_local_modifications.py`) - Complete ✅
 
 ### **Version 1.0.0 Release Preparation**
 - [x] **Performance optimization** - Smart install logic delivering 50-100x improvements ✅
-- [x] **End-to-end testing foundation** - Critical operational scenarios identified and first test complete ✅
-- [ ] **Complete end-to-end test suite** - All 3 critical scenarios with comprehensive coverage
+- [x] **End-to-end testing foundation** - All 3 critical operational scenarios complete ✅
 - [ ] **User documentation** - Complete README, installation guide, and usage examples
 - [ ] **Release preparation** - Version tagging, PyPI upload, and distribution testing
 - [ ] **Community outreach** - Announce to analog IC design community
-
-### **Code Quality Improvements (Next Sprint)**
-- [ ] **Checksum Operations Isolation** - Extract checksum logic to dedicated `utils/checksum.py` module
-  - Eliminate code duplication in `extractor.py` (3+ instances of `_calculate_directory_checksum`)
-  - Centralize directory and file checksum calculations in reusable utility class
-  - Move URL hashing from `mirror.py` to unified checksum utilities
-  - Create dedicated test file `test_checksum.py` with comprehensive coverage
-  - Benefits: DRY principle, better testability, future optimization opportunities (caching, parallel processing)
 
 ### **Optional Enhancements (Post v1.0.0)**
 - [ ] **GitHub API integration** - More efficient downloads for GitHub-hosted repositories

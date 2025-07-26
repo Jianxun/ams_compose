@@ -9,6 +9,7 @@ import pytest
 
 from analog_hub.core.extractor import PathExtractor, LibraryMetadata
 from analog_hub.core.config import ImportSpec
+from analog_hub.utils.checksum import ChecksumCalculator
 
 
 class TestPathExtractor:
@@ -61,17 +62,17 @@ class TestPathExtractor:
         lib_dir = self.mock_mirror / "libs" / "test_lib"
         
         # Calculate checksum
-        checksum1 = self.extractor._calculate_directory_checksum(lib_dir)
+        checksum1 = ChecksumCalculator.calculate_directory_checksum(lib_dir)
         assert len(checksum1) == 64  # SHA256 hex length
         assert checksum1 != ""
         
         # Same directory should produce same checksum
-        checksum2 = self.extractor._calculate_directory_checksum(lib_dir)
+        checksum2 = ChecksumCalculator.calculate_directory_checksum(lib_dir)
         assert checksum1 == checksum2
         
         # Modified directory should produce different checksum
         (lib_dir / "new_file.txt").write_text("new content")
-        checksum3 = self.extractor._calculate_directory_checksum(lib_dir)
+        checksum3 = ChecksumCalculator.calculate_directory_checksum(lib_dir)
         assert checksum3 != checksum1
     
     def test_calculate_directory_checksum_empty_dir(self):
@@ -79,14 +80,14 @@ class TestPathExtractor:
         empty_dir = self.mock_mirror / "empty"
         empty_dir.mkdir()
         
-        checksum = self.extractor._calculate_directory_checksum(empty_dir)
+        checksum = ChecksumCalculator.calculate_directory_checksum(empty_dir)
         assert len(checksum) == 64
         assert checksum != ""
     
     def test_calculate_directory_checksum_nonexistent(self):
         """Test checksum of nonexistent directory."""
         nonexistent = self.mock_mirror / "nonexistent"
-        checksum = self.extractor._calculate_directory_checksum(nonexistent)
+        checksum = ChecksumCalculator.calculate_directory_checksum(nonexistent)
         assert checksum == ""
     
     def test_resolve_local_path_with_library_root(self):

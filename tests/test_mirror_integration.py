@@ -7,6 +7,7 @@ import pytest
 
 from analog_hub.core.mirror import RepositoryMirror
 from analog_hub.core.config import AnalogHubConfig
+from analog_hub.utils.checksum import ChecksumCalculator
 
 
 class TestMirrorIntegration:
@@ -55,7 +56,7 @@ class TestMirrorIntegration:
         assert metadata.repo_url == repo_url
         assert metadata.current_ref == ref
         assert len(metadata.resolved_commit) == 40  # SHA hash length
-        assert metadata.repo_hash == self.mirror._generate_repo_hash(repo_url)
+        assert metadata.repo_hash == ChecksumCalculator.generate_repo_hash(repo_url)
         
         # Verify mirror directory exists
         mirror_path = self.mirror.get_mirror_path(repo_url)
@@ -101,7 +102,7 @@ class TestMirrorIntegration:
         assert metadata.repo_url == repo_url
         assert metadata.current_ref == ref
         assert len(metadata.resolved_commit) == 40
-        assert metadata.repo_hash == self.mirror._generate_repo_hash(repo_url)
+        assert metadata.repo_hash == ChecksumCalculator.generate_repo_hash(repo_url)
         
         # Verify mirror directory exists
         mirror_path = self.mirror.get_mirror_path(repo_url)
@@ -141,8 +142,8 @@ class TestMirrorIntegration:
         ]
         
         for repo_url in test_urls:
-            hash1 = self.mirror._generate_repo_hash(repo_url)
-            hash2 = self.mirror._generate_repo_hash(repo_url)
+            hash1 = ChecksumCalculator.generate_repo_hash(repo_url)
+            hash2 = ChecksumCalculator.generate_repo_hash(repo_url)
             assert hash1 == hash2, f"Hash inconsistent for {repo_url}"
             
             # Test that different URLs produce different hashes

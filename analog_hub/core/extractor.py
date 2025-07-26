@@ -1,6 +1,5 @@
 """Path extraction operations for analog-hub."""
 
-import hashlib
 import shutil
 from datetime import datetime
 from pathlib import Path
@@ -10,6 +9,7 @@ import yaml
 from pydantic import BaseModel, Field
 
 from .config import ImportSpec
+from ..utils.checksum import ChecksumCalculator
 
 
 class LibraryMetadata(BaseModel):
@@ -50,43 +50,6 @@ class PathExtractor:
         """
         self.project_root = Path(project_root).resolve()
     
-    def _calculate_directory_checksum(self, directory: Path) -> str:
-        """Calculate SHA256 checksum of directory contents.
-        
-        Args:
-            directory: Directory to checksum
-            
-        Returns:
-            Hex string of SHA256 checksum
-        """
-        if not directory.exists() or not directory.is_dir():
-            return ""
-        
-        sha256_hash = hashlib.sha256()
-        
-        # Get all files recursively, sorted for consistent ordering
-        files = sorted(directory.rglob("*"))
-        
-        for file_path in files:
-            if file_path.is_file():
-                # Skip metadata files when calculating checksum
-                if file_path.name.startswith(".analog-hub-meta"):
-                    continue
-                
-                # Include relative path in hash for structure validation
-                relative_path = file_path.relative_to(directory)
-                sha256_hash.update(str(relative_path).encode('utf-8'))
-                
-                # Include file content in hash
-                try:
-                    with open(file_path, 'rb') as f:
-                        for chunk in iter(lambda: f.read(4096), b""):
-                            sha256_hash.update(chunk)
-                except (OSError, PermissionError):
-                    # Include placeholder for unreadable files
-                    sha256_hash.update(b"<unreadable>")
-        
-        return sha256_hash.hexdigest()
     
     def _resolve_local_path(self, library_name: str, import_spec: ImportSpec, library_root: str) -> Path:
         """Resolve the local installation path for a library.
@@ -172,10 +135,9 @@ class PathExtractor:
             
             # Calculate checksum of extracted content
             if local_path.is_dir():
-                checksum = self._calculate_directory_checksum(local_path)
+                checksum = ChecksumCalculator.calculate_directory_checksum(local_path)
             else:
-                with open(local_path, 'rb') as f:
-                    checksum = hashlib.sha256(f.read()).hexdigest()
+                checksum = ChecksumCalculator.calculate_file_checksum(local_path)
             
             # Create metadata
             now = datetime.now().isoformat()
@@ -240,10 +202,9 @@ class PathExtractor:
             # Validate checksum only if we can calculate it
             try:
                 if library_path.is_dir():
-                    current_checksum = self._calculate_directory_checksum(library_path)
+                    current_checksum = ChecksumCalculator.calculate_directory_checksum(library_path)
                 else:
-                    with open(library_path, 'rb') as f:
-                        current_checksum = hashlib.sha256(f.read()).hexdigest()
+                    current_checksum = ChecksumCalculator.calculate_file_checksum(library_path)
                 
                 if current_checksum != metadata.checksum:
                     # Checksum mismatch - library may have been modified
@@ -354,10 +315,9 @@ class PathExtractor:
         try:
             # Recalculate checksum
             if library_path.is_dir():
-                new_checksum = self._calculate_directory_checksum(library_path)
+                new_checksum = ChecksumCalculator.calculate_directory_checksum(library_path)
             else:
-                with open(library_path, 'rb') as f:
-                    new_checksum = hashlib.sha256(f.read()).hexdigest()
+                new_checksum = ChecksumCalculator.calculate_file_checksum(library_path)
             
             # Update metadata
             updated_metadata = LibraryMetadata(
