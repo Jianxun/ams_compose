@@ -292,7 +292,6 @@ class RepositoryMirror:
             
             if resolved_commit is None:
                 # We don't have the ref locally, need to fetch
-                print(f"🔄 Fetching updates for {repo_url}")
                 self._with_timeout(lambda: repo.remotes.origin.fetch())
                 
                 # Try to resolve the ref again after fetching
@@ -300,17 +299,12 @@ class RepositoryMirror:
                 
                 if resolved_commit is None:
                     raise ValueError(f"Reference '{ref}' not found in repository after fetch")
-            else:
-                print(f"⚡ Using cached version of {repo_url} (no fetch needed)")
             
             # Checkout the target ref (this is fast since we verified it exists)
             try:
                 current_commit = repo.head.commit.hexsha
                 if current_commit != resolved_commit:
                     self._with_timeout(lambda: repo.git.checkout('-f', ref))
-                    print(f"🔄 Checked out {ref} ({resolved_commit[:8]})")
-                else:
-                    print(f"⚡ Already on target commit {resolved_commit[:8]}")
             except git.GitCommandError as e:
                 if "pathspec" in str(e).lower():
                     raise ValueError(f"Reference '{ref}' not found in repository")
@@ -337,7 +331,6 @@ class RepositoryMirror:
             
         except Exception as e:
             # If update fails, try fresh clone
-            print(f"⚠️  Mirror update failed, creating fresh clone: {e}")
             return self.create_mirror(repo_url, ref)
     
     def remove_mirror(self, repo_url: str) -> bool:

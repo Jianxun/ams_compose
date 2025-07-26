@@ -171,7 +171,6 @@ class LibraryInstaller:
             elif library_name not in lock_file.libraries:
                 # Library not installed: needs installation
                 libraries_needing_work[library_name] = import_spec
-                print(f"📦 Installing {library_name} (new library)")
             else:
                 # Library installed: check if update needed
                 current_entry = lock_file.libraries[library_name]
@@ -181,7 +180,6 @@ class LibraryInstaller:
                     current_entry.ref != import_spec.ref or
                     current_entry.source_path != import_spec.source_path):
                     libraries_needing_work[library_name] = import_spec
-                    print(f"🔄 Updating {library_name} (configuration changed)")
                 else:
                     # Check if library files still exist and are valid
                     library_path = self.project_root / current_entry.local_path
@@ -189,18 +187,13 @@ class LibraryInstaller:
                     
                     if not library_path.exists() or not metadata_path.exists():
                         libraries_needing_work[library_name] = import_spec
-                        print(f"🔄 Reinstalling {library_name} (library files missing)")
                     else:
-                        # Library is up-to-date, skip it
+                        # Library is up-to-date, print status
+                        commit_hash = current_entry.commit[:8]
+                        print(f"Library: {library_name} (commit {commit_hash}) [up to date]")
                         skipped_libraries.append(library_name)
-                        print(f"⏭️  Skipping {library_name} (up-to-date)")
-        
-        # Show summary of what will be processed
-        if skipped_libraries:
-            print(f"Skipped {len(skipped_libraries)} up-to-date libraries")
         
         if not libraries_needing_work:
-            print("All libraries are up-to-date")
             return {}
         
         # Install/update libraries that need work
@@ -216,19 +209,20 @@ class LibraryInstaller:
                 )
                 installed_libraries[library_name] = lock_entry
                 
-                # Show what changed if this was an update
+                # Determine if this was an install or update
+                commit_hash = lock_entry.commit[:8]
                 if library_name in lock_file.libraries:
                     old_commit = lock_file.libraries[library_name].commit
                     if old_commit != lock_entry.commit:
-                        print(f"✓ Updated {library_name}: {old_commit[:8]} → {lock_entry.commit[:8]}")
+                        print(f"Library: {library_name} (commit {commit_hash}) [updated]")
                     else:
-                        print(f"✓ Reinstalled {library_name}: {lock_entry.commit[:8]}")
+                        print(f"Library: {library_name} (commit {commit_hash}) [installed]")
                 else:
-                    print(f"✓ Installed {library_name}: {lock_entry.commit[:8]}")
+                    print(f"Library: {library_name} (commit {commit_hash}) [installed]")
                 
             except Exception as e:
                 failed_libraries.append((library_name, str(e)))
-                print(f"✗ Failed to process library: {library_name} - {e}")
+                print(f"Library: {library_name} (commit unknown) [error]")
         
         # Handle failures
         if failed_libraries:
@@ -313,7 +307,6 @@ class LibraryInstaller:
                 try:
                     self.mirror_manager.remove_mirror(repo_url)
                     removed_mirrors.append(self.mirror_manager.get_mirror_path(repo_url))
-                    print(f"Removed unused mirror: {repo_url}")
                 except Exception as e:
                     print(f"Warning: Failed to remove mirror {repo_url}: {e}")
         

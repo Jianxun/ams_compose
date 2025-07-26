@@ -81,9 +81,7 @@ def install(libraries: tuple, auto_gitignore: bool, force: bool):
         installed = installer.install_all(library_list, force=force)
         
         if installed:
-            click.echo(f"\n✓ Successfully installed {len(installed)} libraries:")
-            for library_name, lock_entry in installed.items():
-                click.echo(f"  - {library_name} (commit: {lock_entry.commit[:8]})")
+            click.echo(f"Installed {len(installed)} libraries")
         else:
             click.echo("No libraries to install")
             
@@ -105,19 +103,19 @@ def list_libraries(detailed: bool):
             click.echo("No libraries installed")
             return
         
-        click.echo(f"Installed libraries ({len(installed)}):\n")
+        click.echo(f"Installed libraries ({len(installed)}):")
         
         for library_name, lock_entry in installed.items():
             if detailed:
-                click.echo(f"📦 {library_name}")
-                click.echo(f"   Repository: {lock_entry.repo}")
-                click.echo(f"   Reference:  {lock_entry.ref}")
-                click.echo(f"   Commit:     {lock_entry.commit}")
-                click.echo(f"   Path:       {lock_entry.local_path}")
-                click.echo(f"   Installed:  {lock_entry.installed_at}")
+                click.echo(f"{library_name}")
+                click.echo(f"  Repository: {lock_entry.repo}")
+                click.echo(f"  Reference:  {lock_entry.ref}")
+                click.echo(f"  Commit:     {lock_entry.commit}")
+                click.echo(f"  Path:       {lock_entry.local_path}")
+                click.echo(f"  Installed:  {lock_entry.installed_at}")
                 click.echo()
             else:
-                click.echo(f"  📦 {library_name:<20} {lock_entry.commit[:8]} ({lock_entry.ref})")
+                click.echo(f"  {library_name:<20} {lock_entry.commit[:8]} ({lock_entry.ref})")
                 
     except InstallationError as e:
         _handle_installation_error(e)
@@ -130,30 +128,23 @@ def validate():
         installer = _get_installer()
         
         # Validate configuration
-        click.echo("Validating configuration...")
         try:
             config = installer.load_config()
-            click.echo(f"✓ Configuration valid: {len(config.imports)} libraries defined")
+            click.echo(f"Configuration valid: {len(config.imports)} libraries defined")
         except Exception as e:
-            click.echo(f"✗ Configuration error: {e}")
+            click.echo(f"Configuration error: {e}")
             sys.exit(1)
         
         # Validate installation state
-        click.echo("\nValidating installation state...")
         valid_libraries, invalid_libraries = installer.validate_installation()
         
-        if valid_libraries:
-            click.echo(f"✓ Valid libraries ({len(valid_libraries)}):")
-            for library in valid_libraries:
-                click.echo(f"  - {library}")
-        
         if invalid_libraries:
-            click.echo(f"\n✗ Invalid libraries ({len(invalid_libraries)}):")
+            click.echo(f"Invalid libraries ({len(invalid_libraries)}):")
             for issue in invalid_libraries:
-                click.echo(f"  - {issue}")
+                click.echo(f"  {issue}")
             sys.exit(1)
         else:
-            click.echo(f"\n✓ All {len(valid_libraries)} installed libraries are valid")
+            click.echo(f"All {len(valid_libraries)} libraries are valid")
             
     except InstallationError as e:
         _handle_installation_error(e)
@@ -220,13 +211,8 @@ imports:
     # Auto-generate .gitignore
     _auto_generate_gitignore()
     
-    click.echo(f"✓ Initialized analog-hub project in {Path.cwd()}")
-    click.echo(f"  - Created {config_path.name}")
-    click.echo(f"  - Created {library_root}/ directory")
-    click.echo(f"  - Updated .gitignore")
-    click.echo(f"\nNext steps:")
-    click.echo(f"  1. Edit {config_path.name} to add your library dependencies")
-    click.echo(f"  2. Run 'analog-hub install' to fetch libraries")
+    click.echo(f"Initialized analog-hub project in {Path.cwd()}")
+    click.echo(f"Edit {config_path.name} to add library dependencies, then run 'analog-hub install'")
 
 
 @main.command()
@@ -235,25 +221,23 @@ def clean():
     try:
         installer = _get_installer()
         
-        click.echo("Cleaning unused mirrors...")
         removed_mirrors = installer.clean_unused_mirrors()
         
         if removed_mirrors:
-            click.echo(f"✓ Removed {len(removed_mirrors)} unused mirrors")
+            click.echo(f"Removed {len(removed_mirrors)} unused mirrors")
         else:
-            click.echo("✓ No unused mirrors found")
+            click.echo("No unused mirrors found")
         
         # Also run validation
-        click.echo("\nValidating installations...")
         valid_libraries, invalid_libraries = installer.validate_installation()
         
         if invalid_libraries:
-            click.echo(f"⚠️  Found {len(invalid_libraries)} invalid libraries:")
+            click.echo(f"Found {len(invalid_libraries)} invalid libraries:")
             for issue in invalid_libraries:
-                click.echo(f"  - {issue}")
-            click.echo("\nConsider running 'analog-hub install --force' to fix these issues.")
+                click.echo(f"  {issue}")
+            click.echo("Consider running 'analog-hub install --force' to fix these issues.")
         else:
-            click.echo(f"✓ All {len(valid_libraries)} libraries are valid")
+            click.echo(f"All {len(valid_libraries)} libraries are valid")
             
     except InstallationError as e:
         _handle_installation_error(e)
