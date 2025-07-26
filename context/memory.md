@@ -2,325 +2,37 @@
 
 ## Current Status
 - **Project**: analog-hub - Dependency management tool for analog IC design repositories
-- **Stage**: Production Ready ✅ (v1.0.0 candidate)
-- **Last Updated**: 2025-07-26 (Performance Optimization + UX Improvements)
+- **Stage**: MVP Complete, Test Suite Refactored
+- **Last Updated**: 2025-07-26
 
-## Project Overview
-**analog-hub** enables selective import of IP libraries from git repositories without copying entire repository structures. Designed for analog IC designers using open source toolchains (IIC-OSIC-TOOLS).
+## Recent Major Changes (Last 2-3 Sessions Only)
 
-### Core Problems Solved
-- Fragmentation of analog IP libraries across repositories
-- Git submodules copy unwanted boilerplate when only specific libraries are needed
-- No standardized way to include standard cell libraries, behavioral models, example designs
+### Test Suite Refactor - 2025-07-26
+- **Problem**: Flat test structure after metadata refactor, unclear organization
+- **Solution**: Implemented 3-tier hierarchy (unit/integration/e2e) with logical module organization
+- **Status**: Complete - All tests moved to new structure
+- **Benefits**: Clear separation by speed/scope, improved TDD workflow, organized by functionality
 
-### Solution Approach
-- **Consumer-only system**: Works with any Git repository (no upstream requirements)
-- **Selective fetching**: Extract only specified library components using mirrors
-- **Version control**: Support for branch/tag/commit pinning with lockfile tracking
+### Metadata Architecture Consolidation - 2025-07-26
+- **Problem**: Dual metadata system creates file clutter (.analog-hub-meta*.yaml files)
+- **Solution**: Single lockfile architecture with lightweight return types (MirrorState, ExtractionState)
+- **Status**: Complete
+- **Benefits**: Clean workspace, single source of truth, simplified validation
 
-## Key Architecture Decisions ✅
+### Performance Optimization - 2025-07-26
+- **Problem**: Slow install times (30+ seconds for up-to-date libraries)
+- **Solution**: Smart install logic with skip-up-to-date behavior (pip-like)
+- **Status**: Complete
+- **Benefits**: 50-100x faster installs (0.16s vs 30s)
 
-### **Configuration Format**
-**File**: `analog-hub.yaml`
-```yaml
-library-root: designs/libs
-imports:
-  library_name:
-    repo: git_repository_url
-    ref: branch_tag_or_commit  
-    source_path: path_within_repo_to_extract
-    local_path: optional_override_path  # overrides library-root
-    license: license_info
-```
+## Key Architecture Decisions (Stable Decisions Only)
+- **Mirror-based approach**: Full clone to .mirror/ directory with SHA256 naming
+- **Smart install logic**: Skip libraries that don't need updates
+- **Single lockfile**: All state in .analog-hub.lock, no metadata files
+- **3-tier test structure**: unit/ (fast, mocked), integration/ (real deps), e2e/ (full workflows)
+- **Technology stack**: Python + Click + GitPython + Pydantic
 
-### **Core Design Principles**
-- **Mirror-based approach**: Full clone to isolated `.mirror/` directory (gitignored)
-- **Smart install logic**: Skip up-to-date libraries, only process when changes needed (pip-like behavior)
-- **SHA256 validation**: Content integrity checking with lockfile tracking
-- **Universal compatibility**: Works with any Git repository, no upstream requirements
-
-### **Technology Stack**
-- **Language**: Python with PyPI distribution
-- **Configuration**: Pydantic BaseModels for YAML parsing/validation
-- **CLI Framework**: Click with comprehensive error handling
-- **Git Operations**: GitPython with timeout handling and robust error recovery
-
-## Core Architecture ✅
-
-### **Module Structure**
-```
-analog_hub/
-├── cli/main.py              # CLI entry point with all commands
-├── core/
-│   ├── config.py           # Pydantic configuration models
-│   ├── mirror.py           # Repository mirroring with timeout handling
-│   ├── extractor.py        # Selective path copying and validation
-│   └── installer.py        # Installation orchestration and lockfile management
-└── utils/                   # Filesystem and validation utilities
-```
-
-### **CLI Commands** ✅ (Optimized Interface)
-- `analog-hub init [--library-root]` - Initialize project with configuration template
-- `analog-hub install [library] [--force]` - Smart install/update with skip logic (pip-like behavior)
-- `analog-hub list [--detailed]` - Show installed libraries with metadata
-- `analog-hub validate` - Validate configuration and installation integrity
-- `analog-hub clean` - Cleanup unused mirrors and validate installations
-
-**Removed**: `analog-hub update` command (redundant with smart install)
-
-## Implementation Status ✅
-
-### **Completed Features**
-- **Mirror Operations**: Full repository cloning with SHA256-based directory naming + smart git optimization
-- **Path Extraction**: Selective copying with checksum validation and metadata tracking
-- **Installation Orchestration**: Complete workflow coordination with error recovery + smart skip logic
-- **CLI Interface**: User-friendly commands with comprehensive help and error handling
-- **Project Initialization**: Scaffolding with configuration templates and .gitignore management
-- **Lockfile Management**: State tracking with resolved commits and checksums
-- **Timeout Handling**: Robust git operation timeouts preventing indefinite hangs
-- **Performance Optimization**: Smart install logic with 50-100x speed improvements
-- **User Interface Enhancements**: Clean, structured status output without emojis
-
-### **Testing Achievement** ✅
-- **Unit Tests**: 72+ tests with high coverage across all modules
-- **Integration Tests**: Real repository validation with actual analog IC design repos
-- **Error Handling**: Comprehensive validation of failure scenarios and recovery
-- **Real-world Testing**: Validated with multiple analog design repositories
-
-## Critical Bug Fixes Completed ✅
-
-### **Installation Orchestration Fixes**
-- Fixed missing `mirror_repository` method calls in installer
-- Corrected parameter mismatches between modules
-- Resolved clean/update command errors with proper path handling
-
-### **Checkout Hanging Issue Resolution** ✅
-- **Root Cause**: Multiple refs from same repository + corrupted test repository
-- **Solution**: Added robust timeout handling (300s clone, 60s operations) with signal handlers
-- **Validation**: Successfully handles multiple imports from same repository with different refs
-- **Final Resolution**: Corrupted repository replaced, all functionality working correctly
-
-## Performance Optimization Achievements ✅
-
-### **Major Performance Improvements (2025-07-26)**
-- **Smart Install Logic**: Implemented pip-like behavior - only processes libraries needing updates
-- **Git Operation Optimization**: Skip unnecessary git fetch when target commits exist locally
-- **Command Interface Simplification**: Removed redundant `analog-hub update` command
-- **Enhanced User Feedback**: Structured library status output with real-time progress indicators
-- **Clean Output Design**: Removed verbose messaging and emojis for professional CLI experience
-
-### **Performance Results**
-- **Before**: Installing 5 up-to-date libraries took ~30+ seconds (always full reinstall)
-- **After**: Installing 5 up-to-date libraries takes ~0.16 seconds (smart skip logic)
-- **Improvement**: **50-100x faster** for typical development workflows
-
-### **User Experience Improvements**
-```bash
-# Smart install with structured status output
-analog-hub install
-Installing all libraries from analog-hub.yaml
-Library: MOSbius_v1 (commit 6e6fbcff) [up to date]
-Library: switch_matrix_gf180mcu_9t5v0 (commit 0a7e1150) [up to date]
-Library: core_analog (commit f9750b16) [up to date]
-Library: scripts (commit f9750b16) [up to date]
-Library: devcontainer (commit 881c7941) [up to date]
-No libraries to install
-
-# Force reinstall shows clear status
-analog-hub install MOSbius_v1 --force
-Installing libraries: MOSbius_v1
-Library: MOSbius_v1 (commit 6e6fbcff) [installed]
-Installed 1 libraries
-```
-
-## Current Configuration ✅
-Successfully working with real analog design repositories:
-- **MOSbius_v1**: Xschem library with analog components
-- **switch_matrix_gf180mcu_9t5v0**: Complete switch matrix implementation  
-- **core_analog**: Standard analog design components
-- **scripts**: Design automation scripts
-- **devcontainer**: Development environment configuration
-
-## Project Status: Production Ready ✅
-**analog-hub v1.0.0 candidate** - All core functionality implemented and validated:
-- Complete mirror → extract → install → validate → update → clean workflow
-- Error-free operation with timeout handling and robust error recovery
-- Real-world validation with actual analog IC design repositories
-- User-friendly CLI with comprehensive help and project initialization
-- Ready for release to analog IC design community
-
-## Next Steps
-- **Current Priority**: Version 1.0.0 Release Preparation
-  - **User documentation**: Complete README, installation guide, and usage examples
-  - **Release preparation**: Version tagging, PyPI upload, and distribution testing
-  - **Community outreach**: Announce to analog IC design community
-- **Secondary Priority**: Optional enhancements for future versions
-  - **GitHub API integration**: More efficient downloads for GitHub-hosted repositories
-  - **Multi-config support**: Support for `.analog-hub/` directory structure
-  - **Parallel processing**: Concurrent library installation for multiple repositories
-  - **Advanced validation**: PDK compatibility and toolchain integration checking
-
-## End-to-End Testing Strategy ✅
-
-### **Critical Operational Scenarios Identified**
-Based on real analog IC designer workflows and the production analog-hub.yaml configuration:
-
-1. **Branch Update Detection**: Source repo branch updated → `analog-hub install` should update library
-2. **Version Pinning**: Source repo branch updated, but library has pinned version/commit → shouldn't update library  
-3. **Local Modification Detection**: Source repo didn't change, local libraries accidentally modified → should give validation errors
-
-### **Implementation Analysis Complete**
-- ✅ **Current Implementation Review**: All 3 scenarios are properly handled in existing code
-  - **Branch Updates**: `installer.py:178-182` checks ref changes, `mirror.py:290-302` fetches latest commits
-  - **Version Pinning**: `installer.py:190-194` skips libraries already at correct version with "[up to date]" status
-  - **Local Modifications**: `installer.py:277-280` detects checksum mismatches with "checksum mismatch (modified?)" errors
-
-### **Test Implementation Status**
-- ✅ **Branch Update Detection Tests**: Completed (`test_e2e_branch_updates.py`)
-  - Mock repository creation with git operations
-  - Branch update simulation and detection validation
-  - Mixed update scenarios (some libraries updated, others skipped)
-  - Branch-to-branch reference changes
-- ✅ **Version Pinning Tests**: Completed (`test_e2e_version_pinning.py`)
-  - Pinned commit behavior verification (ignores upstream changes)
-  - Pinned tag behavior verification (ignores branch updates)
-  - Mixed pinning scenarios (pinned vs branch tracking)
-  - Force reinstall behavior with pinned versions
-- ✅ **Local Modification Detection Tests**: Completed (`test_e2e_local_modifications.py`)
-  - File content modification detection via explicit validation
-  - Deleted file detection via checksum validation
-  - Unauthorized file addition detection
-  - Complex modification scenarios with force reinstall recovery
-  - **Important Discovery**: Smart install logic doesn't validate checksums automatically
-- 🔄 **Real-World Integration Tests**: Pending next session
-
-### **Test Architecture Established**
-- **Mock Git Operations**: Temporary repositories to simulate upstream changes
-- **Real Repository Integration**: Subset of configured repos for validation
-- **State Verification**: Comprehensive lockfile, metadata, and checksum validation
-- **Dedicated Session Approach**: Complex test cases handled individually for focused development
-
-## Completed Session: Metadata Architecture Consolidation (2025-07-26)
-
-### **Metadata Consolidation Refactor** ✅ (COMPLETE)
-- **Problem Identified**: Dual metadata system (MirrorMetadata + LibraryMetadata) creates file clutter and complexity
-- **Specific Issues**: 
-  - Single-file IPs get extra `.analog-hub-meta-filename.yaml` files creating messy workspace
-  - Metadata validation requires checking two files per library
-  - Significant information duplication between metadata files and lockfile
-- **Solution**: Consolidate to single lockfile architecture with lightweight return types
-
-### **Implementation Completed** ✅
-- **Step 1 ✅**: Enhanced `LockEntry` model with validation fields (`updated_at`, `last_validated`, `validation_status`)
-- **Step 2 ✅**: Removed `MirrorMetadata` and `LibraryMetadata` classes from both modules
-- **Step 3 ✅**: Created lightweight data classes (`MirrorState`, `ExtractionState`)
-- **Step 4 ✅**: Updated `mirror.py` method signatures to use `MirrorState`
-  - `create_mirror()` → returns `MirrorState(resolved_commit)`
-  - `update_mirror()` → returns `MirrorState(resolved_commit)`
-  - `get_mirror_commit()` → returns commit hash directly
-  - `list_mirrors()` → simplified to return list of directory hashes
-  - Removed all `.mirror-meta.yaml` file operations
-- **Step 5 ✅**: Updated `extractor.py` method signatures to use `ExtractionState`
-  - `extract_library()` → returns `ExtractionState(local_path, checksum)`
-  - `validate_library()` → returns Optional[str] (checksum only)
-  - `list_installed_libraries()` → returns Dict[str, Path]
-  - `calculate_library_checksum()` → new simplified method
-  - Removed all `.analog-hub-meta*.yaml` file operations
-- **Step 6 ✅**: Updated `installer.py` to use new return types (`MirrorState`, `ExtractionState`)
-  - `install_library()` method uses `MirrorState.resolved_commit` and `ExtractionState.local_path/checksum`
-  - Simplified smart skip logic to check file existence only (no metadata file checks)
-  - Updated validation logic to use `PathExtractor.validate_library()`
-- **Step 7 ✅**: Removed all metadata file operations from core modules
-- **Step 8 🔄**: Test with existing configuration blocked by backward compatibility
-
-### **Architecture Changes Implemented**
-```python
-# New lightweight return types
-@dataclass
-class MirrorState:
-    resolved_commit: str
-
-@dataclass  
-class ExtractionState:
-    local_path: str
-    checksum: str
-
-# Enhanced lockfile model (needs optional fields for backward compatibility)
-class LockEntry(BaseModel):
-    # Existing fields...
-    updated_at: str = Field(..., description="Last update timestamp")  # NEEDS: Optional for compatibility
-    last_validated: Optional[str] = None
-    validation_status: str = "unknown"
-```
-
-### **Status**: Core refactor complete, blocked on backward compatibility fix
-
-### **Next Session Priority** 🎯
-1. **Fix Backward Compatibility**: Make `updated_at` field optional in `LockEntry` model
-2. **Test Suite Refactor**: Update all tests to use new architecture (extensive changes needed)
-3. **Validation Testing**: Test with existing analog-hub.yaml configuration
-
-### **Expected Benefits**
-- **Clean workspace**: No metadata files cluttering library directories
-- **Single source of truth**: All state in lockfile only
-- **Simplified validation**: One file to check per library
-- **Maintained functionality**: All integrity checking preserved
-
-## Recent Decisions (2025-07-26)
-
-### **Installer Method Refactoring Complete** ✅
-- **Implementation**: Successfully refactored the 114-line `install_all()` method into focused helper methods
-- **Code Quality Improvement**: Broke down monolithic method violating single responsibility principle
-- **New Helper Methods**: Created 4 focused methods with clear separation of concerns
-  - `_resolve_target_libraries()` - Configuration loading and library resolution (19 lines)
-  - `_determine_libraries_needing_work()` - Smart skip logic implementation (33 lines)
-  - `_install_libraries_batch()` - Installation loop and status reporting (33 lines)
-  - `_update_lock_file()` - Lock file persistence (8 lines)
-- **Main Method Simplification**: Reduced `install_all()` to 22 lines of clear orchestration
-- **Benefits Achieved**: Improved readability, better testability, easier maintenance, reduced complexity
-- **Compatibility**: Zero breaking changes, identical behavior to original implementation
-- **Testing**: Core functionality validated, essential behavior preserved
-
-### **Previous: Checksum Operations Consolidation Complete** ✅
-- **Implementation**: Successfully completed 4-session refactoring to consolidate checksum operations
-- **New Module**: Created `analog_hub/utils/checksum.py` with centralized `ChecksumCalculator` class
-- **Code Deduplication**: Eliminated checksum logic duplication across `mirror.py`, `extractor.py`, and `installer.py`
-- **Architecture Improvement**: Removed cross-module dependencies and improved separation of concerns
-- **Testing**: Added comprehensive test suite with 20 new tests achieving 91% coverage
-- **Compatibility**: Verified identical behavior to existing implementations with zero breaking changes
-- **Benefits Achieved**: DRY principle, better testability, foundation for future optimizations
-
-### **Refactoring Details**:
-- **Session 1**: Created `utils/checksum.py` with 4 core methods (`calculate_directory_checksum`, `calculate_file_checksum`, `generate_repo_hash`, `normalize_repo_url`)
-- **Session 2**: Updated `mirror.py` to use centralized utilities, removed internal hash generation methods
-- **Session 3**: Updated `extractor.py` to use centralized utilities, removed duplicated checksum calculation
-- **Session 4**: Updated `installer.py` to use direct imports, eliminated cross-module method calls
-- **Validation**: All 43 tests passing (20 new + 23 existing), consistent performance and results
-
-## Previous Decisions (2025-07-26)
-
-### **End-to-End Testing Progress** ✅
-- **Version Pinning Tests**: Successfully implemented comprehensive tests validating that libraries pinned to specific commits/tags don't update when upstream changes
-- **Local Modification Detection Tests**: Implemented tests with important discovery about smart install behavior
-- **Smart Install Logic Limitation Identified**: Current implementation doesn't automatically validate checksums - only checks file existence
-  - **Behavior**: `installer.py:184-194` checks if files exist but doesn't validate content integrity
-  - **Workaround**: Explicit `validate_installation()` method provides checksum validation when needed
-  - **Impact**: Users must manually validate or use force reinstall to detect local modifications
-  - **Future Enhancement**: Could integrate checksum validation into smart install logic
-
-### **Key Technical Findings**
-- **Version Pinning Works Correctly**: Libraries pinned to commits/tags properly ignore upstream changes
-- **Force Reinstall Behavior**: Correctly restores original content and removes unauthorized files
-- **Validation Infrastructure**: Robust checksum validation exists but not integrated into main install flow
-- **Test Coverage**: End-to-end scenarios comprehensively covered with 2/3 critical use cases complete
-
-### **Remaining Work**
-- **Real-World Integration Tests**: Final test suite using actual analog-hub.yaml configuration
-- **Potential Enhancement**: Integrate checksum validation into smart install logic for better user experience
-
-## Previous Decisions
-- **Code Review Completed**: Comprehensive analysis revealed production-ready status with minor improvements needed
-- **Refactoring Priority**: Checksum isolation identified as next logical code quality improvement
-- **Architecture Assessment**: Current modular design is solid, focus on eliminating code duplication
-- **End-to-End Test Strategy**: Identified 3 critical operational scenarios requiring comprehensive testing
-- **Test Implementation Approach**: Complex test cases will be handled in dedicated sessions for focused development
+## Active Issues & Next Steps
+- **Current Priority**: Create missing unit tests (test_config.py, test_mirror.py)
+- **Blockers**: None - Test structure now supports clean development
+- **Next Session Goals**: Add missing unit tests, validate all tests pass

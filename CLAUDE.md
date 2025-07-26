@@ -81,9 +81,77 @@ tests/
 4. Mark current task as `completed` in TodoWrite
 
 ### Context Documentation
-- **Memory**: Record design decisions, git operation findings, performance metrics
-- **Todo**: Maintain clear priorities, break down complex tasks into subtasks
-- **Implementation Notes**: Document any analog design specific considerations
+
+#### **Context File Management Guidelines**
+
+**IMPORTANT**: Context files have become extremely verbose and difficult to navigate. Follow these strict guidelines to maintain clean, actionable context:
+
+**memory.md Structure**:
+```markdown
+# Project Memory
+
+## Current Status
+- **Project**: Brief description
+- **Stage**: Current development phase
+- **Last Updated**: Date
+
+## Recent Major Changes (Last 2-3 Sessions Only)
+### [Session Topic] - [Date]
+- **Problem**: Brief problem statement
+- **Solution**: Key implementation approach
+- **Status**: Complete/In Progress/Blocked
+- **Benefits**: Concrete improvements achieved
+
+## Key Architecture Decisions (Stable Decisions Only)
+- **Decision**: Brief statement
+- **Rationale**: Why this was chosen
+- **Impact**: What this affects
+
+## Active Issues & Next Steps
+- **Current Priority**: What needs immediate attention
+- **Blockers**: What's preventing progress
+- **Next Session Goals**: Clear actionable items
+```
+
+**todo.md Structure**:
+```markdown
+# Current Sprint
+
+## In Progress
+- [ ] **[Task Name]** - Brief description (assigned to current session)
+
+## Priority 1 (HIGH) - Next Tasks
+- [ ] **[Task Name]** - Brief description
+- [ ] **[Task Name]** - Brief description
+
+## Priority 2 (MEDIUM) - Upcoming
+- [ ] **[Task Name]** - Brief description
+
+## Completed This Sprint ✅
+- [x] **[Task Name]** - Brief description
+```
+
+#### **Context Maintenance Rules**
+
+1. **Archival Policy**: 
+   - Keep only last 3 major sessions in memory.md
+   - Move older content to archive sections or remove entirely
+   - Focus on current state, not historical narrative
+
+2. **Brevity Requirements**:
+   - Each entry: 1-3 lines maximum
+   - No redundant information between files
+   - Remove completed tasks from todo.md after each session
+
+3. **Content Guidelines**:
+   - **Memory**: Architectural decisions, current blockers, major findings
+   - **Todo**: Only actionable tasks with clear completion criteria
+   - **No duplicates**: Same information should not appear in both files
+
+4. **Session Updates**:
+   - **Start**: Read both files, select one Priority 1 task
+   - **End**: Update memory with key findings, mark todos complete, archive old content
+
 
 ## Git Operations Testing
 
