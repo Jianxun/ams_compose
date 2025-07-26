@@ -30,6 +30,9 @@ class LockEntry(BaseModel):
     local_path: str = Field(..., description="Local path under analog-hub-root")
     checksum: str = Field(..., description="Content checksum for validation")
     installed_at: str = Field(..., description="Installation timestamp")
+    updated_at: str = Field(..., description="Last update timestamp")
+    last_validated: Optional[str] = Field(default=None, description="Last validation timestamp")
+    validation_status: str = Field(default="unknown", description="Validation status: valid/modified/missing/unknown")
 
 
 class AnalogHubConfig(BaseModel):

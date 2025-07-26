@@ -5,13 +5,18 @@ import tempfile
 import signal
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
+from dataclasses import dataclass
 
 import git
-import yaml
-from pydantic import BaseModel, Field
 
 from ..utils.checksum import ChecksumCalculator
+
+
+@dataclass
+class MirrorState:
+    """Lightweight state information returned by mirror operations."""
+    resolved_commit: str
 
 
 class GitOperationTimeout(Exception):
@@ -23,28 +28,6 @@ def timeout_handler(signum, frame):
     """Signal handler for operation timeout."""
     raise GitOperationTimeout("Git operation timed out")
 
-
-class MirrorMetadata(BaseModel):
-    """Metadata stored in each mirror directory."""
-    repo_url: str = Field(..., description="Original repository URL")
-    repo_hash: str = Field(..., description="SHA256 hash of repo URL")
-    current_ref: str = Field(..., description="Currently checked out ref")
-    resolved_commit: str = Field(..., description="Resolved commit hash")
-    created_at: str = Field(..., description="Mirror creation timestamp")
-    updated_at: str = Field(..., description="Last update timestamp")
-    
-    def to_yaml(self, path: Path) -> None:
-        """Save metadata to YAML file."""
-        data = self.model_dump()
-        with open(path, 'w') as f:
-            yaml.dump(data, f, default_flow_style=False, sort_keys=False)
-    
-    @classmethod
-    def from_yaml(cls, path: Path) -> "MirrorMetadata":
-        """Load metadata from YAML file."""
-        with open(path, 'r') as f:
-            data = yaml.safe_load(f)
-        return cls(**data)
 
 
 class RepositoryMirror:
@@ -122,30 +105,26 @@ class RepositoryMirror:
         except (git.InvalidGitRepositoryError, git.NoSuchPathError):
             return False
     
-    def get_mirror_metadata(self, repo_url: str) -> Optional[MirrorMetadata]:
-        """Get metadata for existing mirror.
+    def get_mirror_commit(self, repo_url: str) -> Optional[str]:
+        """Get current commit for existing mirror.
         
         Args:
             repo_url: Repository URL
             
         Returns:
-            MirrorMetadata if mirror exists, None otherwise
+            Current commit hash if mirror exists, None otherwise
         """
         if not self.mirror_exists(repo_url):
             return None
         
         mirror_path = self.get_mirror_path(repo_url)
-        metadata_path = mirror_path / ".mirror-meta.yaml"
-        
-        if not metadata_path.exists():
-            return None
-        
         try:
-            return MirrorMetadata.from_yaml(metadata_path)
+            repo = git.Repo(mirror_path)
+            return repo.head.commit.hexsha
         except Exception:
             return None
     
-    def create_mirror(self, repo_url: str, ref: str = "main") -> MirrorMetadata:
+    def create_mirror(self, repo_url: str, ref: str = "main") -> MirrorState:
         """Create new mirror by cloning repository.
         
         Args:
@@ -153,7 +132,7 @@ class RepositoryMirror:
             ref: Git reference to checkout (branch, tag, or commit)
             
         Returns:
-            MirrorMetadata for the created mirror
+            MirrorState for the created mirror
             
         Raises:
             git.GitCommandError: If git operations fail
@@ -192,24 +171,8 @@ class RepositoryMirror:
                 for item in temp_path.iterdir():
                     shutil.move(str(item), str(mirror_path / item.name))
             
-            # Create metadata
-            now = datetime.now().isoformat()
-            repo_hash = ChecksumCalculator.generate_repo_hash(repo_url)
-            
-            metadata = MirrorMetadata(
-                repo_url=repo_url,
-                repo_hash=repo_hash,
-                current_ref=ref,
-                resolved_commit=resolved_commit,
-                created_at=now,
-                updated_at=now
-            )
-            
-            # Save metadata
-            metadata_path = mirror_path / ".mirror-meta.yaml"
-            metadata.to_yaml(metadata_path)
-            
-            return metadata
+            # Return mirror state
+            return MirrorState(resolved_commit=resolved_commit)
             
         except Exception as e:
             # Cleanup on failure
@@ -234,7 +197,7 @@ class RepositoryMirror:
         except (git.BadName, git.BadObject, ValueError):
             return None
     
-    def update_mirror(self, repo_url: str, ref: str) -> MirrorMetadata:
+    def update_mirror(self, repo_url: str, ref: str) -> MirrorState:
         """Update existing mirror or create new one with smart git operations.
         
         Args:
@@ -242,10 +205,9 @@ class RepositoryMirror:
             ref: Git reference to checkout
             
         Returns:
-            Updated MirrorMetadata
+            Updated MirrorState
         """
         mirror_path = self.get_mirror_path(repo_url)
-        existing_metadata = self.get_mirror_metadata(repo_url)
         
         if not self.mirror_exists(repo_url):
             # Create new mirror if it doesn't exist
@@ -277,24 +239,8 @@ class RepositoryMirror:
                     raise ValueError(f"Reference '{ref}' not found in repository")
                 raise
             
-            # Update metadata
-            repo_hash = ChecksumCalculator.generate_repo_hash(repo_url)
-            created_at = existing_metadata.created_at if existing_metadata else datetime.now().isoformat()
-            
-            metadata = MirrorMetadata(
-                repo_url=repo_url,
-                repo_hash=repo_hash,
-                current_ref=ref,
-                resolved_commit=resolved_commit,
-                created_at=created_at,
-                updated_at=datetime.now().isoformat()
-            )
-            
-            # Save updated metadata
-            metadata_path = mirror_path / ".mirror-meta.yaml"
-            metadata.to_yaml(metadata_path)
-            
-            return metadata
+            # Return mirror state
+            return MirrorState(resolved_commit=resolved_commit)
             
         except Exception as e:
             # If update fails, try fresh clone
@@ -315,28 +261,24 @@ class RepositoryMirror:
             return True
         return False
     
-    def list_mirrors(self) -> Dict[str, MirrorMetadata]:
-        """List all existing mirrors with their metadata.
+    def list_mirrors(self) -> List[str]:
+        """List all existing mirror directories.
         
         Returns:
-            Dictionary mapping repo URLs to their metadata
+            List of mirror directory hashes
         """
-        mirrors = {}
+        mirrors = []
         
         if not self.mirror_root.exists():
             return mirrors
         
         for mirror_dir in self.mirror_root.iterdir():
-            if not mirror_dir.is_dir():
-                continue
-            
-            metadata_path = mirror_dir / ".mirror-meta.yaml"
-            if metadata_path.exists():
+            if mirror_dir.is_dir():
                 try:
-                    metadata = MirrorMetadata.from_yaml(metadata_path)
-                    mirrors[metadata.repo_url] = metadata
-                except Exception:
-                    # Skip invalid metadata files
+                    # Check if it's a valid git repository
+                    git.Repo(mirror_dir)
+                    mirrors.append(mirror_dir.name)
+                except (git.InvalidGitRepositoryError, git.NoSuchPathError):
                     continue
         
         return mirrors
@@ -359,16 +301,9 @@ class RepositoryMirror:
             # Check if it's a valid git repository
             try:
                 git.Repo(mirror_dir)
-                # Also check if metadata exists
-                metadata_path = mirror_dir / ".mirror-meta.yaml"
-                if metadata_path.exists():
-                    MirrorMetadata.from_yaml(metadata_path)
-                else:
-                    # Missing metadata - remove
-                    shutil.rmtree(mirror_dir)
-                    removed_count += 1
+                # Valid repository - keep it
             except Exception:
-                # Invalid repository or metadata - remove
+                # Invalid repository - remove
                 shutil.rmtree(mirror_dir)
                 removed_count += 1
         

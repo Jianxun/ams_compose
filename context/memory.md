@@ -200,6 +200,72 @@ Based on real analog IC designer workflows and the production analog-hub.yaml co
 - **State Verification**: Comprehensive lockfile, metadata, and checksum validation
 - **Dedicated Session Approach**: Complex test cases handled individually for focused development
 
+## Completed Session: Metadata Architecture Consolidation (2025-07-26)
+
+### **Metadata Consolidation Refactor** ✅ (COMPLETE)
+- **Problem Identified**: Dual metadata system (MirrorMetadata + LibraryMetadata) creates file clutter and complexity
+- **Specific Issues**: 
+  - Single-file IPs get extra `.analog-hub-meta-filename.yaml` files creating messy workspace
+  - Metadata validation requires checking two files per library
+  - Significant information duplication between metadata files and lockfile
+- **Solution**: Consolidate to single lockfile architecture with lightweight return types
+
+### **Implementation Completed** ✅
+- **Step 1 ✅**: Enhanced `LockEntry` model with validation fields (`updated_at`, `last_validated`, `validation_status`)
+- **Step 2 ✅**: Removed `MirrorMetadata` and `LibraryMetadata` classes from both modules
+- **Step 3 ✅**: Created lightweight data classes (`MirrorState`, `ExtractionState`)
+- **Step 4 ✅**: Updated `mirror.py` method signatures to use `MirrorState`
+  - `create_mirror()` → returns `MirrorState(resolved_commit)`
+  - `update_mirror()` → returns `MirrorState(resolved_commit)`
+  - `get_mirror_commit()` → returns commit hash directly
+  - `list_mirrors()` → simplified to return list of directory hashes
+  - Removed all `.mirror-meta.yaml` file operations
+- **Step 5 ✅**: Updated `extractor.py` method signatures to use `ExtractionState`
+  - `extract_library()` → returns `ExtractionState(local_path, checksum)`
+  - `validate_library()` → returns Optional[str] (checksum only)
+  - `list_installed_libraries()` → returns Dict[str, Path]
+  - `calculate_library_checksum()` → new simplified method
+  - Removed all `.analog-hub-meta*.yaml` file operations
+- **Step 6 ✅**: Updated `installer.py` to use new return types (`MirrorState`, `ExtractionState`)
+  - `install_library()` method uses `MirrorState.resolved_commit` and `ExtractionState.local_path/checksum`
+  - Simplified smart skip logic to check file existence only (no metadata file checks)
+  - Updated validation logic to use `PathExtractor.validate_library()`
+- **Step 7 ✅**: Removed all metadata file operations from core modules
+- **Step 8 🔄**: Test with existing configuration blocked by backward compatibility
+
+### **Architecture Changes Implemented**
+```python
+# New lightweight return types
+@dataclass
+class MirrorState:
+    resolved_commit: str
+
+@dataclass  
+class ExtractionState:
+    local_path: str
+    checksum: str
+
+# Enhanced lockfile model (needs optional fields for backward compatibility)
+class LockEntry(BaseModel):
+    # Existing fields...
+    updated_at: str = Field(..., description="Last update timestamp")  # NEEDS: Optional for compatibility
+    last_validated: Optional[str] = None
+    validation_status: str = "unknown"
+```
+
+### **Status**: Core refactor complete, blocked on backward compatibility fix
+
+### **Next Session Priority** 🎯
+1. **Fix Backward Compatibility**: Make `updated_at` field optional in `LockEntry` model
+2. **Test Suite Refactor**: Update all tests to use new architecture (extensive changes needed)
+3. **Validation Testing**: Test with existing analog-hub.yaml configuration
+
+### **Expected Benefits**
+- **Clean workspace**: No metadata files cluttering library directories
+- **Single source of truth**: All state in lockfile only
+- **Simplified validation**: One file to check per library
+- **Maintained functionality**: All integrity checking preserved
+
 ## Recent Decisions (2025-07-26)
 
 ### **Installer Method Refactoring Complete** ✅

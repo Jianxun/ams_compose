@@ -1,42 +1,21 @@
 """Path extraction operations for analog-hub."""
 
 import shutil
-from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict
-
-import yaml
-from pydantic import BaseModel, Field
+from dataclasses import dataclass
 
 from .config import ImportSpec
 from ..utils.checksum import ChecksumCalculator
 
 
-class LibraryMetadata(BaseModel):
-    """Metadata stored in each installed library directory."""
-    library_name: str = Field(..., description="Name of the imported library")
-    repo_url: str = Field(..., description="Source repository URL")
-    repo_hash: str = Field(..., description="SHA256 hash of repo URL")
-    ref: str = Field(..., description="Git reference used")
-    resolved_commit: str = Field(..., description="Resolved commit hash")
-    source_path: str = Field(..., description="Source path within repository")
-    local_path: str = Field(..., description="Local installation path")
-    checksum: str = Field(..., description="Content checksum for validation")
-    installed_at: str = Field(..., description="Installation timestamp")
-    updated_at: str = Field(..., description="Last update timestamp")
-    
-    def to_yaml(self, path: Path) -> None:
-        """Save metadata to YAML file."""
-        data = self.model_dump()
-        with open(path, 'w') as f:
-            yaml.dump(data, f, default_flow_style=False, sort_keys=False)
-    
-    @classmethod
-    def from_yaml(cls, path: Path) -> "LibraryMetadata":
-        """Load metadata from YAML file."""
-        with open(path, 'r') as f:
-            data = yaml.safe_load(f)
-        return cls(**data)
+@dataclass
+class ExtractionState:
+    """Lightweight state information returned by extraction operations."""
+    local_path: str
+    checksum: str
+
+
 
 
 class PathExtractor:
@@ -81,7 +60,7 @@ class PathExtractor:
         library_root: str,
         repo_hash: str,
         resolved_commit: str
-    ) -> LibraryMetadata:
+    ) -> ExtractionState:
         """Extract library from mirror to local project directory.
         
         Args:
@@ -93,7 +72,7 @@ class PathExtractor:
             resolved_commit: Resolved commit hash
             
         Returns:
-            LibraryMetadata for the extracted library
+            ExtractionState with local path and checksum
             
         Raises:
             FileNotFoundError: If source_path doesn't exist in mirror
@@ -139,31 +118,11 @@ class PathExtractor:
             else:
                 checksum = ChecksumCalculator.calculate_file_checksum(local_path)
             
-            # Create metadata
-            now = datetime.now().isoformat()
-            metadata = LibraryMetadata(
-                library_name=library_name,
-                repo_url=import_spec.repo,
-                repo_hash=repo_hash,
-                ref=import_spec.ref,
-                resolved_commit=resolved_commit,
-                source_path=import_spec.source_path,
+            # Return extraction state
+            return ExtractionState(
                 local_path=str(local_path.relative_to(self.project_root)),
-                checksum=checksum,
-                installed_at=now,
-                updated_at=now
+                checksum=checksum
             )
-            
-            # Save metadata file in the library directory
-            if local_path.is_dir():
-                metadata_path = local_path / ".analog-hub-meta.yaml"
-            else:
-                # For single files, save metadata alongside
-                metadata_path = local_path.parent / f".analog-hub-meta-{local_path.name}.yaml"
-            
-            metadata.to_yaml(metadata_path)
-            
-            return metadata
             
         except Exception:
             # Cleanup on failure
@@ -174,52 +133,28 @@ class PathExtractor:
                     local_path.unlink()
             raise
     
-    def validate_library(self, library_path: Path) -> Optional[LibraryMetadata]:
-        """Validate installed library and return its metadata.
+    def validate_library(self, library_path: Path) -> Optional[str]:
+        """Validate installed library and return its checksum.
         
         Args:
             library_path: Path to installed library directory
             
         Returns:
-            LibraryMetadata if valid, None if invalid or missing
+            Checksum if valid, None if library doesn't exist
         """
         if not library_path.exists():
             return None
         
-        # Find metadata file
-        if library_path.is_dir():
-            metadata_path = library_path / ".analog-hub-meta.yaml"
-        else:
-            # Single file - look for metadata alongside
-            metadata_path = library_path.parent / f".analog-hub-meta-{library_path.name}.yaml"
-        
-        if not metadata_path.exists():
-            return None
-        
         try:
-            metadata = LibraryMetadata.from_yaml(metadata_path)
-            
-            # Validate checksum only if we can calculate it
-            try:
-                if library_path.is_dir():
-                    current_checksum = ChecksumCalculator.calculate_directory_checksum(library_path)
-                else:
-                    current_checksum = ChecksumCalculator.calculate_file_checksum(library_path)
-                
-                if current_checksum != metadata.checksum:
-                    # Checksum mismatch - library may have been modified
-                    return None
-            except Exception:
-                # If checksum calculation fails, still return metadata but warn
-                pass
-            
-            return metadata
-            
+            if library_path.is_dir():
+                return ChecksumCalculator.calculate_directory_checksum(library_path)
+            else:
+                return ChecksumCalculator.calculate_file_checksum(library_path)
         except Exception:
             return None
     
     def remove_library(self, library_path: Path) -> bool:
-        """Remove installed library and its metadata.
+        """Remove installed library.
         
         Args:
             library_path: Path to installed library
@@ -231,21 +166,9 @@ class PathExtractor:
             return False
         
         try:
-            # Remove metadata file first
             if library_path.is_dir():
-                metadata_path = library_path / ".analog-hub-meta.yaml"
-                if metadata_path.exists():
-                    metadata_path.unlink()
-                
-                # Remove library directory
                 shutil.rmtree(library_path)
             else:
-                # Single file - remove metadata alongside
-                metadata_path = library_path.parent / f".analog-hub-meta-{library_path.name}.yaml"
-                if metadata_path.exists():
-                    metadata_path.unlink()
-                
-                # Remove library file
                 library_path.unlink()
             
             return True
@@ -253,14 +176,14 @@ class PathExtractor:
         except Exception:
             return False
     
-    def list_installed_libraries(self, library_root: str) -> Dict[str, LibraryMetadata]:
-        """List all installed libraries with their metadata.
+    def list_installed_libraries(self, library_root: str) -> Dict[str, Path]:
+        """List all installed libraries.
         
         Args:
             library_root: Root directory to search for libraries
             
         Returns:
-            Dictionary mapping library names to their metadata
+            Dictionary mapping library names to their paths
         """
         libraries = {}
         library_root_path = self.project_root / library_root
@@ -268,79 +191,29 @@ class PathExtractor:
         if not library_root_path.exists():
             return libraries
         
-        # Search for metadata files
-        for metadata_file in library_root_path.rglob(".analog-hub-meta*.yaml"):
-            try:
-                metadata = LibraryMetadata.from_yaml(metadata_file)
-                
-                # Verify the library still exists and is valid
-                if metadata_file.name == ".analog-hub-meta.yaml":
-                    # Directory-based library
-                    library_path = metadata_file.parent
-                else:
-                    # Single file library
-                    file_name = metadata_file.name.replace(".analog-hub-meta-", "").replace(".yaml", "")
-                    library_path = metadata_file.parent / file_name
-                
-                # Check if library path exists and metadata is readable
-                if library_path.exists():
-                    libraries[metadata.library_name] = metadata
-                    
-            except Exception:
-                # Skip invalid metadata files
-                continue
+        # Search for directories and files in library root
+        for item in library_root_path.iterdir():
+            if item.is_dir() or item.is_file():
+                libraries[item.name] = item
         
         return libraries
     
-    def update_library_metadata(
-        self, 
-        library_path: Path, 
-        new_commit: str, 
-        new_ref: str
-    ) -> Optional[LibraryMetadata]:
-        """Update metadata for an existing library installation.
+    def calculate_library_checksum(self, library_path: Path) -> Optional[str]:
+        """Calculate checksum for an existing library installation.
         
         Args:
             library_path: Path to installed library
-            new_commit: New resolved commit hash
-            new_ref: New git reference
             
         Returns:
-            Updated LibraryMetadata if successful, None if failed
+            Checksum if successful, None if failed
         """
-        metadata = self.validate_library(library_path)
-        if not metadata:
+        if not library_path.exists():
             return None
         
         try:
-            # Recalculate checksum
             if library_path.is_dir():
-                new_checksum = ChecksumCalculator.calculate_directory_checksum(library_path)
+                return ChecksumCalculator.calculate_directory_checksum(library_path)
             else:
-                new_checksum = ChecksumCalculator.calculate_file_checksum(library_path)
-            
-            # Update metadata
-            updated_metadata = LibraryMetadata(
-                library_name=metadata.library_name,
-                repo_url=metadata.repo_url,
-                repo_hash=metadata.repo_hash,
-                ref=new_ref,
-                resolved_commit=new_commit,
-                source_path=metadata.source_path,
-                local_path=metadata.local_path,
-                checksum=new_checksum,
-                installed_at=metadata.installed_at,
-                updated_at=datetime.now().isoformat()
-            )
-            
-            # Save updated metadata
-            if library_path.is_dir():
-                metadata_path = library_path / ".analog-hub-meta.yaml"
-            else:
-                metadata_path = library_path.parent / f".analog-hub-meta-{library_path.name}.yaml"
-            
-            updated_metadata.to_yaml(metadata_path)
-            return updated_metadata
-            
+                return ChecksumCalculator.calculate_file_checksum(library_path)
         except Exception:
             return None

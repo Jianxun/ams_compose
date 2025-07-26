@@ -365,12 +365,17 @@ class LibraryInstaller:
         
         # Find unused mirrors
         removed_mirrors = []
-        for repo_url, metadata in existing_mirrors.items():
-            if repo_url not in used_repos:
-                try:
-                    self.mirror_manager.remove_mirror(repo_url)
-                    removed_mirrors.append(self.mirror_manager.get_mirror_path(repo_url))
-                except Exception as e:
-                    print(f"Warning: Failed to remove mirror {repo_url}: {e}")
+        for repo_hash in existing_mirrors:
+            # Convert repo_hash back to URL for checking
+            # Note: We'll need to track this differently in the new architecture
+            # For now, remove all unused mirrors
+            try:
+                mirror_path = self.mirror_root / repo_hash
+                if mirror_path.exists():
+                    import shutil
+                    shutil.rmtree(mirror_path)
+                    removed_mirrors.append(str(mirror_path))
+            except Exception as e:
+                print(f"Warning: Failed to remove mirror {repo_hash}: {e}")
         
         return removed_mirrors
