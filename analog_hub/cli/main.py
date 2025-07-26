@@ -188,6 +188,76 @@ def validate():
 
 
 @main.command()
+@click.option('--library-root', default='designs/libs', 
+              help='Default directory for library installations (default: libs)')
+@click.option('--force', is_flag=True, 
+              help='Overwrite existing analog-hub.yaml file')
+def init(library_root: str, force: bool):
+    """Initialize a new analog-hub project.
+    
+    Creates an analog-hub.yaml configuration file and sets up the project
+    directory structure for analog IC design dependency management.
+    """
+    config_path = Path.cwd() / "analog-hub.yaml"
+    
+    # Check if config already exists
+    if config_path.exists() and not force:
+        click.echo(f"Error: {config_path.name} already exists. Use --force to overwrite.", err=True)
+        sys.exit(1)
+    
+    # Create scaffold directory structure
+    libs_path = Path.cwd() / library_root
+    if not libs_path.exists():
+        libs_path.mkdir(parents=True, exist_ok=True)
+        click.echo(f"Created directory: {library_root}/")
+    
+    # Generate template configuration
+    template_config = f"""# analog-hub configuration file
+# For more information, see: https://github.com/Jianxun/analog-hub
+
+# Default directory where libraries will be installed
+library-root: {library_root}
+
+# Library imports - add your dependencies here
+imports:
+  # Example library import (remove or modify as needed):
+  # my_analog_lib:
+  #   repo: https://github.com/example/analog-library.git
+  #   ref: main                    # branch, tag, or commit
+  #   source_path: lib/analog      # path within the repository
+  #   # local_path: custom/path    # optional: override library-root location
+  
+# To add a new library:
+# 1. Add an entry under 'imports' with a unique name
+# 2. Specify the git repository URL
+# 3. Set the reference (branch/tag/commit)  
+# 4. Define the source path within the repository
+# 5. Run 'analog-hub install' to fetch the library
+#
+# Example commands:
+#   analog-hub install           # Install all libraries
+#   analog-hub install my_lib    # Install specific library
+#   analog-hub update           # Update all libraries
+#   analog-hub list             # List installed libraries
+#   analog-hub validate         # Validate configuration
+"""
+    
+    # Write configuration file
+    config_path.write_text(template_config)
+    
+    # Auto-generate .gitignore
+    _auto_generate_gitignore()
+    
+    click.echo(f"✓ Initialized analog-hub project in {Path.cwd()}")
+    click.echo(f"  - Created {config_path.name}")
+    click.echo(f"  - Created {library_root}/ directory")
+    click.echo(f"  - Updated .gitignore")
+    click.echo(f"\nNext steps:")
+    click.echo(f"  1. Edit {config_path.name} to add your library dependencies")
+    click.echo(f"  2. Run 'analog-hub install' to fetch libraries")
+
+
+@main.command()
 def clean():
     """Clean unused mirrors and validate installations."""
     try:
