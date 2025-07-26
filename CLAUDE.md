@@ -24,6 +24,11 @@ Test-driven development guidelines for the analog-hub dependency management tool
 - **CLI Commands**: Use Click framework with descriptive help text
 - **Error Handling**: Provide user-friendly error messages for analog IC designers
 
+## Development Memories
+
+### Project Phase Considerations
+- We are at MVP development phase and aggressive refactors are expected and backward compatibility is not an issue.
+
 ## Testing Organization
 
 ### Test Structure
