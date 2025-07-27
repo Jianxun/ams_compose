@@ -1,37 +1,38 @@
-# Current Sprint: Test Quality & Missing Coverage
+# Current Sprint: Fix Core Unit Test Breaking Changes
 
 ## Sprint Goal
-Add missing unit tests and ensure comprehensive test coverage in new hierarchy.
+Fix breaking changes in split core unit test modules after metadata refactor.
 
-## Current Test Structure ✅
+## New Test Structure (Broken - Needs Fixes) 🔧
 ```
 tests/
 ├── unit/                          # Fast isolated tests (~50ms each)
 │   ├── core/
-│   │   ├── test_extractor.py     # PathExtractor (mocked file ops) ✅
-│   │   ├── test_installer.py     # LibraryInstaller (mocked dependencies) ✅
-│   │   └── test_config.py        # Configuration models (Pydantic validation) - MISSING
-│   │   └── test_mirror.py        # RepositoryMirror (mocked git ops) - MISSING
+│   │   ├── test_extractor_path_resolution.py     # Path resolution logic 🔧
+│   │   ├── test_extractor_checksum.py            # Checksum calculations 🔧  
+│   │   ├── test_extractor_extraction.py          # File/dir extraction 🔧
+│   │   ├── test_extractor_validation.py          # Validation & management 🔧
+│   │   ├── test_installer_config.py              # Config & lockfile ops 🔧
+│   │   ├── test_installer_single.py              # Single library install 🔧
+│   │   ├── test_installer_batch.py               # Batch install ops 🔧
+│   │   ├── test_installer_management.py          # Library management 🔧
+│   │   └── test_config.py        # Configuration models - MISSING
+│   │   └── test_mirror.py        # RepositoryMirror - MISSING
 │   ├── utils/
-│   │   └── test_checksum.py      # ChecksumCalculator (temp files) ✅
+│   │   └── test_checksum.py      # ChecksumCalculator ✅
 │   └── cli/
-│       └── test_init.py          # Init command (Click testing) ✅
-├── integration/                   # Medium-speed real dependency tests (~5s each)
-│   ├── test_extractor_real.py    # Real git repo extraction ✅
-│   ├── test_mirror_real.py       # Real repository mirroring ✅
-│   └── test_cli_integration.py   # CLI with real operations ✅
-└── e2e/                          # Full workflow tests (~30s each)
-    ├── test_branch_updates.py    # Use Case 1: Branch update detection ✅
-    ├── test_version_pinning.py   # Use Case 2: Pinned version behavior ✅
-    └── test_local_modifications.py # Use Case 3: Local change detection ✅
+│       └── test_init.py          # Init command ✅
+└── integration/ & e2e/           # Working ✅
 ```
 
 ## In Progress
 
-## Priority 1 (HIGH) - Missing Unit Tests
-- [ ] **Create test_config.py** - Unit tests for AnalogHubConfig, ImportSpec, LockFile models
-- [ ] **Create test_mirror.py** - Unit tests for RepositoryMirror with mocked git operations
-- [ ] **Validate All Tests Pass** - Run pytest on entire test suite
+## Priority 1 (HIGH) - Fix Breaking Changes  
+- [ ] **Fix test_extractor_path_resolution.py** - Update method calls and imports
+- [ ] **Fix test_extractor_checksum.py** - Update to use ChecksumCalculator correctly
+- [ ] **Fix test_extractor_extraction.py** - Update to ExtractionState return types
+- [ ] **Fix test_extractor_validation.py** - Update validation methods
+- [ ] **Fix test_installer_*.py modules** - Update to use LockEntry, remove LibraryMetadata
 
 ## Priority 2 (MEDIUM) - Test Infrastructure  
 - [ ] **Update Test Documentation** - Reflect new hierarchy in CLAUDE.md guidelines

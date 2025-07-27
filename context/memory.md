@@ -7,11 +7,11 @@
 
 ## Recent Major Changes (Last 2-3 Sessions Only)
 
-### Test Suite Refactor - 2025-07-26
-- **Problem**: Flat test structure after metadata refactor, unclear organization
-- **Solution**: Implemented 3-tier hierarchy (unit/integration/e2e) with logical module organization
-- **Status**: Complete - All tests moved to new structure
-- **Benefits**: Clear separation by speed/scope, improved TDD workflow, organized by functionality
+### Core Unit Test Breakdown - 2025-07-26
+- **Problem**: Monolithic test files (test_extractor.py, test_installer.py) with breaking changes from metadata refactor
+- **Solution**: Split into focused modules by responsibility - path resolution, extraction, validation, config, batch ops
+- **Status**: In Progress - Files split, but breaking changes need fixing
+- **Benefits**: Easier debugging, focused testing, cleaner git diffs
 
 ### Metadata Architecture Consolidation - 2025-07-26
 - **Problem**: Dual metadata system creates file clutter (.analog-hub-meta*.yaml files)
@@ -19,11 +19,11 @@
 - **Status**: Complete
 - **Benefits**: Clean workspace, single source of truth, simplified validation
 
-### Performance Optimization - 2025-07-26
-- **Problem**: Slow install times (30+ seconds for up-to-date libraries)
-- **Solution**: Smart install logic with skip-up-to-date behavior (pip-like)
-- **Status**: Complete
-- **Benefits**: 50-100x faster installs (0.16s vs 30s)
+### Test Suite Refactor - 2025-07-26
+- **Problem**: Flat test structure after metadata refactor, unclear organization
+- **Solution**: Implemented 3-tier hierarchy (unit/integration/e2e) with logical module organization
+- **Status**: Complete - All tests moved to new structure
+- **Benefits**: Clear separation by speed/scope, improved TDD workflow, organized by functionality
 
 ## Key Architecture Decisions (Stable Decisions Only)
 - **Mirror-based approach**: Full clone to .mirror/ directory with SHA256 naming
@@ -33,6 +33,16 @@
 - **Technology stack**: Python + Click + GitPython + Pydantic
 
 ## Active Issues & Next Steps
-- **Current Priority**: Create missing unit tests (test_config.py, test_mirror.py)
-- **Blockers**: None - Test structure now supports clean development
-- **Next Session Goals**: Add missing unit tests, validate all tests pass
+- **Current Priority**: Fix breaking changes in split test modules
+- **Blockers**: LibraryMetadata/MirrorMetadata classes removed, need to update to lightweight State classes
+- **Next Session Goals**: Fix individual test modules one-by-one, then validate all tests pass
+
+## Test Modules Created (Need Breaking Change Fixes)
+- **test_extractor_path_resolution.py** - Path resolution logic (basic imports work)
+- **test_extractor_checksum.py** - Checksum calculation methods
+- **test_extractor_extraction.py** - File/directory extraction operations  
+- **test_extractor_validation.py** - Library validation and management
+- **test_installer_config.py** - Configuration and lockfile operations
+- **test_installer_single.py** - Single library installation
+- **test_installer_batch.py** - Batch installation operations
+- **test_installer_management.py** - Library management operations
