@@ -1,44 +1,39 @@
-# Current Sprint: Fix Core Unit Test Breaking Changes
+# Current Sprint: Test Coverage Improvement
 
 ## Sprint Goal
-Fix breaking changes in split core unit test modules after metadata refactor.
+Improve test coverage for core modules after achieving 100% E2E test pass rate.
 
-## New Test Structure (Broken - Needs Fixes) 🔧
-```
-tests/
-├── unit/                          # Fast isolated tests (~50ms each)
-│   ├── core/
-│   │   ├── test_extractor_path_resolution.py     # Path resolution logic 🔧
-│   │   ├── test_extractor_checksum.py            # Checksum calculations 🔧  
-│   │   ├── test_extractor_extraction.py          # File/dir extraction 🔧
-│   │   ├── test_extractor_validation.py          # Validation & management 🔧
-│   │   ├── test_installer_config.py              # Config & lockfile ops 🔧
-│   │   ├── test_installer_single.py              # Single library install 🔧
-│   │   ├── test_installer_batch.py               # Batch install ops 🔧
-│   │   ├── test_installer_management.py          # Library management 🔧
-│   │   └── test_config.py        # Configuration models - MISSING
-│   │   └── test_mirror.py        # RepositoryMirror - MISSING
-│   ├── utils/
-│   │   └── test_checksum.py      # ChecksumCalculator ✅
-│   └── cli/
-│       └── test_init.py          # Init command ✅
-└── integration/ & e2e/           # Working ✅
-```
+## Test Status Summary 📊
+- **E2E Tests**: 12 passed, 0 failed (100% pass rate) ✅✅✅
+- **Core Unit Tests**: All 35/35 passing ✅
+- **System Status**: Fully stable, all workflows validated ✅
 
 ## In Progress  
 - No active tasks
 
 ## Priority 1 (HIGH) - Test Coverage Improvement
-- [x] **Improve extractor.py Test Coverage** - Achieved 99% coverage (73% → 99%)
-- [ ] **Improve mirror.py Test Coverage** - Focus on remaining 23% (currently 77%)
-- [ ] **Improve CLI Test Coverage** - Focus on CLI main.py (currently 76%)
+- [ ] **Create mirror.py Unit Tests** - Currently 20% coverage, needs dedicated unit test module
+- [ ] **Improve installer.py Test Coverage** - Currently 76%, test new remote update logic and timestamp handling
+
+## Priority 2 (MEDIUM) - Test Coverage Improvement  
 - [ ] **Add CLI Unit Tests** - Create unit tests for install, update, list, validate, clean commands
+- [ ] **Improve CLI Test Coverage** - Focus on CLI main.py (currently 0%)
 
 ## Priority 2 (MEDIUM) - Development 
 - [ ] **Update Test Documentation** - Reflect optimized 2-tier test strategy in CLAUDE.md guidelines
 - [ ] **CLI Feature Development** - Enhance existing commands or add new functionality
 
 ## Completed This Sprint ✅
+- [x] **🎉 CRITICAL: Fixed All E2E Test Failures** - E2E tests improved from 10/12 → 12/12 (100% pass rate)
+  - [x] **Timestamp Handling Bug**: Fixed install_library() to preserve installed_at during updates
+  - [x] **Metadata Architecture Mismatch**: Updated test to use lockfile instead of .analog-hub-meta.yaml files
+  - [x] test_branch_update_single_library: FAILED → PASSED ✅
+  - [x] test_detect_modified_library_files: FAILED → PASSED ✅
+- [x] **🔥 CRITICAL: Fixed Branch Update Detection Bug** - Core branch update logic working perfectly
+  - [x] Enhanced installer smart logic to check remote commits via mirror_manager.update_mirror()
+  - [x] Improved mirror fetch logic to always get latest branch commits  
+  - [x] Fixed mirror checkout to ensure working directory matches target commit
+  - [x] test_multiple_libraries_mixed_updates: FAILED → PASSED ✅
 - [x] **Extractor Test Coverage Improvement** - Improved from 73% to 99% (32 tests total)
   - [x] Added calculate_library_checksum() tests (0% → 100% coverage)
   - [x] Added extract_library() existing file cleanup tests

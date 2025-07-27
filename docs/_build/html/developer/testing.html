@@ -1,0 +1,680 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Testing Guide &mdash; analog-hub 0.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=7026087e"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="Architecture Overview" href="architecture.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            analog-hub
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../user-guide/installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../user-guide/quickstart.html">Quick Start Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../user-guide/configuration.html">Configuration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../user-guide/commands.html">Command Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/analog_hub.html">analog_hub package</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer Guide:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture Overview</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Testing Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#testing-philosophy">Testing Philosophy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#test-structure">Test Structure</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#two-tier-architecture">Two-Tier Architecture</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#running-tests">Running Tests</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#basic-test-execution">Basic Test Execution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#advanced-test-options">Advanced Test Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#coverage-requirements">Coverage Requirements</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#unit-testing">Unit Testing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#unit-test-principles">Unit Test Principles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#example-unit-test">Example Unit Test</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mock-strategies">Mock Strategies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#test-fixtures">Test Fixtures</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#end-to-end-testing">End-to-End Testing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#e2e-test-philosophy">E2E Test Philosophy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mock-repository-structure">Mock Repository Structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#example-e2e-test">Example E2E Test</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#branch-update-testing">Branch Update Testing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#local-modification-testing">Local Modification Testing</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#test-data-management">Test Data Management</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#mock-repository-creation">Mock Repository Creation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#test-isolation">Test Isolation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#debugging-tests">Debugging Tests</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#test-debugging-techniques">Test Debugging Techniques</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#common-testing-patterns">Common Testing Patterns</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#configuration-testing">Configuration Testing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#error-handling-testing">Error Handling Testing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#performance-testing">Performance Testing</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#continuous-integration">Continuous Integration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#github-actions-configuration">GitHub Actions Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#test-coverage-reporting">Test Coverage Reporting</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#best-practices">Best Practices</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#test-organization">Test Organization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#test-maintenance">Test Maintenance</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">analog-hub</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Testing Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/developer/testing.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="testing-guide">
+<h1>Testing Guide<a class="headerlink" href="#testing-guide" title="Link to this heading"></a></h1>
+<p>analog-hub uses a comprehensive testing strategy to ensure reliability and maintainability.</p>
+<section id="testing-philosophy">
+<h2>Testing Philosophy<a class="headerlink" href="#testing-philosophy" title="Link to this heading"></a></h2>
+<p>Our testing approach follows these principles:</p>
+<ul class="simple">
+<li><p><strong>Test-Driven Development</strong>: Write tests before implementation</p></li>
+<li><p><strong>High Coverage</strong>: Maintain &gt;90% test coverage</p></li>
+<li><p><strong>Fast Feedback</strong>: Unit tests complete in seconds</p></li>
+<li><p><strong>Realistic Scenarios</strong>: E2E tests use realistic analog design workflows</p></li>
+<li><p><strong>Maintainable</strong>: Tests are easy to understand and modify</p></li>
+</ul>
+</section>
+<section id="test-structure">
+<h2>Test Structure<a class="headerlink" href="#test-structure" title="Link to this heading"></a></h2>
+<section id="two-tier-architecture">
+<h3>Two-Tier Architecture<a class="headerlink" href="#two-tier-architecture" title="Link to this heading"></a></h3>
+<dl class="simple">
+<dt><strong>Unit Tests</strong> (<code class="docutils literal notranslate"><span class="pre">tests/unit/</span></code>):</dt><dd><p>Fast, isolated tests with mocked dependencies</p>
+</dd>
+<dt><strong>End-to-End Tests</strong> (<code class="docutils literal notranslate"><span class="pre">tests/e2e/</span></code>):</dt><dd><p>Complete workflow tests with mock repositories</p>
+</dd>
+</dl>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>tests/
+├── unit/                        # Fast unit tests
+│   ├── core/                    # Core module tests
+│   │   ├── test_extractor_*.py  # Extractor component tests
+│   │   ├── test_installer_*.py  # Installer component tests
+│   │   └── test_mirror_*.py     # Mirror manager tests
+│   ├── cli/                     # CLI layer tests
+│   └── utils/                   # Utility function tests
+└── e2e/                         # End-to-end workflow tests
+    ├── test_branch_updates.py   # Branch update scenarios
+    ├── test_local_modifications.py # Local change detection
+    └── test_version_pinning.py  # Version pinning workflows
+</pre></div>
+</div>
+</section>
+</section>
+<section id="running-tests">
+<h2>Running Tests<a class="headerlink" href="#running-tests" title="Link to this heading"></a></h2>
+<section id="basic-test-execution">
+<h3>Basic Test Execution<a class="headerlink" href="#basic-test-execution" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run all tests</span>
+pytest
+
+<span class="c1"># Run with coverage report</span>
+pytest<span class="w"> </span>--cov<span class="o">=</span>analog_hub<span class="w"> </span>--cov-report<span class="o">=</span>term-missing
+
+<span class="c1"># Run only unit tests</span>
+pytest<span class="w"> </span>tests/unit/
+
+<span class="c1"># Run only E2E tests</span>
+pytest<span class="w"> </span>tests/e2e/
+
+<span class="c1"># Run specific test file</span>
+pytest<span class="w"> </span>tests/unit/core/test_extractor_validation.py
+
+<span class="c1"># Run specific test function</span>
+pytest<span class="w"> </span>tests/unit/core/test_extractor_validation.py::test_validate_library_success
+</pre></div>
+</div>
+</section>
+<section id="advanced-test-options">
+<h3>Advanced Test Options<a class="headerlink" href="#advanced-test-options" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run tests in parallel (requires pytest-xdist)</span>
+pytest<span class="w"> </span>-n<span class="w"> </span>auto
+
+<span class="c1"># Stop on first failure</span>
+pytest<span class="w"> </span>-x
+
+<span class="c1"># Show local variables on failure</span>
+pytest<span class="w"> </span>-l
+
+<span class="c1"># Verbose output</span>
+pytest<span class="w"> </span>-v
+
+<span class="c1"># Run tests matching pattern</span>
+pytest<span class="w"> </span>-k<span class="w"> </span><span class="s2">&quot;test_install&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="coverage-requirements">
+<h3>Coverage Requirements<a class="headerlink" href="#coverage-requirements" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Overall Coverage</strong>: ≥90%</p></li>
+<li><p><strong>New Code</strong>: 100% coverage required</p></li>
+<li><p><strong>Critical Modules</strong>: 95%+ coverage</p></li>
+<li><p><strong>CLI Commands</strong>: ≥85% coverage</p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Generate HTML coverage report</span>
+pytest<span class="w"> </span>--cov<span class="o">=</span>analog_hub<span class="w"> </span>--cov-report<span class="o">=</span>html
+open<span class="w"> </span>htmlcov/index.html
+</pre></div>
+</div>
+</section>
+</section>
+<section id="unit-testing">
+<h2>Unit Testing<a class="headerlink" href="#unit-testing" title="Link to this heading"></a></h2>
+<section id="unit-test-principles">
+<h3>Unit Test Principles<a class="headerlink" href="#unit-test-principles" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Isolation</strong>: Mock all external dependencies</p></li>
+<li><p><strong>Speed</strong>: Each test completes in milliseconds</p></li>
+<li><p><strong>Focus</strong>: Test one specific behavior</p></li>
+<li><p><strong>Clarity</strong>: Descriptive names and clear assertions</p></li>
+</ul>
+</section>
+<section id="example-unit-test">
+<h3>Example Unit Test<a class="headerlink" href="#example-unit-test" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">unittest.mock</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mock</span><span class="p">,</span> <span class="n">patch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">analog_hub.core.extractor</span><span class="w"> </span><span class="kn">import</span> <span class="n">LibraryExtractor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">analog_hub.core.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">LibraryConfig</span>
+
+
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">mock_extractor</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a LibraryExtractor with mocked dependencies.&quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">patch</span><span class="p">(</span><span class="s1">&#39;analog_hub.core.extractor.GitPython&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">mock_git</span><span class="p">:</span>
+        <span class="n">extractor</span> <span class="o">=</span> <span class="n">LibraryExtractor</span><span class="p">()</span>
+        <span class="n">extractor</span><span class="o">.</span><span class="n">git</span> <span class="o">=</span> <span class="n">mock_git</span>
+        <span class="k">return</span> <span class="n">extractor</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_extract_library_creates_target_directory</span><span class="p">(</span><span class="n">mock_extractor</span><span class="p">,</span> <span class="n">tmp_path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test that extract_library creates the target directory.&quot;&quot;&quot;</span>
+    <span class="c1"># Arrange</span>
+    <span class="n">library_config</span> <span class="o">=</span> <span class="n">LibraryConfig</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;test_lib&quot;</span><span class="p">,</span>
+        <span class="n">url</span><span class="o">=</span><span class="s2">&quot;https://github.com/example/repo.git&quot;</span><span class="p">,</span>
+        <span class="n">paths</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;lib/analog&quot;</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">target_path</span> <span class="o">=</span> <span class="n">tmp_path</span> <span class="o">/</span> <span class="s2">&quot;libs&quot;</span> <span class="o">/</span> <span class="s2">&quot;test_lib&quot;</span>
+
+    <span class="c1"># Act</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">mock_extractor</span><span class="o">.</span><span class="n">extract_library</span><span class="p">(</span><span class="n">library_config</span><span class="p">,</span> <span class="n">target_path</span><span class="p">)</span>
+
+    <span class="c1"># Assert</span>
+    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">success</span>
+    <span class="k">assert</span> <span class="n">target_path</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
+    <span class="k">assert</span> <span class="n">target_path</span><span class="o">.</span><span class="n">is_dir</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="mock-strategies">
+<h3>Mock Strategies<a class="headerlink" href="#mock-strategies" title="Link to this heading"></a></h3>
+<p><strong>Git Operations</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@patch</span><span class="p">(</span><span class="s1">&#39;analog_hub.core.mirror.git.Repo&#39;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_mirror_clone</span><span class="p">(</span><span class="n">mock_repo</span><span class="p">):</span>
+    <span class="n">mock_repo</span><span class="o">.</span><span class="n">clone_from</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="n">Mock</span><span class="p">()</span>
+    <span class="c1"># Test mirror cloning logic</span>
+</pre></div>
+</div>
+<p><strong>File System Operations</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@patch</span><span class="p">(</span><span class="s1">&#39;analog_hub.core.extractor.shutil.copytree&#39;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_extract_paths</span><span class="p">(</span><span class="n">mock_copytree</span><span class="p">,</span> <span class="n">tmp_path</span><span class="p">):</span>
+    <span class="n">mock_copytree</span><span class="o">.</span><span class="n">return_value</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="c1"># Test path extraction logic</span>
+</pre></div>
+</div>
+<p><strong>Network Operations</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@patch</span><span class="p">(</span><span class="s1">&#39;requests.get&#39;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_remote_validation</span><span class="p">(</span><span class="n">mock_get</span><span class="p">):</span>
+    <span class="n">mock_get</span><span class="o">.</span><span class="n">return_value</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="mi">200</span>
+    <span class="c1"># Test remote repository validation</span>
+</pre></div>
+</div>
+</section>
+<section id="test-fixtures">
+<h3>Test Fixtures<a class="headerlink" href="#test-fixtures" title="Link to this heading"></a></h3>
+<p>Common fixtures for consistent test setup:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sample_config</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sample analog-hub configuration.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">AnalogHubConfig</span><span class="p">(</span>
+        <span class="n">libraries</span><span class="o">=</span><span class="p">[</span>
+            <span class="n">LibraryConfig</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">&quot;core_analog&quot;</span><span class="p">,</span>
+                <span class="n">url</span><span class="o">=</span><span class="s2">&quot;https://github.com/example/core.git&quot;</span><span class="p">,</span>
+                <span class="n">ref</span><span class="o">=</span><span class="s2">&quot;v1.0.0&quot;</span><span class="p">,</span>
+                <span class="n">paths</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;lib/amplifiers&quot;</span><span class="p">,</span> <span class="s2">&quot;lib/filters&quot;</span><span class="p">]</span>
+            <span class="p">)</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">mock_lockfile</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a mock lockfile.&quot;&quot;&quot;</span>
+    <span class="n">lockfile_path</span> <span class="o">=</span> <span class="n">tmp_path</span> <span class="o">/</span> <span class="s2">&quot;.analog-hub.lock&quot;</span>
+    <span class="n">lockfile_data</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;libraries&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;core_analog&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;core_analog&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;https://github.com/example/core.git&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="s2">&quot;v1.0.0&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;commit_sha&quot;</span><span class="p">:</span> <span class="s2">&quot;abc123def456&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;installed_at&quot;</span><span class="p">:</span> <span class="s2">&quot;2025-01-15T10:30:00Z&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;checksum&quot;</span><span class="p">:</span> <span class="s2">&quot;sha256:1234567890abcdef&quot;</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">lockfile_path</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">yaml</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">lockfile_data</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">lockfile_path</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="end-to-end-testing">
+<h2>End-to-End Testing<a class="headerlink" href="#end-to-end-testing" title="Link to this heading"></a></h2>
+<section id="e2e-test-philosophy">
+<h3>E2E Test Philosophy<a class="headerlink" href="#e2e-test-philosophy" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>User Scenarios</strong>: Test complete user workflows</p></li>
+<li><p><strong>Realistic Data</strong>: Use mock repositories with analog design files</p></li>
+<li><p><strong>Integration</strong>: Verify component interactions</p></li>
+<li><p><strong>Error Handling</strong>: Test failure scenarios and recovery</p></li>
+</ul>
+</section>
+<section id="mock-repository-structure">
+<h3>Mock Repository Structure<a class="headerlink" href="#mock-repository-structure" title="Link to this heading"></a></h3>
+<p>E2E tests use pre-built mock repositories:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>tests/fixtures/mock_repos/
+├── analog_library/
+│   ├── .git/                    # Git repository
+│   ├── lib/
+│   │   ├── amplifiers/
+│   │   │   ├── ota_5t/
+│   │   │   │   ├── ota_5t.sch
+│   │   │   │   ├── ota_5t.sym
+│   │   │   │   └── ota_5t.spice
+│   │   │   └── diffamp/
+│   │   └── filters/
+│   └── models/
+└── process_library/
+    ├── .git/
+    └── models/
+</pre></div>
+</div>
+</section>
+<section id="example-e2e-test">
+<h3>Example E2E Test<a class="headerlink" href="#example-e2e-test" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">test_complete_install_workflow</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test complete library installation workflow.&quot;&quot;&quot;</span>
+    <span class="c1"># Arrange</span>
+    <span class="n">project_dir</span> <span class="o">=</span> <span class="n">tmp_path</span> <span class="o">/</span> <span class="s2">&quot;test_project&quot;</span>
+    <span class="n">project_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">()</span>
+
+    <span class="n">config_file</span> <span class="o">=</span> <span class="n">project_dir</span> <span class="o">/</span> <span class="s2">&quot;analog-hub.yaml&quot;</span>
+    <span class="n">config_content</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    libraries:</span>
+<span class="s2">      - name: &quot;analog_lib&quot;</span>
+<span class="s2">        url: &quot;tests/fixtures/mock_repos/analog_library&quot;</span>
+<span class="s2">        ref: &quot;main&quot;</span>
+<span class="s2">        paths:</span>
+<span class="s2">          - &quot;lib/amplifiers&quot;</span>
+<span class="s2">    &quot;&quot;&quot;</span>
+    <span class="n">config_file</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">config_content</span><span class="p">)</span>
+
+    <span class="c1"># Act</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">runner</span><span class="o">.</span><span class="n">invoke</span><span class="p">(</span><span class="n">cli</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;install&#39;</span><span class="p">],</span> <span class="n">cwd</span><span class="o">=</span><span class="n">project_dir</span><span class="p">)</span>
+
+    <span class="c1"># Assert</span>
+    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">exit_code</span> <span class="o">==</span> <span class="mi">0</span>
+    <span class="k">assert</span> <span class="p">(</span><span class="n">project_dir</span> <span class="o">/</span> <span class="s2">&quot;designs&quot;</span> <span class="o">/</span> <span class="s2">&quot;libs&quot;</span> <span class="o">/</span> <span class="s2">&quot;analog_lib&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
+    <span class="k">assert</span> <span class="p">(</span><span class="n">project_dir</span> <span class="o">/</span> <span class="s2">&quot;designs&quot;</span> <span class="o">/</span> <span class="s2">&quot;libs&quot;</span> <span class="o">/</span> <span class="s2">&quot;analog_lib&quot;</span> <span class="o">/</span> <span class="s2">&quot;amplifiers&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
+    <span class="k">assert</span> <span class="p">(</span><span class="n">project_dir</span> <span class="o">/</span> <span class="s2">&quot;.analog-hub.lock&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="branch-update-testing">
+<h3>Branch Update Testing<a class="headerlink" href="#branch-update-testing" title="Link to this heading"></a></h3>
+<p>Test branch update detection and handling:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">test_branch_update_detection</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test detection of branch updates.&quot;&quot;&quot;</span>
+    <span class="c1"># Initial install</span>
+    <span class="n">install_library</span><span class="p">(</span><span class="s2">&quot;v1.0.0&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Simulate remote branch update</span>
+    <span class="n">update_mock_repository</span><span class="p">(</span><span class="s2">&quot;v1.1.0&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Test update detection</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">runner</span><span class="o">.</span><span class="n">invoke</span><span class="p">(</span><span class="n">cli</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;update&#39;</span><span class="p">])</span>
+
+    <span class="k">assert</span> <span class="s2">&quot;analog_lib updated&quot;</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">output</span>
+    <span class="k">assert</span> <span class="n">get_installed_version</span><span class="p">(</span><span class="s2">&quot;analog_lib&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;v1.1.0&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="local-modification-testing">
+<h3>Local Modification Testing<a class="headerlink" href="#local-modification-testing" title="Link to this heading"></a></h3>
+<p>Test handling of local modifications:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">test_local_modification_detection</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test detection of locally modified library files.&quot;&quot;&quot;</span>
+    <span class="c1"># Install library</span>
+    <span class="n">install_library</span><span class="p">()</span>
+
+    <span class="c1"># Modify local file</span>
+    <span class="n">lib_file</span> <span class="o">=</span> <span class="n">project_dir</span> <span class="o">/</span> <span class="s2">&quot;designs&quot;</span> <span class="o">/</span> <span class="s2">&quot;libs&quot;</span> <span class="o">/</span> <span class="s2">&quot;analog_lib&quot;</span> <span class="o">/</span> <span class="s2">&quot;amplifiers&quot;</span> <span class="o">/</span> <span class="s2">&quot;ota.sch&quot;</span>
+    <span class="n">lib_file</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="s2">&quot;modified content&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Test validation</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">runner</span><span class="o">.</span><span class="n">invoke</span><span class="p">(</span><span class="n">cli</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;validate&#39;</span><span class="p">])</span>
+
+    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">exit_code</span> <span class="o">!=</span> <span class="mi">0</span>
+    <span class="k">assert</span> <span class="s2">&quot;checksum mismatch&quot;</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="test-data-management">
+<h2>Test Data Management<a class="headerlink" href="#test-data-management" title="Link to this heading"></a></h2>
+<section id="mock-repository-creation">
+<h3>Mock Repository Creation<a class="headerlink" href="#mock-repository-creation" title="Link to this heading"></a></h3>
+<p>Script to create realistic mock repositories:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">create_mock_analog_repo</span><span class="p">(</span><span class="n">repo_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a mock analog design repository.&quot;&quot;&quot;</span>
+    <span class="c1"># Initialize Git repository</span>
+    <span class="n">repo</span> <span class="o">=</span> <span class="n">git</span><span class="o">.</span><span class="n">Repo</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">repo_path</span><span class="p">)</span>
+
+    <span class="c1"># Create analog design files</span>
+    <span class="n">create_schematic_file</span><span class="p">(</span><span class="n">repo_path</span> <span class="o">/</span> <span class="s2">&quot;lib&quot;</span> <span class="o">/</span> <span class="s2">&quot;amplifiers&quot;</span> <span class="o">/</span> <span class="s2">&quot;ota.sch&quot;</span><span class="p">)</span>
+    <span class="n">create_symbol_file</span><span class="p">(</span><span class="n">repo_path</span> <span class="o">/</span> <span class="s2">&quot;lib&quot;</span> <span class="o">/</span> <span class="s2">&quot;amplifiers&quot;</span> <span class="o">/</span> <span class="s2">&quot;ota.sym&quot;</span><span class="p">)</span>
+    <span class="n">create_spice_file</span><span class="p">(</span><span class="n">repo_path</span> <span class="o">/</span> <span class="s2">&quot;lib&quot;</span> <span class="o">/</span> <span class="s2">&quot;amplifiers&quot;</span> <span class="o">/</span> <span class="s2">&quot;ota.spice&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Create commits</span>
+    <span class="n">repo</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">add</span><span class="p">([</span><span class="s2">&quot;.&quot;</span><span class="p">])</span>
+    <span class="n">repo</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">commit</span><span class="p">(</span><span class="s2">&quot;Initial analog library&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Create tags</span>
+    <span class="n">repo</span><span class="o">.</span><span class="n">create_tag</span><span class="p">(</span><span class="s2">&quot;v1.0.0&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="test-isolation">
+<h3>Test Isolation<a class="headerlink" href="#test-isolation" title="Link to this heading"></a></h3>
+<p>Ensure tests don’t interfere with each other:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">(</span><span class="n">autouse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">isolated_test_environment</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">,</span> <span class="n">monkeypatch</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Isolate each test in its own directory.&quot;&quot;&quot;</span>
+    <span class="n">monkeypatch</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">)</span>
+
+    <span class="c1"># Clean environment variables</span>
+    <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;ANALOG_HUB_CONFIG&#39;</span><span class="p">,</span> <span class="s1">&#39;GIT_CONFIG&#39;</span><span class="p">]:</span>
+        <span class="n">monkeypatch</span><span class="o">.</span><span class="n">delenv</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">raising</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="debugging-tests">
+<h2>Debugging Tests<a class="headerlink" href="#debugging-tests" title="Link to this heading"></a></h2>
+<section id="test-debugging-techniques">
+<h3>Test Debugging Techniques<a class="headerlink" href="#test-debugging-techniques" title="Link to this heading"></a></h3>
+<p><strong>Print Debugging</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">test_complex_scenario</span><span class="p">(</span><span class="n">capfd</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test with output capture for debugging.&quot;&quot;&quot;</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">complex_operation</span><span class="p">()</span>
+
+    <span class="c1"># Capture and print output for debugging</span>
+    <span class="n">captured</span> <span class="o">=</span> <span class="n">capfd</span><span class="o">.</span><span class="n">readouterr</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Debug output: </span><span class="si">{</span><span class="n">captured</span><span class="o">.</span><span class="n">out</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">success</span>
+</pre></div>
+</div>
+<p><strong>Temporary Files</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">test_with_debug_files</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test that preserves files for debugging.&quot;&quot;&quot;</span>
+    <span class="n">debug_dir</span> <span class="o">=</span> <span class="n">tmp_path</span> <span class="o">/</span> <span class="s2">&quot;debug&quot;</span>
+    <span class="n">debug_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">()</span>
+
+    <span class="c1"># Your test logic here</span>
+
+    <span class="c1"># Files remain in debug_dir for inspection</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s1">&#39;KEEP_DEBUG_FILES&#39;</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Debug files preserved in: </span><span class="si">{</span><span class="n">debug_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Interactive Debugging</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">test_interactive_debug</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test with breakpoint for interactive debugging.&quot;&quot;&quot;</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">some_operation</span><span class="p">()</span>
+
+    <span class="c1"># Set breakpoint for inspection</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">pdb</span><span class="p">;</span> <span class="n">pdb</span><span class="o">.</span><span class="n">set_trace</span><span class="p">()</span>
+
+    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">expected_value</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="common-testing-patterns">
+<h2>Common Testing Patterns<a class="headerlink" href="#common-testing-patterns" title="Link to this heading"></a></h2>
+<section id="configuration-testing">
+<h3>Configuration Testing<a class="headerlink" href="#configuration-testing" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;config_data,expected_error&quot;</span><span class="p">,</span> <span class="p">[</span>
+    <span class="p">({</span><span class="s2">&quot;libraries&quot;</span><span class="p">:</span> <span class="p">[]},</span> <span class="s2">&quot;No libraries configured&quot;</span><span class="p">),</span>
+    <span class="p">({</span><span class="s2">&quot;libraries&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test&quot;</span><span class="p">}]},</span> <span class="s2">&quot;Missing required field: url&quot;</span><span class="p">),</span>
+    <span class="p">({</span><span class="s2">&quot;libraries&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;invalid&quot;</span><span class="p">}]},</span> <span class="s2">&quot;Invalid URL format&quot;</span><span class="p">),</span>
+<span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_config_validation</span><span class="p">(</span><span class="n">config_data</span><span class="p">,</span> <span class="n">expected_error</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test configuration validation with various invalid inputs.&quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">ValidationError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="n">expected_error</span><span class="p">):</span>
+        <span class="n">AnalogHubConfig</span><span class="p">(</span><span class="o">**</span><span class="n">config_data</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="error-handling-testing">
+<h3>Error Handling Testing<a class="headerlink" href="#error-handling-testing" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">test_git_error_handling</span><span class="p">(</span><span class="n">mock_git_error</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test graceful handling of Git errors.&quot;&quot;&quot;</span>
+    <span class="n">mock_git_error</span><span class="o">.</span><span class="n">side_effect</span> <span class="o">=</span> <span class="n">GitCommandError</span><span class="p">(</span><span class="s2">&quot;clone failed&quot;</span><span class="p">)</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">installer</span><span class="o">.</span><span class="n">install_library</span><span class="p">(</span><span class="n">library_config</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">success</span>
+    <span class="k">assert</span> <span class="s2">&quot;clone failed&quot;</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">error_message</span>
+</pre></div>
+</div>
+</section>
+<section id="performance-testing">
+<h3>Performance Testing<a class="headerlink" href="#performance-testing" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">test_large_repository_performance</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test performance with large repositories.&quot;&quot;&quot;</span>
+    <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">install_large_library</span><span class="p">()</span>
+
+    <span class="n">duration</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+    <span class="k">assert</span> <span class="n">duration</span> <span class="o">&lt;</span> <span class="mi">30</span>  <span class="c1"># Should complete within 30 seconds</span>
+    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">success</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="continuous-integration">
+<h2>Continuous Integration<a class="headerlink" href="#continuous-integration" title="Link to this heading"></a></h2>
+<section id="github-actions-configuration">
+<h3>GitHub Actions Configuration<a class="headerlink" href="#github-actions-configuration" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># .github/workflows/test.yml</span>
+<span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Tests</span>
+
+<span class="nt">on</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">push</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">pull_request</span><span class="p p-Indicator">]</span>
+
+<span class="nt">jobs</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">test</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-latest</span>
+<span class="w">    </span><span class="nt">strategy</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">matrix</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">python-version</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">3.8</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">3.9</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;3.10&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">3.11</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">3.12</span><span class="p p-Indicator">]</span>
+
+<span class="w">    </span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/checkout@v4</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Set up Python ${{ matrix.python-version }}</span>
+<span class="w">      </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/setup-python@v4</span>
+<span class="w">      </span><span class="nt">with</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">python-version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ matrix.python-version }}</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Install dependencies</span>
+<span class="w">      </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">        </span><span class="no">pip install -e &quot;.[dev]&quot;</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Run tests</span>
+<span class="w">      </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">        </span><span class="no">pytest --cov=analog_hub --cov-report=xml</span>
+
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Upload coverage</span>
+<span class="w">      </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">codecov/codecov-action@v3</span>
+</pre></div>
+</div>
+</section>
+<section id="test-coverage-reporting">
+<h3>Test Coverage Reporting<a class="headerlink" href="#test-coverage-reporting" title="Link to this heading"></a></h3>
+<p>Track coverage trends and ensure quality gates:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Generate coverage report</span>
+pytest<span class="w"> </span>--cov<span class="o">=</span>analog_hub<span class="w"> </span>--cov-report<span class="o">=</span>html<span class="w"> </span>--cov-report<span class="o">=</span>xml
+
+<span class="c1"># Enforce coverage minimums</span>
+pytest<span class="w"> </span>--cov<span class="o">=</span>analog_hub<span class="w"> </span>--cov-fail-under<span class="o">=</span><span class="m">90</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<section id="test-organization">
+<h3>Test Organization<a class="headerlink" href="#test-organization" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Descriptive Names</strong>: Test names should describe the scenario</p></li>
+<li><p><strong>Single Responsibility</strong>: Each test should verify one behavior</p></li>
+<li><p><strong>Arrange-Act-Assert</strong>: Follow AAA pattern for clarity</p></li>
+<li><p><strong>Independent Tests</strong>: Tests should not depend on each other</p></li>
+</ul>
+</section>
+<section id="test-maintenance">
+<h3>Test Maintenance<a class="headerlink" href="#test-maintenance" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Regular Updates</strong>: Update tests when requirements change</p></li>
+<li><p><strong>Refactor Tests</strong>: Keep test code clean and maintainable</p></li>
+<li><p><strong>Remove Obsolete</strong>: Delete tests for removed functionality</p></li>
+<li><p><strong>Documentation</strong>: Comment complex test scenarios</p></li>
+</ul>
+<p>This comprehensive testing strategy ensures analog-hub remains reliable and maintainable as it evolves.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="architecture.html" class="btn btn-neutral float-left" title="Architecture Overview" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, analog-hub contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

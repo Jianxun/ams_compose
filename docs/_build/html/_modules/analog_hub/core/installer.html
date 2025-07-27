@@ -1,0 +1,551 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>analog_hub.core.installer &mdash; analog-hub 0.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=7026087e"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            analog-hub
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../user-guide/installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user-guide/quickstart.html">Quick Start Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user-guide/configuration.html">Configuration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user-guide/commands.html">Command Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/analog_hub.html">analog_hub package</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Developer Guide:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../developer/contributing.html">Contributing Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../developer/architecture.html">Architecture Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../developer/testing.html">Testing Guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">analog-hub</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">analog_hub.core.installer</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for analog_hub.core.installer</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Installation orchestration for analog-hub.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Set</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnalogHubConfig</span><span class="p">,</span> <span class="n">LockFile</span><span class="p">,</span> <span class="n">LockEntry</span><span class="p">,</span> <span class="n">ImportSpec</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.mirror</span><span class="w"> </span><span class="kn">import</span> <span class="n">RepositoryMirror</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.extractor</span><span class="w"> </span><span class="kn">import</span> <span class="n">PathExtractor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils.checksum</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChecksumCalculator</span>
+
+
+<div class="viewcode-block" id="InstallationError">
+<a class="viewcode-back" href="../../../api/analog_hub.html#analog_hub.core.installer.InstallationError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">InstallationError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when installation operations fail.&quot;&quot;&quot;</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="LibraryInstaller">
+<a class="viewcode-back" href="../../../api/analog_hub.html#analog_hub.core.installer.LibraryInstaller">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LibraryInstaller</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Orchestrates mirror and extraction operations for library installation.&quot;&quot;&quot;</span>
+    
+<div class="viewcode-block" id="LibraryInstaller.__init__">
+<a class="viewcode-back" href="../../../api/analog_hub.html#analog_hub.core.installer.LibraryInstaller.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
+                 <span class="n">project_root</span><span class="p">:</span> <span class="n">Path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">),</span>
+                 <span class="n">mirror_root</span><span class="p">:</span> <span class="n">Path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;.mirror&quot;</span><span class="p">)):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize library installer.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            project_root: Root directory of the project</span>
+<span class="sd">            mirror_root: Root directory for repository mirrors</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">project_root</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">project_root</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mirror_root</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">mirror_root</span><span class="p">)</span>
+        
+        <span class="c1"># Initialize components</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mirror_manager</span> <span class="o">=</span> <span class="n">RepositoryMirror</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mirror_root</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path_extractor</span> <span class="o">=</span> <span class="n">PathExtractor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">project_root</span><span class="p">)</span>
+        
+        <span class="c1"># Configuration paths</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">project_root</span> <span class="o">/</span> <span class="s2">&quot;analog-hub.yaml&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lock_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">project_root</span> <span class="o">/</span> <span class="s2">&quot;.analog-hub.lock&quot;</span></div>
+
+    
+<div class="viewcode-block" id="LibraryInstaller.load_config">
+<a class="viewcode-back" href="../../../api/analog_hub.html#analog_hub.core.installer.LibraryInstaller.load_config">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AnalogHubConfig</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load analog-hub.yaml configuration.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">InstallationError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Configuration file not found: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">config_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">AnalogHubConfig</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config_path</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InstallationError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to load configuration: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="LibraryInstaller.load_lock_file">
+<a class="viewcode-back" href="../../../api/analog_hub.html#analog_hub.core.installer.LibraryInstaller.load_lock_file">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_lock_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LockFile</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load or create lock file.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="k">return</span> <span class="n">LockFile</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lock_path</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Create new lock file with default library_root</span>
+                <span class="n">config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_config</span><span class="p">()</span>
+                <span class="k">return</span> <span class="n">LockFile</span><span class="p">(</span><span class="n">library_root</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">library_root</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InstallationError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to load lock file: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="LibraryInstaller.save_lock_file">
+<a class="viewcode-back" href="../../../api/analog_hub.html#analog_hub.core.installer.LibraryInstaller.save_lock_file">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_lock_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lock_file</span><span class="p">:</span> <span class="n">LockFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save lock file to disk.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">lock_file</span><span class="o">.</span><span class="n">to_yaml</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lock_path</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InstallationError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to save lock file: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="LibraryInstaller.install_library">
+<a class="viewcode-back" href="../../../api/analog_hub.html#analog_hub.core.installer.LibraryInstaller.install_library">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">install_library</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> 
+                       <span class="n">library_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+                       <span class="n">import_spec</span><span class="p">:</span> <span class="n">ImportSpec</span><span class="p">,</span>
+                       <span class="n">library_root</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                       <span class="n">existing_entry</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LockEntry</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LockEntry</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Install a single library.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            library_name: Name of the library to install</span>
+<span class="sd">            import_spec: Import specification from configuration</span>
+<span class="sd">            library_root: Default library root directory</span>
+<span class="sd">            existing_entry: Optional existing lock entry for timestamp preservation during updates</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            LockEntry for the installed library</span>
+<span class="sd">            </span>
+<span class="sd">        Raises:</span>
+<span class="sd">            InstallationError: If installation fails</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Step 1: Mirror the repository</span>
+            <span class="n">mirror_metadata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mirror_manager</span><span class="o">.</span><span class="n">update_mirror</span><span class="p">(</span>
+                <span class="n">import_spec</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span> 
+                <span class="n">import_spec</span><span class="o">.</span><span class="n">ref</span>
+            <span class="p">)</span>
+            <span class="n">mirror_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mirror_manager</span><span class="o">.</span><span class="n">get_mirror_path</span><span class="p">(</span><span class="n">import_spec</span><span class="o">.</span><span class="n">repo</span><span class="p">)</span>
+            
+            <span class="c1"># Get resolved commit from mirror metadata</span>
+            <span class="n">resolved_commit</span> <span class="o">=</span> <span class="n">mirror_metadata</span><span class="o">.</span><span class="n">resolved_commit</span>
+            
+            <span class="c1"># Step 2: Extract the library</span>
+            <span class="n">repo_hash</span> <span class="o">=</span> <span class="n">ChecksumCalculator</span><span class="o">.</span><span class="n">generate_repo_hash</span><span class="p">(</span><span class="n">import_spec</span><span class="o">.</span><span class="n">repo</span><span class="p">)</span>
+            <span class="n">library_metadata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_extractor</span><span class="o">.</span><span class="n">extract_library</span><span class="p">(</span>
+                <span class="n">library_name</span><span class="o">=</span><span class="n">library_name</span><span class="p">,</span>
+                <span class="n">import_spec</span><span class="o">=</span><span class="n">import_spec</span><span class="p">,</span>
+                <span class="n">mirror_path</span><span class="o">=</span><span class="n">mirror_path</span><span class="p">,</span>
+                <span class="n">library_root</span><span class="o">=</span><span class="n">library_root</span><span class="p">,</span>
+                <span class="n">repo_hash</span><span class="o">=</span><span class="n">repo_hash</span><span class="p">,</span>
+                <span class="n">resolved_commit</span><span class="o">=</span><span class="n">resolved_commit</span>
+            <span class="p">)</span>
+            
+            <span class="c1"># Step 3: Create lock entry</span>
+            <span class="n">timestamp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+            
+            <span class="c1"># Handle timestamps: preserve installed_at for updates, set both for new installs</span>
+            <span class="k">if</span> <span class="n">existing_entry</span><span class="p">:</span>
+                <span class="c1"># This is an update: preserve original installed_at timestamp</span>
+                <span class="n">installed_at</span> <span class="o">=</span> <span class="n">existing_entry</span><span class="o">.</span><span class="n">installed_at</span>
+                <span class="n">updated_at</span> <span class="o">=</span> <span class="n">timestamp</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># This is a fresh install: set both timestamps to now</span>
+                <span class="n">installed_at</span> <span class="o">=</span> <span class="n">timestamp</span>
+                <span class="n">updated_at</span> <span class="o">=</span> <span class="n">timestamp</span>
+            
+            <span class="n">lock_entry</span> <span class="o">=</span> <span class="n">LockEntry</span><span class="p">(</span>
+                <span class="n">repo</span><span class="o">=</span><span class="n">import_spec</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span>
+                <span class="n">ref</span><span class="o">=</span><span class="n">import_spec</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span>
+                <span class="n">commit</span><span class="o">=</span><span class="n">resolved_commit</span><span class="p">,</span>
+                <span class="n">source_path</span><span class="o">=</span><span class="n">import_spec</span><span class="o">.</span><span class="n">source_path</span><span class="p">,</span>
+                <span class="n">local_path</span><span class="o">=</span><span class="n">library_metadata</span><span class="o">.</span><span class="n">local_path</span><span class="p">,</span>
+                <span class="n">checksum</span><span class="o">=</span><span class="n">library_metadata</span><span class="o">.</span><span class="n">checksum</span><span class="p">,</span>
+                <span class="n">installed_at</span><span class="o">=</span><span class="n">installed_at</span><span class="p">,</span>
+                <span class="n">updated_at</span><span class="o">=</span><span class="n">updated_at</span>
+            <span class="p">)</span>
+            
+            <span class="k">return</span> <span class="n">lock_entry</span>
+            
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InstallationError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to install library &#39;</span><span class="si">{</span><span class="n">library_name</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_target_libraries</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">library_names</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">config</span><span class="p">:</span> <span class="n">AnalogHubConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ImportSpec</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Resolve which libraries should be processed based on configuration and user input.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            library_names: Optional list of specific libraries to install</span>
+<span class="sd">            config: Loaded configuration with all available libraries</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Dictionary of libraries to process with their import specifications</span>
+<span class="sd">            </span>
+<span class="sd">        Raises:</span>
+<span class="sd">            InstallationError: If specified libraries are not found in configuration</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Handle case where config has no imports</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">config</span><span class="o">.</span><span class="n">imports</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{}</span>
+            
+        <span class="c1"># Determine libraries to install</span>
+        <span class="k">if</span> <span class="n">library_names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">libraries_to_install</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">imports</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">libraries_to_install</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">name</span><span class="p">:</span> <span class="n">spec</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">imports</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> 
+                <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">library_names</span>
+            <span class="p">}</span>
+            
+            <span class="c1"># Check for missing libraries</span>
+            <span class="n">missing</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">library_names</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">imports</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">InstallationError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Libraries not found in configuration: </span><span class="si">{</span><span class="n">missing</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">libraries_to_install</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_determine_libraries_needing_work</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">libraries_to_install</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ImportSpec</span><span class="p">],</span> <span class="n">lock_file</span><span class="p">:</span> <span class="n">LockFile</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ImportSpec</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine which libraries need installation/update using smart skip logic.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            libraries_to_install: Libraries that could potentially be installed</span>
+<span class="sd">            lock_file: Current lock file state</span>
+<span class="sd">            force: If True, force reinstall even if libraries are up-to-date</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple of (libraries_needing_work, skipped_libraries)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">libraries_needing_work</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">skipped_libraries</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="k">for</span> <span class="n">library_name</span><span class="p">,</span> <span class="n">import_spec</span> <span class="ow">in</span> <span class="n">libraries_to_install</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">force</span><span class="p">:</span>
+                <span class="c1"># Force mode: always install</span>
+                <span class="n">libraries_needing_work</span><span class="p">[</span><span class="n">library_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">import_spec</span>
+            <span class="k">elif</span> <span class="n">library_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">lock_file</span><span class="o">.</span><span class="n">libraries</span><span class="p">:</span>
+                <span class="c1"># Library not installed: needs installation</span>
+                <span class="n">libraries_needing_work</span><span class="p">[</span><span class="n">library_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">import_spec</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Library installed: check if update needed</span>
+                <span class="n">current_entry</span> <span class="o">=</span> <span class="n">lock_file</span><span class="o">.</span><span class="n">libraries</span><span class="p">[</span><span class="n">library_name</span><span class="p">]</span>
+                
+                <span class="c1"># Check if configuration changed (repo, ref, or source_path)</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">current_entry</span><span class="o">.</span><span class="n">repo</span> <span class="o">!=</span> <span class="n">import_spec</span><span class="o">.</span><span class="n">repo</span> <span class="ow">or</span> 
+                    <span class="n">current_entry</span><span class="o">.</span><span class="n">ref</span> <span class="o">!=</span> <span class="n">import_spec</span><span class="o">.</span><span class="n">ref</span> <span class="ow">or</span>
+                    <span class="n">current_entry</span><span class="o">.</span><span class="n">source_path</span> <span class="o">!=</span> <span class="n">import_spec</span><span class="o">.</span><span class="n">source_path</span><span class="p">):</span>
+                    <span class="n">libraries_needing_work</span><span class="p">[</span><span class="n">library_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">import_spec</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Check if library files still exist</span>
+                    <span class="n">library_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">project_root</span> <span class="o">/</span> <span class="n">current_entry</span><span class="o">.</span><span class="n">local_path</span>
+                    
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">library_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                        <span class="n">libraries_needing_work</span><span class="p">[</span><span class="n">library_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">import_spec</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c1"># Check if remote has updates by updating mirror and comparing commits</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="n">mirror_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mirror_manager</span><span class="o">.</span><span class="n">update_mirror</span><span class="p">(</span>
+                                <span class="n">import_spec</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span> 
+                                <span class="n">import_spec</span><span class="o">.</span><span class="n">ref</span>
+                            <span class="p">)</span>
+                            
+                            
+                            <span class="c1"># If the resolved commit is different, we need to update</span>
+                            <span class="k">if</span> <span class="n">current_entry</span><span class="o">.</span><span class="n">commit</span> <span class="o">!=</span> <span class="n">mirror_state</span><span class="o">.</span><span class="n">resolved_commit</span><span class="p">:</span>
+                                <span class="n">libraries_needing_work</span><span class="p">[</span><span class="n">library_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">import_spec</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="c1"># Library is truly up-to-date</span>
+                                <span class="n">commit_hash</span> <span class="o">=</span> <span class="n">current_entry</span><span class="o">.</span><span class="n">commit</span><span class="p">[:</span><span class="mi">8</span><span class="p">]</span>
+                                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Library: </span><span class="si">{</span><span class="n">library_name</span><span class="si">}</span><span class="s2"> (commit </span><span class="si">{</span><span class="n">commit_hash</span><span class="si">}</span><span class="s2">) [up to date]&quot;</span><span class="p">)</span>
+                                <span class="n">skipped_libraries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">library_name</span><span class="p">)</span>
+                        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                            <span class="c1"># If we can&#39;t check for updates, assume library needs work</span>
+                            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Could not check for updates for </span><span class="si">{</span><span class="n">library_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                            <span class="n">libraries_needing_work</span><span class="p">[</span><span class="n">library_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">import_spec</span>
+        
+        <span class="k">return</span> <span class="n">libraries_needing_work</span><span class="p">,</span> <span class="n">skipped_libraries</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_install_libraries_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">libraries_needing_work</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ImportSpec</span><span class="p">],</span> <span class="n">config</span><span class="p">:</span> <span class="n">AnalogHubConfig</span><span class="p">,</span> <span class="n">lock_file</span><span class="p">:</span> <span class="n">LockFile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">LockEntry</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Install/update a batch of libraries and handle status reporting.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            libraries_needing_work: Libraries that need installation/update</span>
+<span class="sd">            config: Configuration with library_root setting</span>
+<span class="sd">            lock_file: Current lock file for comparison</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Dictionary of successfully installed libraries</span>
+<span class="sd">            </span>
+<span class="sd">        Raises:</span>
+<span class="sd">            InstallationError: If any installation fails</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">installed_libraries</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">failed_libraries</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="k">for</span> <span class="n">library_name</span><span class="p">,</span> <span class="n">import_spec</span> <span class="ow">in</span> <span class="n">libraries_needing_work</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># Pass existing entry if available for timestamp preservation during updates</span>
+                <span class="n">existing_entry</span> <span class="o">=</span> <span class="n">lock_file</span><span class="o">.</span><span class="n">libraries</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">library_name</span><span class="p">)</span>
+                <span class="n">lock_entry</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">install_library</span><span class="p">(</span>
+                    <span class="n">library_name</span><span class="p">,</span> 
+                    <span class="n">import_spec</span><span class="p">,</span> 
+                    <span class="n">config</span><span class="o">.</span><span class="n">library_root</span><span class="p">,</span>
+                    <span class="n">existing_entry</span>
+                <span class="p">)</span>
+                <span class="n">installed_libraries</span><span class="p">[</span><span class="n">library_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">lock_entry</span>
+                
+                <span class="c1"># Determine if this was an install or update</span>
+                <span class="n">commit_hash</span> <span class="o">=</span> <span class="n">lock_entry</span><span class="o">.</span><span class="n">commit</span><span class="p">[:</span><span class="mi">8</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">library_name</span> <span class="ow">in</span> <span class="n">lock_file</span><span class="o">.</span><span class="n">libraries</span><span class="p">:</span>
+                    <span class="n">old_commit</span> <span class="o">=</span> <span class="n">lock_file</span><span class="o">.</span><span class="n">libraries</span><span class="p">[</span><span class="n">library_name</span><span class="p">]</span><span class="o">.</span><span class="n">commit</span>
+                    <span class="k">if</span> <span class="n">old_commit</span> <span class="o">!=</span> <span class="n">lock_entry</span><span class="o">.</span><span class="n">commit</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Library: </span><span class="si">{</span><span class="n">library_name</span><span class="si">}</span><span class="s2"> (commit </span><span class="si">{</span><span class="n">commit_hash</span><span class="si">}</span><span class="s2">) [updated]&quot;</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Library: </span><span class="si">{</span><span class="n">library_name</span><span class="si">}</span><span class="s2"> (commit </span><span class="si">{</span><span class="n">commit_hash</span><span class="si">}</span><span class="s2">) [installed]&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Library: </span><span class="si">{</span><span class="n">library_name</span><span class="si">}</span><span class="s2"> (commit </span><span class="si">{</span><span class="n">commit_hash</span><span class="si">}</span><span class="s2">) [installed]&quot;</span><span class="p">)</span>
+                
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">failed_libraries</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">library_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Library: </span><span class="si">{</span><span class="n">library_name</span><span class="si">}</span><span class="s2"> (commit unknown) [error]&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># Handle failures</span>
+        <span class="k">if</span> <span class="n">failed_libraries</span><span class="p">:</span>
+            <span class="n">failure_summary</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="sa">f</span><span class="s2">&quot;  - </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">failed_libraries</span><span class="p">])</span>
+            <span class="k">raise</span> <span class="n">InstallationError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to install </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">failed_libraries</span><span class="p">)</span><span class="si">}</span><span class="s2"> libraries:</span><span class="se">\n</span><span class="si">{</span><span class="n">failure_summary</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">installed_libraries</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_update_lock_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">installed_libraries</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">LockEntry</span><span class="p">],</span> <span class="n">config</span><span class="p">:</span> <span class="n">AnalogHubConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update and save the lock file with newly installed libraries.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            installed_libraries: Libraries that were successfully installed</span>
+<span class="sd">            config: Configuration with library_root setting</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">lock_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_lock_file</span><span class="p">()</span>
+        <span class="n">lock_file</span><span class="o">.</span><span class="n">library_root</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">library_root</span>
+        <span class="n">lock_file</span><span class="o">.</span><span class="n">libraries</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">installed_libraries</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_lock_file</span><span class="p">(</span><span class="n">lock_file</span><span class="p">)</span>
+
+<div class="viewcode-block" id="LibraryInstaller.install_all">
+<a class="viewcode-back" href="../../../api/analog_hub.html#analog_hub.core.installer.LibraryInstaller.install_all">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">install_all</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">library_names</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">LockEntry</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Install all libraries or specific subset with smart skip logic.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            library_names: Optional list of specific libraries to install.</span>
+<span class="sd">                          If None, installs all libraries from configuration.</span>
+<span class="sd">            force: If True, force reinstall even if libraries are up-to-date.</span>
+<span class="sd">                  If False, skip libraries that are already installed at correct version.</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Dictionary mapping library names to their lock entries (only changed libraries)</span>
+<span class="sd">            </span>
+<span class="sd">        Raises:</span>
+<span class="sd">            InstallationError: If any installation fails</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Load configuration and resolve target libraries</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_config</span><span class="p">()</span>
+        <span class="n">libraries_to_install</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_target_libraries</span><span class="p">(</span><span class="n">library_names</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">libraries_to_install</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{}</span>
+        
+        <span class="c1"># Load current lock file and determine what needs work</span>
+        <span class="n">lock_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_lock_file</span><span class="p">()</span>
+        <span class="n">libraries_needing_work</span><span class="p">,</span> <span class="n">skipped_libraries</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_determine_libraries_needing_work</span><span class="p">(</span>
+            <span class="n">libraries_to_install</span><span class="p">,</span> <span class="n">lock_file</span><span class="p">,</span> <span class="n">force</span>
+        <span class="p">)</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">libraries_needing_work</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{}</span>
+        
+        <span class="c1"># Install/update libraries that need work</span>
+        <span class="n">installed_libraries</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_install_libraries_batch</span><span class="p">(</span><span class="n">libraries_needing_work</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">lock_file</span><span class="p">)</span>
+        
+        <span class="c1"># Update lock file with new installations</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_lock_file</span><span class="p">(</span><span class="n">installed_libraries</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">installed_libraries</span></div>
+
+    
+<div class="viewcode-block" id="LibraryInstaller.list_installed_libraries">
+<a class="viewcode-back" href="../../../api/analog_hub.html#analog_hub.core.installer.LibraryInstaller.list_installed_libraries">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">list_installed_libraries</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">LockEntry</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;List all currently installed libraries.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Dictionary mapping library names to their lock entries</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">lock_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_lock_file</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">lock_file</span><span class="o">.</span><span class="n">libraries</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
+
+    
+<div class="viewcode-block" id="LibraryInstaller.validate_installation">
+<a class="viewcode-back" href="../../../api/analog_hub.html#analog_hub.core.installer.LibraryInstaller.validate_installation">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate_installation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate current installation state.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple of (valid_libraries, invalid_libraries)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">lock_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_lock_file</span><span class="p">()</span>
+        <span class="n">valid_libraries</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">invalid_libraries</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="k">for</span> <span class="n">library_name</span><span class="p">,</span> <span class="n">lock_entry</span> <span class="ow">in</span> <span class="n">lock_file</span><span class="o">.</span><span class="n">libraries</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># Check if library still exists</span>
+                <span class="n">library_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">project_root</span> <span class="o">/</span> <span class="n">lock_entry</span><span class="o">.</span><span class="n">local_path</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">library_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                    <span class="n">invalid_libraries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">library_name</span><span class="si">}</span><span class="s2">: library directory not found&quot;</span><span class="p">)</span>
+                    <span class="k">continue</span>
+                
+                <span class="c1"># Verify checksum to detect modifications</span>
+                <span class="n">current_checksum</span> <span class="o">=</span> <span class="n">ChecksumCalculator</span><span class="o">.</span><span class="n">calculate_directory_checksum</span><span class="p">(</span><span class="n">library_path</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">current_checksum</span> <span class="o">!=</span> <span class="n">lock_entry</span><span class="o">.</span><span class="n">checksum</span><span class="p">:</span>
+                    <span class="n">invalid_libraries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">library_name</span><span class="si">}</span><span class="s2">: checksum mismatch (modified?)&quot;</span><span class="p">)</span>
+                    <span class="k">continue</span>
+                
+                <span class="n">valid_libraries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">library_name</span><span class="p">)</span>
+                
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">invalid_libraries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">library_name</span><span class="si">}</span><span class="s2">: validation error - </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">valid_libraries</span><span class="p">,</span> <span class="n">invalid_libraries</span></div>
+
+    
+<div class="viewcode-block" id="LibraryInstaller.clean_unused_mirrors">
+<a class="viewcode-back" href="../../../api/analog_hub.html#analog_hub.core.installer.LibraryInstaller.clean_unused_mirrors">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clean_unused_mirrors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove unused mirrors not referenced by any installed library.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            List of removed mirror directories</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">lock_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_lock_file</span><span class="p">()</span>
+        
+        <span class="c1"># Get repo URLs that are currently in use</span>
+        <span class="n">used_repos</span> <span class="o">=</span> <span class="p">{</span><span class="n">entry</span><span class="o">.</span><span class="n">repo</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">lock_file</span><span class="o">.</span><span class="n">libraries</span><span class="o">.</span><span class="n">values</span><span class="p">()}</span>
+        
+        <span class="c1"># Get all existing mirrors</span>
+        <span class="n">existing_mirrors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mirror_manager</span><span class="o">.</span><span class="n">list_mirrors</span><span class="p">()</span>
+        
+        <span class="c1"># Find unused mirrors</span>
+        <span class="n">removed_mirrors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">repo_hash</span> <span class="ow">in</span> <span class="n">existing_mirrors</span><span class="p">:</span>
+            <span class="c1"># Convert repo_hash back to URL for checking</span>
+            <span class="c1"># Note: We&#39;ll need to track this differently in the new architecture</span>
+            <span class="c1"># For now, remove all unused mirrors</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">mirror_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mirror_root</span> <span class="o">/</span> <span class="n">repo_hash</span>
+                <span class="k">if</span> <span class="n">mirror_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                    <span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
+                    <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">mirror_path</span><span class="p">)</span>
+                    <span class="n">removed_mirrors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">mirror_path</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Failed to remove mirror </span><span class="si">{</span><span class="n">repo_hash</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">removed_mirrors</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, analog-hub contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
