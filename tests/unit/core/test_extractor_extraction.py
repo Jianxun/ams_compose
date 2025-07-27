@@ -358,11 +358,14 @@ class TestExtractionOperations:
         (git_dir / "objects").mkdir()
         (git_dir / "objects" / "object1").write_text("git object")
         
-        # Create other VCS files that should be ignored
+        # Create other VCS and development files that should be ignored
         (source_path / ".gitignore").write_text("*.log")
         (source_path / ".gitmodules").write_text("[submodule]")
         (source_path / ".svn").mkdir()
         (source_path / ".hg").mkdir()
+        (source_path / ".ipynb_checkpoints").mkdir()
+        (source_path / "__pycache__").mkdir()
+        (source_path / ".DS_Store").write_text("macOS system file")
         
         import_spec = ImportSpec(
             repo="https://example.com/repo",
@@ -388,12 +391,15 @@ class TestExtractionOperations:
         assert (extracted_path / "library.v").exists()
         assert (extracted_path / "docs" / "readme.txt").exists()
         
-        # Verify git metadata is NOT extracted
+        # Verify VCS and development metadata is NOT extracted
         assert not (extracted_path / ".git").exists(), ".git directory should be ignored"
         assert not (extracted_path / ".gitignore").exists(), ".gitignore should be ignored"
         assert not (extracted_path / ".gitmodules").exists(), ".gitmodules should be ignored"
         assert not (extracted_path / ".svn").exists(), ".svn directory should be ignored"
         assert not (extracted_path / ".hg").exists(), ".hg directory should be ignored"
+        assert not (extracted_path / ".ipynb_checkpoints").exists(), ".ipynb_checkpoints should be ignored"
+        assert not (extracted_path / "__pycache__").exists(), "__pycache__ should be ignored"
+        assert not (extracted_path / ".DS_Store").exists(), ".DS_Store should be ignored"
     
     def test_ignore_function_creation(self):
         """Test the _create_ignore_function method directly."""
@@ -403,18 +409,22 @@ class TestExtractionOperations:
         # Test with various filenames
         test_filenames = [
             'library.v', 'readme.txt', '.git', '.gitignore', 
-            '.svn', '.hg', '.bzr', 'CVS', 'normal_file.txt'
+            '.svn', '.hg', '.bzr', 'CVS', '.ipynb_checkpoints',
+            '__pycache__', '.DS_Store', 'normal_file.txt'
         ]
         
         ignored = ignore_func('/some/dir', test_filenames)
         
-        # Verify VCS files are ignored
+        # Verify VCS and development files are ignored
         assert '.git' in ignored
         assert '.gitignore' in ignored  
         assert '.svn' in ignored
         assert '.hg' in ignored
         assert '.bzr' in ignored
         assert 'CVS' in ignored
+        assert '.ipynb_checkpoints' in ignored
+        assert '__pycache__' in ignored
+        assert '.DS_Store' in ignored
         
         # Verify normal files are not ignored
         assert 'library.v' not in ignored

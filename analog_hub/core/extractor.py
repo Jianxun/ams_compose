@@ -46,16 +46,19 @@ class PathExtractor:
             ignored = set()
             filenames_set = set(filenames)
             
-            # Default ignore patterns for version control
+            # Default ignore patterns for version control and development tools
             default_ignores = {
-                '.git',           # Git repository metadata
-                '.gitignore',     # Git ignore rules
-                '.gitmodules',    # Git submodules configuration
-                '.gitattributes', # Git attributes configuration
-                '.svn',           # SVN metadata
-                '.hg',            # Mercurial metadata
-                '.bzr',           # Bazaar metadata
-                'CVS',            # CVS metadata
+                '.git',              # Git repository metadata
+                '.gitignore',        # Git ignore rules
+                '.gitmodules',       # Git submodules configuration
+                '.gitattributes',    # Git attributes configuration
+                '.svn',              # SVN metadata
+                '.hg',               # Mercurial metadata
+                '.bzr',              # Bazaar metadata
+                'CVS',               # CVS metadata
+                '.ipynb_checkpoints', # Jupyter notebook checkpoints
+                '__pycache__',       # Python cache directories
+                '.DS_Store',         # macOS system files
             }
             
             # Apply default ignores

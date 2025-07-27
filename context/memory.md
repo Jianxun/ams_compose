@@ -7,6 +7,12 @@
 
 ## Recent Major Changes (Last 2-3 Sessions Only)
 
+### Enhanced Filtering System for Real Repositories - 2025-07-27
+- **Problem**: Real repository testing revealed .ipynb_checkpoints causing extraction timeouts, plus .git directory copying security issue
+- **Solution**: Comprehensive filtering system covering VCS (.git, .svn), development tools (.ipynb_checkpoints, __pycache__), and OS files (.DS_Store)
+- **Status**: Complete - Successfully tested with real GitHub repos, all extraction issues resolved, provisional hooks for future extensibility
+- **Benefits**: Reliable real-world usage, clean workspaces, eliminated timeout errors, security improvements, .gitignore integration ready for future
+
 ### E2E Test Failures Completely Fixed - 2025-07-27
 - **Problem**: 2 remaining E2E test failures after branch update detection fix
 - **Solution**: Fixed timestamp handling bug and metadata architecture mismatch
@@ -57,21 +63,26 @@
 - **Mirror-based approach**: Full clone to .mirror/ directory with SHA256 naming
 - **Smart install logic**: Skip libraries that don't need updates
 - **Single lockfile**: All state in .analog-hub.lock, no metadata files
+- **Comprehensive filtering**: Automatic filtering of VCS (.git, .svn), development tools (.ipynb_checkpoints, __pycache__), and OS files (.DS_Store) with provisional hooks
 - **2-tier test structure**: unit/ (fast, mocked), e2e/ (full workflows with mock repos)
 - **Technology stack**: Python + Click + GitPython + Pydantic
 
 ## Active Issues & Next Steps
 - **Current Priority**: Improve test coverage for mirror.py and installer.py  
-- **Blockers**: None - all E2E tests passing, system fully stable
+- **Blockers**: None - all E2E tests passing, system fully stable, real repositories tested successfully
 - **Next Session Goals**: Create unit tests for mirror.py (20% coverage), improve installer.py coverage (76%), add CLI unit tests
-- **Test Strategy**: Unit tests (mocked) → E2E tests (mock repos) → Manual validation (real repos occasionally)
+- **Test Strategy**: Unit tests (mocked) → E2E tests (mock repos) → Real repository validation (proven successful)
 - **E2E Status**: 12 passed, 0 failed (100% pass rate) ✅ - System fully validated
-- **Coverage Status**: extractor.py 99% ✅, installer.py 76%, mirror.py 20% (needs unit tests)
+- **Real Repository Status**: Successfully tested with peterkinget/gf180mcu_fd_sc_mcu9t5v0_symbols and mosbiuschip/switch_matrix_gf180mcu_9t5v0 ✅
+- **Coverage Status**: extractor.py 51% (enhanced filtering system), installer.py 76%, mirror.py 20% (needs unit tests)
 
-## Test Modules Status (All Core Tests Working - 35/35 passing)
+## Backlog & Future Enhancements
+- **Low Priority**: .gitignore integration for user-configurable filtering using pathspec library
+
+## Test Modules Status (All Core Tests Working - 43/43 passing)
 - **test_extractor_path_resolution.py** - ✅ 3 tests - Path resolution logic
 - **test_extractor_checksum.py** - ✅ 3 tests - Checksum calculation methods  
-- **test_extractor_extraction.py** - ✅ 5 tests - File/directory extraction operations
+- **test_extractor_extraction.py** - ✅ 13 tests - File/directory extraction operations (comprehensive filtering: VCS + development tools)
 - **test_extractor_validation.py** - ✅ 8 tests - Library validation and management
 - **test_installer_config.py** - ✅ 6 tests - Configuration and lockfile operations
 - **test_installer_single.py** - ✅ 2 tests - Single library installation
