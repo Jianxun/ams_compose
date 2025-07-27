@@ -217,25 +217,38 @@ imports:
 
 @main.command()
 def clean():
-    """Clean unused mirrors and validate installations."""
+    """Clean unused mirrors, orphaned libraries, and validate installations."""
     try:
         installer = _get_installer()
         
+        # Clean unused mirrors
         removed_mirrors = installer.clean_unused_mirrors()
-        
         if removed_mirrors:
             click.echo(f"Removed {len(removed_mirrors)} unused mirrors")
         else:
             click.echo("No unused mirrors found")
         
-        # Also run validation
+        # Clean orphaned libraries from lockfile
+        removed_libraries = installer.clean_orphaned_libraries()
+        if removed_libraries:
+            click.echo(f"Removed {len(removed_libraries)} orphaned libraries from lockfile:")
+            for lib in removed_libraries:
+                click.echo(f"  {lib}")
+        else:
+            click.echo("No orphaned libraries found")
+        
+        # Run validation after cleanup
         valid_libraries, invalid_libraries = installer.validate_installation()
         
         if invalid_libraries:
-            click.echo(f"Found {len(invalid_libraries)} invalid libraries:")
-            for issue in invalid_libraries:
-                click.echo(f"  {issue}")
-            click.echo("Consider running 'analog-hub install --force' to fix these issues.")
+            # Filter out warnings (since we just cleaned orphaned libraries)
+            actual_issues = [issue for issue in invalid_libraries if not issue.startswith('WARNING')]
+            if actual_issues:
+                click.echo(f"Found {len(actual_issues)} remaining issues:")
+                for issue in actual_issues:
+                    click.echo(f"  {issue}")
+            else:
+                click.echo(f"All {len(valid_libraries)} libraries are valid")
         else:
             click.echo(f"All {len(valid_libraries)} libraries are valid")
             

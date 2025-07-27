@@ -344,23 +344,52 @@ class LibraryInstaller:
     def validate_installation(self) -> Tuple[List[str], List[str]]:
         """Validate current installation state.
         
+        Only validates libraries currently defined in analog-hub.yaml config.
+        Libraries in lockfile but not in config are considered orphaned and warned about.
+        
         Returns:
-            Tuple of (valid_libraries, invalid_libraries)
+            Tuple of (valid_libraries, invalid_libraries_and_warnings)
         """
         lock_file = self.load_lock_file()
+        config = self.load_config()
+        
         valid_libraries = []
         invalid_libraries = []
         
-        for library_name, lock_entry in lock_file.libraries.items():
+        # Get current library names from config
+        current_library_names = set(config.imports.keys())
+        lockfile_library_names = set(lock_file.libraries.keys())
+        
+        # Find orphaned libraries (in lockfile but not in current config)
+        orphaned_libraries = lockfile_library_names - current_library_names
+        
+        # Add warnings for orphaned libraries
+        if orphaned_libraries:
+            invalid_libraries.append(f"WARNING: Found {len(orphaned_libraries)} orphaned libraries in lockfile but not in config:")
+            for orphaned_lib in sorted(orphaned_libraries):
+                invalid_libraries.append(f"  {orphaned_lib}: no longer defined in analog-hub.yaml")
+            invalid_libraries.append("  To fix: Run 'analog-hub clean' to remove orphaned libraries from lockfile")
+        
+        # Only validate libraries that exist in current config
+        for library_name in current_library_names:
+            if library_name not in lock_file.libraries:
+                invalid_libraries.append(f"{library_name}: not installed (missing from lockfile)")
+                continue
+                
+            lock_entry = lock_file.libraries[library_name]
             try:
                 # Check if library still exists
                 library_path = self.project_root / lock_entry.local_path
                 if not library_path.exists():
-                    invalid_libraries.append(f"{library_name}: library directory not found")
+                    invalid_libraries.append(f"{library_name}: library not found at {lock_entry.local_path}")
                     continue
                 
-                # Verify checksum to detect modifications
-                current_checksum = ChecksumCalculator.calculate_directory_checksum(library_path)
+                # Verify checksum using correct method for files vs directories
+                if library_path.is_dir():
+                    current_checksum = ChecksumCalculator.calculate_directory_checksum(library_path)
+                else:
+                    current_checksum = ChecksumCalculator.calculate_file_checksum(library_path)
+                    
                 if current_checksum != lock_entry.checksum:
                     invalid_libraries.append(f"{library_name}: checksum mismatch (modified?)")
                     continue
@@ -402,3 +431,31 @@ class LibraryInstaller:
                 print(f"Warning: Failed to remove mirror {repo_hash}: {e}")
         
         return removed_mirrors
+    
+    def clean_orphaned_libraries(self) -> List[str]:
+        """Remove orphaned libraries from lockfile that are no longer in config.
+        
+        Returns:
+            List of removed library names
+        """
+        lock_file = self.load_lock_file()
+        config = self.load_config()
+        
+        # Get current library names from config
+        current_library_names = set(config.imports.keys())
+        lockfile_library_names = set(lock_file.libraries.keys())
+        
+        # Find orphaned libraries (in lockfile but not in current config)
+        orphaned_libraries = lockfile_library_names - current_library_names
+        
+        if not orphaned_libraries:
+            return []
+        
+        # Remove orphaned libraries from lockfile
+        for orphaned_lib in orphaned_libraries:
+            del lock_file.libraries[orphaned_lib]
+        
+        # Save updated lockfile
+        self.save_lock_file(lock_file)
+        
+        return list(orphaned_libraries)
