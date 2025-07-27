@@ -49,10 +49,14 @@ class TestSingleLibraryInstaller:
         
         return config
     
+    @patch('analog_hub.core.installer.ChecksumCalculator')
     @patch('analog_hub.core.installer.RepositoryMirror')
     @patch('analog_hub.core.installer.PathExtractor')
-    def test_install_library_success(self, mock_extractor_class, mock_mirror_class, installer, sample_config):
+    def test_install_library_success(self, mock_extractor_class, mock_mirror_class, mock_checksum_class, installer, sample_config):
         """Test successful single library installation."""
+        # Mock ChecksumCalculator
+        mock_checksum_class.generate_repo_hash.return_value = "hash123"
+        
         # Mock mirror manager
         mock_mirror = Mock()
         mock_mirror_class.return_value = mock_mirror
@@ -62,7 +66,6 @@ class TestSingleLibraryInstaller:
         mock_mirror_state = MirrorState(resolved_commit="abc123def456")
         mock_mirror.update_mirror.return_value = mock_mirror_state
         mock_mirror.get_mirror_path.return_value = mock_mirror_path
-        mock_mirror._generate_repo_hash.return_value = "hash123"
         
         # Mock path extractor
         mock_extractor = Mock()
@@ -97,9 +100,9 @@ class TestSingleLibraryInstaller:
         
         # Verify returned LockEntry
         assert isinstance(lock_entry, LockEntry)
-        assert lock_entry.repo_url == "https://github.com/example/test-repo"
+        assert lock_entry.repo == "https://github.com/example/test-repo"
         assert lock_entry.ref == "main"
-        assert lock_entry.resolved_commit == "abc123def456"
+        assert lock_entry.commit == "abc123def456"
         assert lock_entry.source_path == "lib/test"
         assert lock_entry.local_path == "designs/libs/test_library"
         assert lock_entry.checksum == "checksum123"
@@ -119,5 +122,5 @@ class TestSingleLibraryInstaller:
         
         # Test installation failure
         import_spec = sample_config.imports["test_library"]
-        with pytest.raises(InstallationError, match="Failed to install library test_library"):
+        with pytest.raises(InstallationError, match="Failed to install library 'test_library'"):
             installer.install_library("test_library", import_spec, "designs/libs")

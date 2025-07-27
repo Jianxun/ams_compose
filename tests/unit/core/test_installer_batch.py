@@ -59,9 +59,9 @@ class TestBatchInstaller:
         # Mock successful installations
         mock_install_library.side_effect = [
             LockEntry(
-                repo_url="https://github.com/example/test-repo",
+                repo="https://github.com/example/test-repo",
                 ref="main",
-                resolved_commit="abc123",
+                commit="abc123",
                 source_path="lib/test",
                 local_path="designs/libs/test_library",
                 checksum="checksum1",
@@ -69,9 +69,9 @@ class TestBatchInstaller:
                 updated_at="2025-01-01T00:00:00"
             ),
             LockEntry(
-                repo_url="https://github.com/example/another-repo",
+                repo="https://github.com/example/another-repo",
                 ref="v1.0.0",
-                resolved_commit="def456",
+                commit="def456",
                 source_path="src",
                 local_path="custom/path",
                 checksum="checksum2",
@@ -92,8 +92,8 @@ class TestBatchInstaller:
         assert mock_install_library.call_count == 2
         
         # Verify lock entries
-        assert result["test_library"].repo_url == "https://github.com/example/test-repo"
-        assert result["another_lib"].repo_url == "https://github.com/example/another-repo"
+        assert result["test_library"].repo == "https://github.com/example/test-repo"
+        assert result["another_lib"].repo == "https://github.com/example/another-repo"
         assert result["another_lib"].local_path == "custom/path"
     
     @patch('analog_hub.core.installer.LibraryInstaller.install_library')
@@ -101,9 +101,9 @@ class TestBatchInstaller:
         """Test installation of specific libraries only."""
         # Mock successful installation
         mock_install_library.return_value = LockEntry(
-            repo_url="https://github.com/example/test-repo",
+            repo="https://github.com/example/test-repo",
             ref="main",
-            resolved_commit="abc123",
+            commit="abc123",
             source_path="lib/test",
             local_path="designs/libs/test_library",
             checksum="checksum1",
@@ -124,7 +124,7 @@ class TestBatchInstaller:
     
     def test_install_all_missing_library(self, installer, sample_config):
         """Test installation when specified library doesn't exist in config."""
-        with pytest.raises(InstallationError, match="Library 'nonexistent' not found in configuration"):
+        with pytest.raises(InstallationError, match=r"Libraries not found in configuration: \{'nonexistent'\}"):
             installer.install_all(library_names=["nonexistent"])
     
     @patch('analog_hub.core.installer.LibraryInstaller.install_library')
@@ -133,9 +133,9 @@ class TestBatchInstaller:
         # Mock mixed success/failure
         mock_install_library.side_effect = [
             LockEntry(
-                repo_url="https://github.com/example/test-repo",
+                repo="https://github.com/example/test-repo",
                 ref="main",
-                resolved_commit="abc123",
+                commit="abc123",
                 source_path="lib/test",
                 local_path="designs/libs/test_library",
                 checksum="checksum1",

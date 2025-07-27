@@ -211,5 +211,5 @@ class TestValidationOperations:
         assert "lib2" in libraries
         
         # Verify they are Path objects pointing to the right locations
-        assert libraries["lib1"] == self.project_root / "designs" / "libs" / "lib1"
-        assert libraries["lib2"] == self.project_root / "designs" / "libs" / "lib2"
+        assert libraries["lib1"].resolve() == (self.project_root / "designs" / "libs" / "lib1").resolve()
+        assert libraries["lib2"].resolve() == (self.project_root / "designs" / "libs" / "lib2").resolve()

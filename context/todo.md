@@ -25,14 +25,12 @@ tests/
 └── integration/ & e2e/           # Working ✅
 ```
 
-## In Progress
+## In Progress  
+- [ ] **Fix installer.py validate_installation method** - Remove LibraryMetadata references, update to new architecture
 
-## Priority 1 (HIGH) - Fix Breaking Changes  
-- [ ] **Fix test_extractor_path_resolution.py** - Update method calls and imports
-- [ ] **Fix test_extractor_checksum.py** - Update to use ChecksumCalculator correctly
-- [ ] **Fix test_extractor_extraction.py** - Update to ExtractionState return types
-- [ ] **Fix test_extractor_validation.py** - Update validation methods
-- [ ] **Fix test_installer_*.py modules** - Update to use LockEntry, remove LibraryMetadata
+## Priority 1 (HIGH) - Remaining Core Fixes
+- [ ] **Update installer validate_installation method** - Currently still references .analog-hub-meta.yaml and LibraryMetadata
+- [ ] **Run full core test suite** - Verify all 8 core test modules pass completely
 
 ## Priority 2 (MEDIUM) - Test Infrastructure  
 - [ ] **Update Test Documentation** - Reflect new hierarchy in CLAUDE.md guidelines
@@ -44,6 +42,15 @@ tests/
 - [x] **Lightweight Return Types** - Implemented MirrorState/ExtractionState dataclasses  
 - [x] **Single Lockfile Architecture** - Eliminated .analog-hub-meta*.yaml files
 - [x] **Method Signature Updates** - Updated all core modules (mirror.py, extractor.py, installer.py)
+- [x] **Fixed Core Unit Tests** - All 8 core test modules updated for new architecture (7/8 fully working)
+  - [x] test_extractor_path_resolution.py - Path resolution tests
+  - [x] test_extractor_checksum.py - Checksum calculation tests  
+  - [x] test_extractor_extraction.py - File extraction tests
+  - [x] test_extractor_validation.py - Library validation tests
+  - [x] test_installer_config.py - Configuration and lockfile tests
+  - [x] test_installer_single.py - Single library installation tests
+  - [x] test_installer_batch.py - Batch installation tests
+  - [x] test_installer_management.py - Library management tests (7/8 tests passing)
 
 ## Definition of Done
 - [ ] All tests pass with new architecture

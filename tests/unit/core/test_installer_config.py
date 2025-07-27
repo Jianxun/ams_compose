@@ -75,22 +75,21 @@ class TestInstallerConfig:
     
     def test_load_lock_file_new(self, installer, sample_config):
         """Test loading lockfile when none exists."""
-        config = installer.load_config()
-        lock_file = installer.load_lock_file(config)
+        lock_file = installer.load_lock_file()
         
         assert lock_file.library_root == "designs/libs"
-        assert lock_file.entries == {}
+        assert lock_file.libraries == {}
     
     def test_load_lock_file_existing(self, installer, temp_project):
         """Test loading existing lockfile."""
         # Create existing lockfile
         lock_data = LockFile(
             library_root="designs/libs",
-            entries={
+            libraries={
                 "test_lib": LockEntry(
-                    repo_url="https://github.com/example/test-repo",
+                    repo="https://github.com/example/test-repo",
                     ref="main",
-                    resolved_commit="abc123",
+                    commit="abc123",
                     source_path="lib/test",
                     local_path="designs/libs/test_lib",
                     checksum="checksum123",
@@ -108,22 +107,22 @@ class TestInstallerConfig:
         config.library_root = "designs/libs"
         
         # Load lockfile
-        loaded_lock = installer.load_lock_file(config)
+        loaded_lock = installer.load_lock_file()
         
         assert loaded_lock.library_root == "designs/libs"
-        assert "test_lib" in loaded_lock.entries
-        assert loaded_lock.entries["test_lib"].repo_url == "https://github.com/example/test-repo"
-        assert loaded_lock.entries["test_lib"].resolved_commit == "abc123"
+        assert "test_lib" in loaded_lock.libraries
+        assert loaded_lock.libraries["test_lib"].repo == "https://github.com/example/test-repo"
+        assert loaded_lock.libraries["test_lib"].commit == "abc123"
     
     def test_save_lock_file(self, installer, temp_project):
         """Test saving lockfile."""
         lock_data = LockFile(
             library_root="designs/libs",
-            entries={
+            libraries={
                 "test_lib": LockEntry(
-                    repo_url="https://github.com/example/test-repo",
+                    repo="https://github.com/example/test-repo",
                     ref="main",
-                    resolved_commit="abc123",
+                    commit="abc123",
                     source_path="lib/test",
                     local_path="designs/libs/test_lib",
                     checksum="checksum123",
@@ -142,5 +141,5 @@ class TestInstallerConfig:
         # Verify content can be loaded back
         loaded_lock = LockFile.from_yaml(lock_path)
         assert loaded_lock.library_root == "designs/libs"
-        assert "test_lib" in loaded_lock.entries
-        assert loaded_lock.entries["test_lib"].resolved_commit == "abc123"
+        assert "test_lib" in loaded_lock.libraries
+        assert loaded_lock.libraries["test_lib"].commit == "abc123"

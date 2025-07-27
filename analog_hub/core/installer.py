@@ -115,7 +115,8 @@ class LibraryInstaller:
                 source_path=import_spec.source_path,
                 local_path=library_metadata.local_path,
                 checksum=library_metadata.checksum,
-                installed_at=timestamp
+                installed_at=timestamp,
+                updated_at=timestamp
             )
             
             return lock_entry
