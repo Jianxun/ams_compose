@@ -339,3 +339,105 @@ class TestExtractionOperations:
             # Verify cleanup occurred - copied files should be removed
             local_path = self.project_root / "designs" / "libs" / "test_lib"
             assert not local_path.exists(), "Copied files should be cleaned up after checksum failure"
+    
+    def test_extract_library_ignores_git_directories(self):
+        """Test that .git and other VCS directories are ignored during extraction."""
+        # Create mock source with git metadata and library files
+        source_path = self.mock_mirror / "full_repo"
+        source_path.mkdir(parents=True)
+        
+        # Create library files
+        (source_path / "library.v").write_text("module library(); endmodule")
+        (source_path / "docs").mkdir()
+        (source_path / "docs" / "readme.txt").write_text("Library documentation")
+        
+        # Create git metadata that should be ignored
+        git_dir = source_path / ".git"
+        git_dir.mkdir()
+        (git_dir / "config").write_text("[core]\n\trepositoryformatversion = 0")
+        (git_dir / "objects").mkdir()
+        (git_dir / "objects" / "object1").write_text("git object")
+        
+        # Create other VCS files that should be ignored
+        (source_path / ".gitignore").write_text("*.log")
+        (source_path / ".gitmodules").write_text("[submodule]")
+        (source_path / ".svn").mkdir()
+        (source_path / ".hg").mkdir()
+        
+        import_spec = ImportSpec(
+            repo="https://example.com/repo",
+            ref="main",
+            source_path="full_repo"  # Extract entire directory including git metadata
+        )
+        
+        extraction_state = self.extractor.extract_library(
+            library_name="full_library",
+            import_spec=import_spec,
+            mirror_path=self.mock_mirror,
+            library_root="designs/libs",
+            repo_hash="abcd1234",
+            resolved_commit="commit123456"
+        )
+        
+        # Verify extraction succeeded
+        assert extraction_state.local_path == "designs/libs/full_library"
+        assert len(extraction_state.checksum) == 64
+        
+        # Verify library files are extracted
+        extracted_path = self.project_root / "designs" / "libs" / "full_library"
+        assert (extracted_path / "library.v").exists()
+        assert (extracted_path / "docs" / "readme.txt").exists()
+        
+        # Verify git metadata is NOT extracted
+        assert not (extracted_path / ".git").exists(), ".git directory should be ignored"
+        assert not (extracted_path / ".gitignore").exists(), ".gitignore should be ignored"
+        assert not (extracted_path / ".gitmodules").exists(), ".gitmodules should be ignored"
+        assert not (extracted_path / ".svn").exists(), ".svn directory should be ignored"
+        assert not (extracted_path / ".hg").exists(), ".hg directory should be ignored"
+    
+    def test_ignore_function_creation(self):
+        """Test the _create_ignore_function method directly."""
+        # Test default ignore function
+        ignore_func = self.extractor._create_ignore_function()
+        
+        # Test with various filenames
+        test_filenames = [
+            'library.v', 'readme.txt', '.git', '.gitignore', 
+            '.svn', '.hg', '.bzr', 'CVS', 'normal_file.txt'
+        ]
+        
+        ignored = ignore_func('/some/dir', test_filenames)
+        
+        # Verify VCS files are ignored
+        assert '.git' in ignored
+        assert '.gitignore' in ignored  
+        assert '.svn' in ignored
+        assert '.hg' in ignored
+        assert '.bzr' in ignored
+        assert 'CVS' in ignored
+        
+        # Verify normal files are not ignored
+        assert 'library.v' not in ignored
+        assert 'readme.txt' not in ignored
+        assert 'normal_file.txt' not in ignored
+    
+    def test_ignore_function_with_custom_hook(self):
+        """Test the _create_ignore_function with custom ignore hook."""
+        # Create custom hook that ignores backup files
+        def custom_hook(directory: str, filenames: set) -> set:
+            return {f for f in filenames if f.endswith('.bak') or f.endswith('.tmp')}
+        
+        ignore_func = self.extractor._create_ignore_function(custom_hook)
+        
+        test_filenames = [
+            'library.v', 'backup.bak', 'temp.tmp', '.git', 'normal.txt'
+        ]
+        
+        ignored = ignore_func('/some/dir', test_filenames)
+        
+        # Verify both default and custom ignores work
+        assert '.git' in ignored  # Default ignore
+        assert 'backup.bak' in ignored  # Custom ignore
+        assert 'temp.tmp' in ignored  # Custom ignore
+        assert 'library.v' not in ignored
+        assert 'normal.txt' not in ignored

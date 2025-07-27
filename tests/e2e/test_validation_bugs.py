@@ -10,11 +10,9 @@ import yaml
 from pathlib import Path
 from typing import Dict, Any
 
-import pytest
 import git
 
 from analog_hub.core.installer import LibraryInstaller
-from analog_hub.core.config import AnalogHubConfig
 
 
 class TestValidationBugs:
@@ -223,3 +221,88 @@ class TestValidationBugs:
         # Filter out any warning messages (which might be present for other reasons)
         actual_invalid_libraries = [lib for lib in invalid_libraries if not lib.startswith('WARNING')]
         assert len(actual_invalid_libraries) == 0, f"Should have no invalid libraries, but got: {actual_invalid_libraries}"
+
+    def test_git_directory_filtering_fix(self):
+        """Test Fix: .git directory is properly filtered when source_path is '.' to prevent version control issues.
+        
+        Fixed behavior: When using source_path: '.', the extractor now filters out .git and other 
+        VCS directories, allowing clean extraction while preventing version control conflicts.
+        """
+        # Create mock repository with git metadata and library files
+        mock_repo = self._create_mock_repo("test_repo", {
+            "library_file.v": "// Verilog library content\nmodule test();\nendmodule",
+            "docs/readme.txt": "Library documentation",
+            "models/model.sp": "* SPICE model\n.model test_model nmos",
+            "subdir/nested_file.txt": "Nested library content"
+        })
+        
+        # Add additional git metadata to the existing .git directory
+        git_dir = mock_repo / ".git"
+        # git_dir already exists from _create_mock_repo, just add more content
+        (git_dir / "config").write_text("[core]\n\trepositoryformatversion = 0")
+        (git_dir / "objects").mkdir(exist_ok=True)
+        (git_dir / "objects" / "test_object").write_text("git object content")
+        
+        # Add other git-related files
+        (mock_repo / ".gitignore").write_text("*.log\n*.tmp")
+        (mock_repo / ".gitmodules").write_text("[submodule \"test\"]\n\tpath = test")
+        (mock_repo / ".gitattributes").write_text("*.v text eol=lf")
+        
+        # Create config using source_path: '.' to extract entire repository
+        config = {
+            'library-root': 'libs',
+            'imports': {
+                'full_repo_library': {
+                    'repo': str(mock_repo),
+                    'ref': 'main',
+                    'source_path': '.',  # This causes the bug - copies everything including .git
+                    'local_path': 'libs/full_repo_library'
+                }
+            }
+        }
+        
+        self._create_config_file(config)
+        
+        # Install the library
+        self.installer.install_all()
+        
+        # Verify library was installed
+        library_path = self.project_root / "libs/full_repo_library"
+        assert library_path.exists() and library_path.is_dir()
+        
+        # Verify library files are properly extracted
+        assert (library_path / "library_file.v").exists(), "Library files should be extracted"
+        assert (library_path / "docs/readme.txt").exists(), "Documentation should be extracted"
+        assert (library_path / "models/model.sp").exists(), "Models should be extracted"
+        assert (library_path / "subdir/nested_file.txt").exists(), "Nested files should be extracted"
+        
+        # BUG REPRODUCTION: Check that .git directory is incorrectly copied
+        git_copied = (library_path / ".git").exists()
+        gitignore_copied = (library_path / ".gitignore").exists()
+        gitmodules_copied = (library_path / ".gitmodules").exists()
+        gitattributes_copied = (library_path / ".gitattributes").exists()
+        
+        # Document the fixed behavior
+        print(f"\\n=== FIXED BEHAVIOR VERIFICATION ===")
+        print(f".git directory copied: {git_copied}")
+        print(f".gitignore copied: {gitignore_copied}")
+        print(f".gitmodules copied: {gitmodules_copied}")
+        print(f".gitattributes copied: {gitattributes_copied}")
+        
+        # FIXED BEHAVIOR: .git directory is properly filtered out
+        assert not git_copied, "FIXED: .git directory should NOT be copied and now it isn't"
+        assert not gitignore_copied, "FIXED: .gitignore should NOT be copied and now it isn't"
+        assert not gitmodules_copied, "FIXED: .gitmodules should NOT be copied and now it isn't"
+        assert not gitattributes_copied, "FIXED: .gitattributes should NOT be copied and now it isn't"
+        
+        # Verify that installation still works functionally (checksum validation)
+        valid_libraries, invalid_libraries = self.installer.validate_installation()
+        actual_invalid = [lib for lib in invalid_libraries if not lib.startswith('WARNING')]
+        assert 'full_repo_library' in valid_libraries, "Library should still validate functionally"
+        assert len(actual_invalid) == 0, "Installation should be functionally valid despite git files"
+        
+        print(f"\\n=== SECURITY/WORKFLOW BENEFITS ===")
+        print(f"- Extracted library is clean of version control metadata")
+        print(f"- Libraries can now be committed to version control without conflicts")
+        print(f"- No security risk from exposed git history")
+        print(f"- Clean workspace without unnecessary VCS files")

@@ -2,7 +2,7 @@
 
 import shutil
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Optional, Dict, Callable, Set
 from dataclasses import dataclass
 
 from .config import ImportSpec
@@ -28,6 +28,47 @@ class PathExtractor:
             project_root: Root directory of the project (default: current directory)
         """
         self.project_root = Path(project_root).resolve()
+    
+    def _create_ignore_function(self, custom_ignore_hook: Optional[Callable[[str, Set[str]], Set[str]]] = None) -> Callable[[str, list], list]:
+        """Create ignore function for shutil.copytree to filter out unwanted files.
+        
+        This method provides a default ignore pattern for version control files
+        and allows for future extensibility via custom ignore hooks.
+        
+        Args:
+            custom_ignore_hook: Optional function that takes (directory_path, filenames_set) 
+                               and returns set of additional filenames to ignore
+        
+        Returns:
+            Function compatible with shutil.copytree ignore parameter
+        """
+        def ignore_function(directory: str, filenames: list) -> list:
+            ignored = set()
+            filenames_set = set(filenames)
+            
+            # Default ignore patterns for version control
+            default_ignores = {
+                '.git',           # Git repository metadata
+                '.gitignore',     # Git ignore rules
+                '.gitmodules',    # Git submodules configuration
+                '.gitattributes', # Git attributes configuration
+                '.svn',           # SVN metadata
+                '.hg',            # Mercurial metadata
+                '.bzr',           # Bazaar metadata
+                'CVS',            # CVS metadata
+            }
+            
+            # Apply default ignores
+            ignored.update(filenames_set.intersection(default_ignores))
+            
+            # Provisional hook for future custom ignore patterns
+            if custom_ignore_hook:
+                additional_ignores = custom_ignore_hook(directory, filenames_set)
+                ignored.update(additional_ignores)
+            
+            return list(ignored)
+        
+        return ignore_function
     
     
     def _resolve_local_path(self, library_name: str, import_spec: ImportSpec, library_root: str) -> Path:
@@ -101,11 +142,15 @@ class PathExtractor:
         try:
             # Copy source to destination
             if source_full_path.is_dir():
+                # Create ignore function to filter out version control files
+                ignore_func = self._create_ignore_function()
+                
                 shutil.copytree(
                     source_full_path, 
                     local_path,
                     symlinks=True,  # Preserve symlinks
                     ignore_dangling_symlinks=True,
+                    ignore=ignore_func,  # Filter out .git and other VCS files
                     dirs_exist_ok=False  # Should not exist due to cleanup above
                 )
             else:
