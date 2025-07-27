@@ -46,6 +46,13 @@ dev = [
     "mypy>=1.0.0",
 ]
 
+docs = [
+    "sphinx>=7.0.0",
+    "sphinx-rtd-theme>=2.0.0",
+    "sphinx-autodoc-typehints>=1.24.0",
+    "myst-parser>=2.0.0",
+]
+
 [project.urls]
 Homepage = "https://github.com/Jianxun/analog-hub"
 Repository = "https://github.com/Jianxun/analog-hub"
@@ -75,3 +82,7 @@ disallow_untyped_defs = true
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "--cov=analog_hub --cov-report=term-missing"
+
+[tool.sphinx]
+source-dir = "docs"
+build-dir = "docs/_build"

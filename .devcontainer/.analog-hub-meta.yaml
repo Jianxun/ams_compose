@@ -1,0 +1,10 @@
+library_name: devcontainer
+repo_url: https://github.com/Jianxun/iic-osic-tools-project-template
+repo_hash: b16d751ac49c6257
+ref: devcontainer
+resolved_commit: 881c79414b74b38b4744e119fc2ae5e55974eb46
+source_path: .devcontainer
+local_path: .devcontainer
+checksum: 012d8c96a8c3392a629c118ae036ed00692c3ca59b38fa3dae8de61beb78f13f
+installed_at: '2025-07-25T22:35:49.517933'
+updated_at: '2025-07-25T22:35:49.517933'

@@ -6,23 +6,17 @@ from pydantic import BaseModel, Field, ConfigDict
 import yaml
 
 
-class ExportSpec(BaseModel):
-    """Specification for an exported library."""
-    model_config = ConfigDict(extra="allow")
-    
-    path: str = Field(..., description="Relative path to the library from repository root")
-    type: str = Field(..., description="Library category (design, testbench, pdk, etc.)")
-    license: Optional[str] = Field(None, description="License information for the library")
-    description: Optional[str] = Field(None, description="Description of the library")
-
-
 class ImportSpec(BaseModel):
     """Specification for an imported library."""
     model_config = ConfigDict(extra="allow")
     
-    repo: str = Field(..., description="Repository URL to import from")
-    ref: str = Field(..., description="Git reference (branch, tag, or commit hash)")
-    library: Optional[str] = Field(None, description="Specific library name to import (optional)")
+    repo: str = Field(..., description="Git repository URL")
+    ref: str = Field(..., description="Git reference (branch, tag, or commit)")
+    source_path: str = Field(..., description="Path within repo to extract")
+    local_path: Optional[str] = Field(
+        None, 
+        description="Local path override (defaults to {library-root}/{import_key}). If specified, overrides library-root completely."
+    )
 
 
 class LockEntry(BaseModel):
@@ -32,29 +26,27 @@ class LockEntry(BaseModel):
     repo: str = Field(..., description="Repository URL")
     ref: str = Field(..., description="Original git reference")
     commit: str = Field(..., description="Resolved commit hash")
-    path: str = Field(..., description="Source path in repository")
-    type: str = Field(..., description="Library type")
-    license: Optional[str] = Field(None, description="License at time of installation")
+    source_path: str = Field(..., description="Source path in repository")
+    local_path: str = Field(..., description="Local path under analog-hub-root")
     checksum: str = Field(..., description="Content checksum for validation")
     installed_at: str = Field(..., description="Installation timestamp")
+    updated_at: str = Field(..., description="Last update timestamp")
+    last_validated: Optional[str] = Field(default=None, description="Last validation timestamp")
+    validation_status: str = Field(default="unknown", description="Validation status: valid/modified/missing/unknown")
 
 
 class AnalogHubConfig(BaseModel):
     """Main configuration model for analog-hub.yaml."""
     model_config = ConfigDict(extra="allow")
     
-    analog_hub_root: str = Field(
+    library_root: str = Field(
         default="libs", 
-        description="Root directory for imported libraries",
-        alias="analog-hub-root"
+        description="Default root directory for imported libraries (used when local_path not specified)",
+        alias="library-root"
     )
     imports: Optional[Dict[str, ImportSpec]] = Field(
         default_factory=dict,
         description="Libraries to import"
-    )
-    exports: Optional[Dict[str, ExportSpec]] = Field(
-        default_factory=dict,
-        description="Libraries available for export"
     )
     
     @classmethod
@@ -76,7 +68,7 @@ class LockFile(BaseModel):
     model_config = ConfigDict(extra="allow")
     
     version: str = Field(default="1", description="Lock file format version")
-    analog_hub_root: str = Field(..., description="Root directory for libraries")
+    library_root: str = Field(..., description="Default root directory for libraries")
     libraries: Dict[str, LockEntry] = Field(
         default_factory=dict,
         description="Installed library entries"
@@ -86,7 +78,7 @@ class LockFile(BaseModel):
     def from_yaml(cls, lock_path: Path) -> "LockFile":
         """Load lock file from YAML."""
         if not lock_path.exists():
-            return cls(analog_hub_root="libs")
+            return cls(library_root="libs")
         
         with open(lock_path, 'r') as f:
             data = yaml.safe_load(f)
