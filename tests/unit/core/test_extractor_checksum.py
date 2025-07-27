@@ -3,7 +3,9 @@
 import tempfile
 import shutil
 from pathlib import Path
+from unittest.mock import patch
 
+from analog_hub.core.extractor import PathExtractor
 from analog_hub.utils.checksum import ChecksumCalculator
 
 
@@ -72,3 +74,75 @@ class TestChecksumOperations:
         nonexistent = self.mock_mirror / "nonexistent"
         checksum = ChecksumCalculator.calculate_directory_checksum(nonexistent)
         assert checksum == ""
+
+
+class TestPathExtractorChecksum:
+    """Test PathExtractor calculate_library_checksum method."""
+    
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.temp_dir = tempfile.mkdtemp()
+        self.project_root = Path(self.temp_dir) / "project"
+        self.project_root.mkdir()
+        self.extractor = PathExtractor(self.project_root)
+        
+        # Create test library structure
+        self.lib_dir = self.project_root / "libs" / "test_lib"
+        self.lib_dir.mkdir(parents=True)
+        (self.lib_dir / "file1.txt").write_text("content1")
+        (self.lib_dir / "file2.txt").write_text("content2")
+        
+        # Create single file library
+        self.single_file = self.project_root / "libs" / "single.sp"
+        self.single_file.write_text("spice content")
+    
+    def teardown_method(self):
+        """Clean up test fixtures."""
+        shutil.rmtree(self.temp_dir)
+    
+    def test_calculate_library_checksum_directory(self):
+        """Test checksum calculation for directory library."""
+        checksum = self.extractor.calculate_library_checksum(self.lib_dir)
+        
+        assert checksum is not None
+        assert len(checksum) == 64  # SHA256 hex length
+        assert checksum != ""
+        
+        # Same directory should produce same checksum
+        checksum2 = self.extractor.calculate_library_checksum(self.lib_dir)
+        assert checksum == checksum2
+    
+    def test_calculate_library_checksum_single_file(self):
+        """Test checksum calculation for single file library."""
+        checksum = self.extractor.calculate_library_checksum(self.single_file)
+        
+        assert checksum is not None
+        assert len(checksum) == 64  # SHA256 hex length
+        assert checksum != ""
+        
+        # Same file should produce same checksum
+        checksum2 = self.extractor.calculate_library_checksum(self.single_file)
+        assert checksum == checksum2
+    
+    def test_calculate_library_checksum_nonexistent(self):
+        """Test checksum calculation for nonexistent library."""
+        nonexistent = self.project_root / "libs" / "nonexistent"
+        checksum = self.extractor.calculate_library_checksum(nonexistent)
+        
+        assert checksum is None
+    
+    def test_calculate_library_checksum_exception_handling(self):
+        """Test exception handling during checksum calculation."""
+        # Mock ChecksumCalculator to raise exception
+        with patch('analog_hub.core.extractor.ChecksumCalculator.calculate_directory_checksum') as mock_calc:
+            mock_calc.side_effect = OSError("Permission denied")
+            
+            checksum = self.extractor.calculate_library_checksum(self.lib_dir)
+            assert checksum is None
+        
+        # Test with single file exception
+        with patch('analog_hub.core.extractor.ChecksumCalculator.calculate_file_checksum') as mock_calc:
+            mock_calc.side_effect = OSError("Permission denied")
+            
+            checksum = self.extractor.calculate_library_checksum(self.single_file)
+            assert checksum is None

@@ -3,6 +3,7 @@
 import tempfile
 import shutil
 from pathlib import Path
+from unittest.mock import patch
 
 from analog_hub.core.extractor import PathExtractor
 from analog_hub.core.config import ImportSpec
@@ -213,3 +214,69 @@ class TestValidationOperations:
         # Verify they are Path objects pointing to the right locations
         assert libraries["lib1"].resolve() == (self.project_root / "designs" / "libs" / "lib1").resolve()
         assert libraries["lib2"].resolve() == (self.project_root / "designs" / "libs" / "lib2").resolve()
+    
+    def test_validate_library_exception_handling_directory(self):
+        """Test exception handling during directory validation."""
+        # Create a test library directory
+        lib_path = self.project_root / "designs" / "libs" / "test_lib"
+        lib_path.mkdir(parents=True)
+        (lib_path / "file.txt").write_text("content")
+        
+        # Mock ChecksumCalculator to raise exception
+        with patch('analog_hub.core.extractor.ChecksumCalculator.calculate_directory_checksum') as mock_calc:
+            mock_calc.side_effect = OSError("Permission denied")
+            
+            checksum = self.extractor.validate_library(lib_path)
+            assert checksum is None
+    
+    def test_validate_library_exception_handling_file(self):
+        """Test exception handling during single file validation."""
+        # Create a test single file library
+        lib_path = self.project_root / "designs" / "libs" / "single.sp"
+        lib_path.parent.mkdir(parents=True)
+        lib_path.write_text("spice content")
+        
+        # Mock ChecksumCalculator to raise exception
+        with patch('analog_hub.core.extractor.ChecksumCalculator.calculate_file_checksum') as mock_calc:
+            mock_calc.side_effect = OSError("Permission denied")
+            
+            checksum = self.extractor.validate_library(lib_path)
+            assert checksum is None
+    
+    def test_remove_library_exception_handling_directory(self):
+        """Test exception handling during directory removal."""
+        # Create a test library directory
+        lib_path = self.project_root / "designs" / "libs" / "test_lib"
+        lib_path.mkdir(parents=True)
+        (lib_path / "file.txt").write_text("content")
+        
+        # Verify it exists
+        assert lib_path.exists()
+        
+        # Mock shutil.rmtree to raise exception
+        with patch('shutil.rmtree') as mock_rmtree:
+            mock_rmtree.side_effect = OSError("Permission denied")
+            
+            result = self.extractor.remove_library(lib_path)
+            assert result is False
+            # Directory should still exist since removal failed
+            assert lib_path.exists()
+    
+    def test_remove_library_exception_handling_file(self):
+        """Test exception handling during file removal."""
+        # Create a test single file library
+        lib_path = self.project_root / "designs" / "libs" / "single.sp"
+        lib_path.parent.mkdir(parents=True)
+        lib_path.write_text("spice content")
+        
+        # Verify it exists
+        assert lib_path.exists()
+        
+        # Mock Path.unlink to raise exception
+        with patch.object(Path, 'unlink') as mock_unlink:
+            mock_unlink.side_effect = OSError("Permission denied")
+            
+            result = self.extractor.remove_library(lib_path)
+            assert result is False
+            # File should still exist since removal failed
+            assert lib_path.exists()

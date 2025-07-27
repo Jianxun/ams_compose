@@ -3,6 +3,7 @@
 import tempfile
 import shutil
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -181,3 +182,160 @@ class TestExtractionOperations:
         # Verify cleanup occurred - library directory should not have been created
         local_path = self.project_root / "designs" / "libs" / "test_lib"
         assert not local_path.exists(), "Library directory should not exist after extraction failure"
+    
+    def test_extract_library_replaces_existing_directory(self):
+        """Test that existing directory is replaced during extraction."""
+        # First, create an existing directory with different content
+        existing_path = self.project_root / "designs" / "libs" / "test_lib"
+        existing_path.mkdir(parents=True)
+        (existing_path / "old_file.txt").write_text("old content")
+        (existing_path / "subdir").mkdir()
+        (existing_path / "subdir" / "old_subfile.txt").write_text("old sub content")
+        
+        # Verify initial state
+        assert existing_path.exists()
+        assert (existing_path / "old_file.txt").exists()
+        assert (existing_path / "subdir" / "old_subfile.txt").exists()
+        
+        # Now extract the library, which should replace the existing directory
+        import_spec = ImportSpec(
+            repo="https://example.com/repo",
+            ref="main",
+            source_path="libs/test_lib"
+        )
+        
+        extraction_state = self.extractor.extract_library(
+            library_name="test_lib",
+            import_spec=import_spec,
+            mirror_path=self.mock_mirror,
+            library_root="designs/libs",
+            repo_hash="abcd1234",
+            resolved_commit="commit123456"
+        )
+        
+        # Verify extraction succeeded
+        assert extraction_state.local_path == "designs/libs/test_lib"
+        assert len(extraction_state.checksum) == 64
+        
+        # Verify old files are gone and new files exist
+        assert not (existing_path / "old_file.txt").exists()
+        assert not (existing_path / "subdir" / "old_subfile.txt").exists()
+        assert (existing_path / "amplifier.sch").exists()
+        assert (existing_path / "models" / "nmos.sp").exists()
+    
+    def test_extract_library_replaces_existing_file(self):
+        """Test that existing file is replaced during extraction."""
+        # First, create an existing file
+        existing_path = self.project_root / "designs" / "libs" / "single_module"
+        existing_path.parent.mkdir(parents=True)
+        existing_path.write_text("old file content")
+        
+        # Verify initial state
+        assert existing_path.exists()
+        assert existing_path.read_text() == "old file content"
+        
+        # Now extract the library, which should replace the existing file
+        import_spec = ImportSpec(
+            repo="https://example.com/repo",
+            ref="main",
+            source_path="single_file.v"
+        )
+        
+        extraction_state = self.extractor.extract_library(
+            library_name="single_module",
+            import_spec=import_spec,
+            mirror_path=self.mock_mirror,
+            library_root="designs/libs",
+            repo_hash="abcd1234",
+            resolved_commit="commit123456"
+        )
+        
+        # Verify extraction succeeded
+        assert extraction_state.local_path == "designs/libs/single_module"
+        assert len(extraction_state.checksum) == 64
+        
+        # Verify old content is replaced with new content
+        content = existing_path.read_text()
+        assert "old file content" not in content
+        assert "module test_module" in content
+    
+    def test_extract_library_exception_cleanup_directory(self):
+        """Test cleanup when exception occurs during directory extraction."""
+        import_spec = ImportSpec(
+            repo="https://example.com/repo",
+            ref="main",
+            source_path="libs/test_lib"
+        )
+        
+        # Mock shutil.copytree to raise an exception after creating directory structure
+        with patch('shutil.copytree') as mock_copytree:
+            mock_copytree.side_effect = OSError("Permission denied")
+            
+            # Verify extraction fails
+            with pytest.raises(OSError, match="Permission denied"):
+                self.extractor.extract_library(
+                    library_name="test_lib",
+                    import_spec=import_spec,
+                    mirror_path=self.mock_mirror,
+                    library_root="designs/libs",
+                    repo_hash="abcd1234",
+                    resolved_commit="commit123456"
+                )
+            
+            # Verify cleanup occurred - no partial directory should exist
+            local_path = self.project_root / "designs" / "libs" / "test_lib"
+            assert not local_path.exists(), "Partial directory should be cleaned up after extraction failure"
+    
+    def test_extract_library_exception_cleanup_file(self):
+        """Test cleanup when exception occurs during file extraction."""
+        import_spec = ImportSpec(
+            repo="https://example.com/repo",
+            ref="main",
+            source_path="single_file.v"
+        )
+        
+        # Mock shutil.copy2 to raise an exception
+        with patch('shutil.copy2') as mock_copy2:
+            mock_copy2.side_effect = OSError("Disk full")
+            
+            # Verify extraction fails
+            with pytest.raises(OSError, match="Disk full"):
+                self.extractor.extract_library(
+                    library_name="single_module",
+                    import_spec=import_spec,
+                    mirror_path=self.mock_mirror,
+                    library_root="designs/libs",
+                    repo_hash="abcd1234",
+                    resolved_commit="commit123456"
+                )
+            
+            # Verify cleanup occurred - no partial file should exist
+            local_path = self.project_root / "designs" / "libs" / "single_module"
+            assert not local_path.exists(), "Partial file should be cleaned up after extraction failure"
+    
+    def test_extract_library_exception_cleanup_during_checksum(self):
+        """Test cleanup when exception occurs during checksum calculation."""
+        import_spec = ImportSpec(
+            repo="https://example.com/repo",
+            ref="main",
+            source_path="libs/test_lib"
+        )
+        
+        # Mock ChecksumCalculator to raise an exception after successful copy
+        with patch('analog_hub.core.extractor.ChecksumCalculator.calculate_directory_checksum') as mock_checksum:
+            mock_checksum.side_effect = OSError("Checksum calculation failed")
+            
+            # Verify extraction fails
+            with pytest.raises(OSError, match="Checksum calculation failed"):
+                self.extractor.extract_library(
+                    library_name="test_lib",
+                    import_spec=import_spec,
+                    mirror_path=self.mock_mirror,
+                    library_root="designs/libs",
+                    repo_hash="abcd1234",
+                    resolved_commit="commit123456"
+                )
+            
+            # Verify cleanup occurred - copied files should be removed
+            local_path = self.project_root / "designs" / "libs" / "test_lib"
+            assert not local_path.exists(), "Copied files should be cleaned up after checksum failure"
