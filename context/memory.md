@@ -7,13 +7,23 @@
 
 ## Recent Major Changes (Last 2-3 Sessions Only)
 
+### Extractor Test Coverage Improvement - 2025-07-27
+- **Problem**: extractor.py had 73% test coverage with 22 missing lines, mostly error handling paths
+- **Solution**: Added comprehensive tests for all uncovered code paths including exception handling, cleanup scenarios, and edge cases
+- **Status**: Complete - Coverage improved from 73% to 99% (22 missing lines → 1 missing line)
+- **Benefits**: Robust error handling validation, comprehensive edge case coverage, improved code reliability
+
+### Test Strategy Optimization - 2025-07-27
+- **Problem**: Integration tests used real GitHub repos causing network dependencies, slow execution, brittleness
+- **Solution**: Removed integration tests entirely, rely on comprehensive E2E tests with mock repos
+- **Status**: Complete - Integration tests removed, test coverage report generated (83% overall)
+- **Benefits**: Faster, more reliable test suite; E2E tests provide superior workflow coverage
+
 ### Core Unit Test Breaking Changes Fixed - 2025-07-27
 - **Problem**: 8 split core unit test modules had breaking changes from metadata refactor (field name changes, method signature changes)
 - **Solution**: Updated all test modules to use new LockEntry field names, fixed installer.py validate_installation method to use lightweight architecture
 - **Status**: Complete - All 35 core unit tests passing, no metadata file dependencies remaining
 - **Benefits**: Clean lightweight architecture, all core tests stable, ready for development
-
-### Core Unit Test Breakdown - 2025-07-26
 - **Problem**: Monolithic test files (test_extractor.py, test_installer.py) with breaking changes from metadata refactor
 - **Solution**: Split into focused modules by responsibility - path resolution, extraction, validation, config, batch ops
 - **Status**: Complete - All files split and fixed
@@ -35,13 +45,15 @@
 - **Mirror-based approach**: Full clone to .mirror/ directory with SHA256 naming
 - **Smart install logic**: Skip libraries that don't need updates
 - **Single lockfile**: All state in .analog-hub.lock, no metadata files
-- **3-tier test structure**: unit/ (fast, mocked), integration/ (real deps), e2e/ (full workflows)
+- **2-tier test structure**: unit/ (fast, mocked), e2e/ (full workflows with mock repos)
 - **Technology stack**: Python + Click + GitPython + Pydantic
 
 ## Active Issues & Next Steps
-- **Current Priority**: Test suite refactor complete - all core unit tests working
-- **Blockers**: None - core architecture is stable
-- **Next Session Goals**: CLI command development, integration tests, or new features
+- **Current Priority**: Test coverage improvement and CLI development
+- **Blockers**: None - test strategy optimized, core architecture stable
+- **Next Session Goals**: Improve unit test coverage (mirror.py 77%, CLI 76%), add CLI unit tests
+- **Test Strategy**: Unit tests (mocked) → E2E tests (mock repos) → Manual validation (real repos occasionally)
+- **Coverage Status**: extractor.py 99% ✅, mirror.py 77%, CLI 76%
 
 ## Test Modules Status (All Core Tests Working - 35/35 passing)
 - **test_extractor_path_resolution.py** - ✅ 3 tests - Path resolution logic
