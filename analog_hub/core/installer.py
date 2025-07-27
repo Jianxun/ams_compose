@@ -70,13 +70,15 @@ class LibraryInstaller:
     def install_library(self, 
                        library_name: str, 
                        import_spec: ImportSpec,
-                       library_root: str) -> LockEntry:
+                       library_root: str,
+                       existing_entry: Optional[LockEntry] = None) -> LockEntry:
         """Install a single library.
         
         Args:
             library_name: Name of the library to install
             import_spec: Import specification from configuration
             library_root: Default library root directory
+            existing_entry: Optional existing lock entry for timestamp preservation during updates
             
         Returns:
             LockEntry for the installed library
@@ -108,6 +110,17 @@ class LibraryInstaller:
             
             # Step 3: Create lock entry
             timestamp = datetime.now().isoformat()
+            
+            # Handle timestamps: preserve installed_at for updates, set both for new installs
+            if existing_entry:
+                # This is an update: preserve original installed_at timestamp
+                installed_at = existing_entry.installed_at
+                updated_at = timestamp
+            else:
+                # This is a fresh install: set both timestamps to now
+                installed_at = timestamp
+                updated_at = timestamp
+            
             lock_entry = LockEntry(
                 repo=import_spec.repo,
                 ref=import_spec.ref,
@@ -115,8 +128,8 @@ class LibraryInstaller:
                 source_path=import_spec.source_path,
                 local_path=library_metadata.local_path,
                 checksum=library_metadata.checksum,
-                installed_at=timestamp,
-                updated_at=timestamp
+                installed_at=installed_at,
+                updated_at=updated_at
             )
             
             return lock_entry
@@ -236,10 +249,13 @@ class LibraryInstaller:
         
         for library_name, import_spec in libraries_needing_work.items():
             try:
+                # Pass existing entry if available for timestamp preservation during updates
+                existing_entry = lock_file.libraries.get(library_name)
                 lock_entry = self.install_library(
                     library_name, 
                     import_spec, 
-                    config.library_root
+                    config.library_root,
+                    existing_entry
                 )
                 installed_libraries[library_name] = lock_entry
                 

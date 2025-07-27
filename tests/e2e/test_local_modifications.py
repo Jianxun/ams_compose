@@ -120,9 +120,10 @@ class TestLocalModificationDetection:
         assert (library_path / "amplifier.sch").exists()
         assert (library_path / "filter.sch").exists()
         
-        # Store original checksums from metadata
-        metadata_path = library_path / ".analog-hub-meta.yaml"
-        assert metadata_path.exists()
+        # Store original checksums from lockfile
+        lock_file = self.installer.load_lock_file()
+        assert 'mod_test_lib' in lock_file.libraries
+        original_checksum = lock_file.libraries['mod_test_lib'].checksum
         
         # Test 1: No modifications - should pass validation
         print("🔄 Testing validation with no modifications...")
