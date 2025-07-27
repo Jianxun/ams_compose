@@ -194,10 +194,26 @@ class LibraryInstaller:
                     if not library_path.exists():
                         libraries_needing_work[library_name] = import_spec
                     else:
-                        # Library is up-to-date, print status
-                        commit_hash = current_entry.commit[:8]
-                        print(f"Library: {library_name} (commit {commit_hash}) [up to date]")
-                        skipped_libraries.append(library_name)
+                        # Check if remote has updates by updating mirror and comparing commits
+                        try:
+                            mirror_state = self.mirror_manager.update_mirror(
+                                import_spec.repo, 
+                                import_spec.ref
+                            )
+                            
+                            
+                            # If the resolved commit is different, we need to update
+                            if current_entry.commit != mirror_state.resolved_commit:
+                                libraries_needing_work[library_name] = import_spec
+                            else:
+                                # Library is truly up-to-date
+                                commit_hash = current_entry.commit[:8]
+                                print(f"Library: {library_name} (commit {commit_hash}) [up to date]")
+                                skipped_libraries.append(library_name)
+                        except Exception as e:
+                            # If we can't check for updates, assume library needs work
+                            print(f"Warning: Could not check for updates for {library_name}: {e}")
+                            libraries_needing_work[library_name] = import_spec
         
         return libraries_needing_work, skipped_libraries
 

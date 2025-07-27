@@ -216,24 +216,58 @@ class RepositoryMirror:
         try:
             repo = git.Repo(mirror_path)
             
-            # First, check if we already have the target ref locally
-            resolved_commit = self._check_commit_exists_locally(repo, ref)
+            # For branch references, always fetch to get latest commits
+            # For commit SHAs and tags, check locally first
+            is_commit_sha = len(ref) == 40 and all(c in '0123456789abcdef' for c in ref.lower())
+            is_tag = ref.startswith('v') or ref in [tag.name for tag in repo.tags]
             
-            if resolved_commit is None:
-                # We don't have the ref locally, need to fetch
-                self._with_timeout(lambda: repo.remotes.origin.fetch())
-                
-                # Try to resolve the ref again after fetching
+            if is_commit_sha or is_tag:
+                # Check if we already have the target ref locally
                 resolved_commit = self._check_commit_exists_locally(repo, ref)
+                
+                if resolved_commit is None:
+                    # We don't have the ref locally, need to fetch
+                    self._with_timeout(lambda: repo.remotes.origin.fetch())
+                    
+                    # Try to resolve the ref again after fetching
+                    resolved_commit = self._check_commit_exists_locally(repo, ref)
+                    
+                    if resolved_commit is None:
+                        raise ValueError(f"Reference '{ref}' not found in repository after fetch")
+            else:
+                # For branch references, always fetch to get latest commits
+                # Fetch with explicit refspec to ensure branch updates
+                refspec = f"+refs/heads/*:refs/remotes/origin/*"
+                self._with_timeout(lambda: repo.remotes.origin.fetch(refspec))
+                
+                # For branches, check the remote tracking branch
+                try:
+                    # Try to get the commit from the remote tracking branch
+                    remote_ref = f"origin/{ref}"
+                    remote_commit = repo.commit(remote_ref)
+                    resolved_commit = remote_commit.hexsha
+                    
+                    # Update local branch to match remote
+                    if repo.heads[ref].commit.hexsha != resolved_commit:
+                        repo.heads[ref].set_commit(remote_commit)
+                        
+                except (git.BadName, git.BadObject, AttributeError):
+                    # Fall back to checking local ref
+                    resolved_commit = self._check_commit_exists_locally(repo, ref)
                 
                 if resolved_commit is None:
                     raise ValueError(f"Reference '{ref}' not found in repository after fetch")
             
-            # Checkout the target ref (this is fast since we verified it exists)
+            # Always checkout the target commit to ensure working directory is correct
             try:
-                current_commit = repo.head.commit.hexsha
-                if current_commit != resolved_commit:
-                    self._with_timeout(lambda: repo.git.checkout('-f', ref))
+                # Always checkout to ensure working directory matches target commit
+                self._with_timeout(lambda: repo.git.checkout('-f', resolved_commit))
+                
+                # Verify checkout was successful
+                actual_commit = repo.head.commit.hexsha
+                if actual_commit != resolved_commit:
+                    raise ValueError(f"Checkout failed: expected {resolved_commit}, got {actual_commit}")
+                    
             except git.GitCommandError as e:
                 if "pathspec" in str(e).lower():
                     raise ValueError(f"Reference '{ref}' not found in repository")
