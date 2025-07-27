@@ -89,8 +89,8 @@ class TestInstallerManagement:
         assert lib2_info.repo == "https://github.com/example/repo2"
         assert lib2_info.ref == "v1.0"
     
-    @patch('analog_hub.core.installer.PathExtractor')
-    def test_validate_installation_success(self, mock_extractor_class, installer, temp_project):
+    @patch('analog_hub.core.installer.ChecksumCalculator')
+    def test_validate_installation_success(self, mock_checksum_class, installer, temp_project):
         """Test successful installation validation."""
         # Create sample library directory
         lib_root = temp_project / "designs" / "libs"
@@ -119,20 +119,15 @@ class TestInstallerManagement:
         lock_path = temp_project / ".analog-hub.lock"
         lock_data.to_yaml(lock_path)
         
-        # Mock extractor to return matching checksum
-        mock_extractor = Mock()
-        mock_extractor_class.return_value = mock_extractor
-        mock_extractor.validate_library.return_value = "expected_checksum"
-        
-        # Re-initialize installer to use mock
-        installer.path_extractor = mock_extractor
+        # Mock checksum calculator to return matching checksum
+        mock_checksum_class.calculate_directory_checksum.return_value = "expected_checksum"
         
         # Test validation
         valid_libs, invalid_libs = installer.validate_installation()
         result = "test_lib" in valid_libs
         
         assert result is True
-        mock_extractor.validate_library.assert_called_once_with(lib_path)
+        mock_checksum_class.calculate_directory_checksum.assert_called_once_with(lib_path)
     
     def test_validate_installation_missing_directory(self, installer, temp_project):
         """Test validation when library directory is missing."""

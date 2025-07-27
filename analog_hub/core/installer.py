@@ -188,11 +188,10 @@ class LibraryInstaller:
                     current_entry.source_path != import_spec.source_path):
                     libraries_needing_work[library_name] = import_spec
                 else:
-                    # Check if library files still exist and are valid
+                    # Check if library files still exist
                     library_path = self.project_root / current_entry.local_path
-                    metadata_path = library_path / ".analog-hub-meta.yaml" if library_path.is_dir() else library_path.parent / f".analog-hub-meta-{library_path.name}.yaml"
                     
-                    if not library_path.exists() or not metadata_path.exists():
+                    if not library_path.exists():
                         libraries_needing_work[library_name] = import_spec
                     else:
                         # Library is up-to-date, print status
@@ -322,22 +321,13 @@ class LibraryInstaller:
         
         for library_name, lock_entry in lock_file.libraries.items():
             try:
-                # Check if library still exists and validate checksum
+                # Check if library still exists
                 library_path = self.project_root / lock_entry.local_path
                 if not library_path.exists():
                     invalid_libraries.append(f"{library_name}: library directory not found")
                     continue
                 
-                # Validate metadata and checksum
-                metadata_path = library_path / ".analog-hub-meta.yaml"
-                if not metadata_path.exists():
-                    invalid_libraries.append(f"{library_name}: metadata file missing")
-                    continue
-                
-                from .extractor import LibraryMetadata
-                metadata = LibraryMetadata.from_yaml(metadata_path)
-                
-                # Verify checksum
+                # Verify checksum to detect modifications
                 current_checksum = ChecksumCalculator.calculate_directory_checksum(library_path)
                 if current_checksum != lock_entry.checksum:
                     invalid_libraries.append(f"{library_name}: checksum mismatch (modified?)")
