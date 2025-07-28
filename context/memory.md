@@ -7,9 +7,21 @@
 
 ## Recent Major Changes (Last 2-3 Sessions Only)
 
+### Three-Tier Filtering System Implementation - 2025-07-28
+- **Problem**: Need user-configurable extraction filtering for performance optimization and flexible per-use-case control
+- **Solution**: Implemented three-tier filtering: built-in defaults + global .analog-hub-ignore + per-library ignore_patterns using pathspec library
+- **Status**: Complete - Clean maintainable built-in rules, gitignore-style pattern matching, comprehensive test coverage (unit + E2E)
+- **Benefits**: Easy addition/removal of built-in rules, familiar gitignore syntax, global + per-library configuration, performance improvements
+
+### .gitignore Injection Implementation - 2025-07-28
+- **Problem**: Need automatic version control exclusion for checkin=false libraries without manual .gitignore maintenance
+- **Solution**: Implemented automatic .gitignore management with dynamic library entry addition/removal based on checkin field
+- **Status**: Complete - Full TDD implementation, comprehensive E2E test coverage, IP repository .gitignore filtering validated
+- **Benefits**: Seamless two-tier dependency management, automatic version control exclusion, clean project workspace, preserved existing .gitignore content
+
 ### Checkin Control Field Implementation - 2025-07-28
 - **Problem**: Need two-tier dependency management - stable environment dependencies vs critical design dependencies for version control
-- **Solution**: Added `checkin: bool = True` field to ImportSpec and LockEntry classes with full TDD implementation
+- **Solution**: Added `checkin: bool = True` field to ImportSpec and LockEntry classes with full TDD implementation  
 - **Status**: Complete - Config models, installer propagation, test coverage, backward compatibility validated
 - **Benefits**: Per-library version control configuration, foundation for .gitignore injection, clean supply chain management
 
@@ -100,25 +112,33 @@
 - **Timing**: Post-MVP rename after core functionality (checkin, filtering, license features) is complete and stable
 
 ## Active Issues & Next Steps
-- **Current Priority**: Implement .gitignore injection logic for checkin=false libraries
-- **Blockers**: None - checkin field implementation complete, ready for gitignore functionality
-- **Next Session Goals**: Complete .gitignore injection, start three-tier filtering system
-- **Development Focus**: Automatic version control exclusion based on checkin field
+- **Current Priority**: Implement license detection and tracking system (auto-detect LICENSE files, add license field to config/lockfile schemas)
+- **Blockers**: None - three-tier filtering system complete, ready for license compliance features
+- **Next Session Goals**: Start license detection and tracking implementation
+- **Development Focus**: License compliance and tracking for supply chain management
 - **Test Strategy**: Unit tests (mocked) → E2E tests (mock repos) → Real repository validation
-- **E2E Status**: 12 passed, 0 failed (100% pass rate) ✅ - System fully validated
+- **E2E Status**: 24 passed, 0 failed (100% pass rate) ✅ - System fully validated including gitignore injection
 - **Real Repository Status**: Successfully tested with peterkinget/gf180mcu_fd_sc_mcu9t5v0_symbols and mosbiuschip/switch_matrix_gf180mcu_9t5v0 ✅
-- **Coverage Status**: extractor.py 51% (enhanced filtering system), installer.py 76%, mirror.py 20% (needs unit tests)
+- **Coverage Status**: extractor.py 97% (three-tier filtering system), installer.py 72% (gitignore injection), mirror.py 40% (E2E coverage boost)
 
 ## Backlog & Future Enhancements
 - **Low Priority**: Advanced filtering features (regex patterns, file size limits, content-based filtering)
 - **Future**: Integration with foundry PDKs and standard cell libraries for analog design flows
 
-## Test Modules Status (All Core Tests Working - 43/43 passing)
+## Test Modules Status (All Core Tests Working - 64/64 passing)
 - **test_extractor_path_resolution.py** - ✅ 3 tests - Path resolution logic
-- **test_extractor_checksum.py** - ✅ 3 tests - Checksum calculation methods  
+- **test_extractor_checksum.py** - ✅ 7 tests - Checksum calculation methods  
 - **test_extractor_extraction.py** - ✅ 13 tests - File/directory extraction operations (comprehensive filtering: VCS + development tools)
-- **test_extractor_validation.py** - ✅ 8 tests - Library validation and management
-- **test_installer_config.py** - ✅ 6 tests - Configuration and lockfile operations
+- **test_extractor_validation.py** - ✅ 12 tests - Library validation and management
+- **test_installer_config.py** - ✅ 11 tests - Configuration and lockfile operations (includes checkin field tests)
+- **test_installer_gitignore.py** - ✅ 4 tests - .gitignore injection functionality (NEW)
 - **test_installer_single.py** - ✅ 2 tests - Single library installation
 - **test_installer_batch.py** - ✅ 4 tests - Batch installation operations
 - **test_installer_management.py** - ✅ 4 tests - Library management (validate_installation fixed)
+
+## E2E Test Modules Status (All E2E Tests Working - 24/24 passing)
+- **test_branch_updates.py** - ✅ 4 tests - Branch update detection and smart install logic
+- **test_local_modifications.py** - ✅ 4 tests - Local modification detection and checksum validation
+- **test_validation_bugs.py** - ✅ 3 tests - Bug fixes and edge cases (orphaned libraries, checksum, git filtering)
+- **test_version_pinning.py** - ✅ 4 tests - Version pinning and commit/tag tracking
+- **test_gitignore_injection.py** - ✅ 10 tests - .gitignore injection functionality (NEW)

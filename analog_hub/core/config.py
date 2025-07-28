@@ -1,7 +1,7 @@
 """Configuration models for analog-hub."""
 
 from pathlib import Path
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, List
 from pydantic import BaseModel, Field, ConfigDict
 import yaml
 
@@ -20,6 +20,10 @@ class ImportSpec(BaseModel):
     checkin: bool = Field(
         default=True,
         description="Whether to include this library in version control"
+    )
+    ignore_patterns: List[str] = Field(
+        default_factory=list,
+        description="Additional gitignore-style patterns to ignore during extraction"
     )
 
 

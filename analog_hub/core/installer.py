@@ -133,6 +133,9 @@ class LibraryInstaller:
                 checkin=import_spec.checkin
             )
             
+            # Step 4: Update .gitignore based on checkin field
+            self._update_gitignore_for_library(library_name, lock_entry)
+            
             return lock_entry
             
         except Exception as e:
@@ -460,3 +463,35 @@ class LibraryInstaller:
         self.save_lock_file(lock_file)
         
         return list(orphaned_libraries)
+    
+    def _update_gitignore_for_library(self, library_name: str, lock_entry: LockEntry) -> None:
+        """Update .gitignore file based on library's checkin setting.
+        
+        Args:
+            library_name: Name of the library
+            lock_entry: Lock entry containing checkin setting and local_path
+        """
+        gitignore_path = self.project_root / ".gitignore"
+        
+        # Prepare library entry for .gitignore (always with trailing slash for directories)
+        library_ignore_line = f"{lock_entry.local_path}/"
+        
+        # Read existing .gitignore content
+        if gitignore_path.exists():
+            gitignore_lines = gitignore_path.read_text().splitlines()
+        else:
+            gitignore_lines = []
+        
+        # Check if library is already in .gitignore
+        library_already_ignored = library_ignore_line in gitignore_lines
+        
+        if not lock_entry.checkin:
+            # Library should be ignored - add to .gitignore if not already there
+            if not library_already_ignored:
+                gitignore_lines.append(library_ignore_line)
+                gitignore_path.write_text('\n'.join(gitignore_lines) + '\n')
+        else:
+            # Library should be checked in - remove from .gitignore if present
+            if library_already_ignored:
+                gitignore_lines.remove(library_ignore_line)
+                gitignore_path.write_text('\n'.join(gitignore_lines) + '\n')
