@@ -2,10 +2,16 @@
 
 ## Current Status
 - **Project**: analog-hub - Dependency management tool for analog IC design repositories
-- **Stage**: MVP Complete, All E2E Tests Passing
-- **Last Updated**: 2025-07-27
+- **Stage**: MVP Complete, Supply Chain Management Features In Development
+- **Last Updated**: 2025-07-28
 
 ## Recent Major Changes (Last 2-3 Sessions Only)
+
+### Checkin Control Field Implementation - 2025-07-28
+- **Problem**: Need two-tier dependency management - stable environment dependencies vs critical design dependencies for version control
+- **Solution**: Added `checkin: bool = True` field to ImportSpec and LockEntry classes with full TDD implementation
+- **Status**: Complete - Config models, installer propagation, test coverage, backward compatibility validated
+- **Benefits**: Per-library version control configuration, foundation for .gitignore injection, clean supply chain management
 
 ### Enhanced Filtering System for Real Repositories - 2025-07-27
 - **Problem**: Real repository testing revealed .ipynb_checkpoints causing extraction timeouts, plus .git directory copying security issue
@@ -67,17 +73,45 @@
 - **2-tier test structure**: unit/ (fast, mocked), e2e/ (full workflows with mock repos)
 - **Technology stack**: Python + Click + GitPython + Pydantic
 
+## Recent Design Decisions - 2025-07-28
+
+### Checkin Control Strategy - Library Supply Chain Management
+- **Problem**: Need to distinguish between stable environment dependencies vs critical design dependencies for version control
+- **Solution**: Add `checkin: bool = True` field to ImportSpec, with automatic .gitignore injection for checkin=false libraries
+- **Rationale**: Two-tier dependency model - stable/battle-tested libs (don't commit) vs critical/custom IP (commit to repo)
+- **Implementation**: Per-library configuration via analog-hub.yaml, default checkin=true for safety
+
+### User-Configurable Extraction Filtering
+- **Problem**: Hardcoded ignore patterns too rigid for real repositories with large files (venv, simulation results, caches)
+- **Solution**: Three-tier filtering system using pathspec library for gitignore-style patterns
+- **Architecture**: Built-in defaults (VCS/OS) + Global .analog-hub-ignore + Per-library ignore_patterns
+- **Benefits**: Performance improvements, familiar syntax, flexible per-use-case control
+
+### License Compliance and Tracking
+- **Problem**: Need automatic license detection and compliance checking when copying/redistributing IP
+- **Solution**: Automatic license detection from source repos + manual override, with lockfile snapshots
+- **Implementation**: Add license field to ImportSpec/LockEntry, detect LICENSE files, display in install/list commands
+- **Compliance**: Warn on license changes during updates, require --allow-license-change flag for safety
+
+### Project Rename Strategy - 2025-07-28
+- **Decision**: Rename `analog-hub` → `ams-compose` for broader market positioning
+- **Rationale**: AMS (Analog/Mixed-Signal) covers entire IC ecosystem, docker-compose pattern familiar to developers
+- **Scope**: Package name, config files (analog-hub.yaml → ams-compose.yaml), CLI commands, documentation
+- **Timing**: Post-MVP rename after core functionality (checkin, filtering, license features) is complete and stable
+
 ## Active Issues & Next Steps
-- **Current Priority**: Improve test coverage for mirror.py and installer.py  
-- **Blockers**: None - all E2E tests passing, system fully stable, real repositories tested successfully
-- **Next Session Goals**: Create unit tests for mirror.py (20% coverage), improve installer.py coverage (76%), add CLI unit tests
-- **Test Strategy**: Unit tests (mocked) → E2E tests (mock repos) → Real repository validation (proven successful)
+- **Current Priority**: Implement .gitignore injection logic for checkin=false libraries
+- **Blockers**: None - checkin field implementation complete, ready for gitignore functionality
+- **Next Session Goals**: Complete .gitignore injection, start three-tier filtering system
+- **Development Focus**: Automatic version control exclusion based on checkin field
+- **Test Strategy**: Unit tests (mocked) → E2E tests (mock repos) → Real repository validation
 - **E2E Status**: 12 passed, 0 failed (100% pass rate) ✅ - System fully validated
 - **Real Repository Status**: Successfully tested with peterkinget/gf180mcu_fd_sc_mcu9t5v0_symbols and mosbiuschip/switch_matrix_gf180mcu_9t5v0 ✅
 - **Coverage Status**: extractor.py 51% (enhanced filtering system), installer.py 76%, mirror.py 20% (needs unit tests)
 
 ## Backlog & Future Enhancements
-- **Low Priority**: .gitignore integration for user-configurable filtering using pathspec library
+- **Low Priority**: Advanced filtering features (regex patterns, file size limits, content-based filtering)
+- **Future**: Integration with foundry PDKs and standard cell libraries for analog design flows
 
 ## Test Modules Status (All Core Tests Working - 43/43 passing)
 - **test_extractor_path_resolution.py** - ✅ 3 tests - Path resolution logic

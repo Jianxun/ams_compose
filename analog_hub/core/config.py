@@ -17,6 +17,10 @@ class ImportSpec(BaseModel):
         None, 
         description="Local path override (defaults to {library-root}/{import_key}). If specified, overrides library-root completely."
     )
+    checkin: bool = Field(
+        default=True,
+        description="Whether to include this library in version control"
+    )
 
 
 class LockEntry(BaseModel):
@@ -33,6 +37,7 @@ class LockEntry(BaseModel):
     updated_at: str = Field(..., description="Last update timestamp")
     last_validated: Optional[str] = Field(default=None, description="Last validation timestamp")
     validation_status: str = Field(default="unknown", description="Validation status: valid/modified/missing/unknown")
+    checkin: bool = Field(default=True, description="Whether library is included in version control")
 
 
 class AnalogHubConfig(BaseModel):

@@ -1,7 +1,7 @@
 # Current Sprint: Test Coverage Improvement
 
 ## Sprint Goal
-Improve test coverage for core modules after achieving 100% E2E test pass rate.
+Implement supply chain management features: checkin control, automatic .gitignore injection, and flexible filtering system.
 
 ## Test Status Summary 📊
 - **E2E Tests**: 12 passed, 0 failed (100% pass rate) ✅✅✅
@@ -9,13 +9,19 @@ Improve test coverage for core modules after achieving 100% E2E test pass rate.
 - **System Status**: Fully stable, all workflows validated ✅
 
 ## In Progress  
-- No active tasks
+- [ ] **Add .gitignore Injection Logic** - Automatically exclude checkin=false libraries from version control (TDD: failing tests written, implementing functionality)
 
-## Priority 1 (HIGH) - Test Coverage Improvement
+## Priority 1 (HIGH) - Feature Development: Supply Chain Management
+- [x] **Implement Checkin Control Field** - Add `checkin: bool = True` to ImportSpec and LockEntry classes ✅
+- [ ] **Implement Three-Tier Filtering System** - Built-in defaults + Global .analog-hub-ignore + Per-library patterns using pathspec library
+- [ ] **Implement License Detection and Tracking** - Auto-detect LICENSE files, add license field to config/lockfile schemas
+- [ ] **Add License Compliance Display** - Show license status in install/list commands, warn on license changes during updates
+
+## Priority 2 (MEDIUM) - Test Coverage Improvement
 - [ ] **Create mirror.py Unit Tests** - Currently 20% coverage, needs dedicated unit test module
 - [ ] **Improve installer.py Test Coverage** - Currently 76%, test new remote update logic and timestamp handling
 
-## Priority 2 (MEDIUM) - Test Coverage Improvement  
+## Priority 3 (MEDIUM) - Test Coverage Improvement  
 - [ ] **Add CLI Unit Tests** - Create unit tests for install, update, list, validate, clean commands
 - [ ] **Improve CLI Test Coverage** - Focus on CLI main.py (currently 0%)
 
@@ -24,7 +30,17 @@ Improve test coverage for core modules after achieving 100% E2E test pass rate.
 - [ ] **CLI Feature Development** - Enhance existing commands or add new functionality
 
 ## Backlog (LOW PRIORITY) - Future Enhancements
-- [ ] **Gitignore Integration Enhancement** - Use local .gitignore patterns for user-configurable filtering with pathspec library
+- [ ] **Project Rename: analog-hub → ams-compose** - Comprehensive rename after core features complete (package, config files, CLI, docs)
+- [ ] **Advanced Filtering Features** - Regex patterns, file size limits, content-based filtering for large repositories
+
+## Current Session Progress ✅
+- [x] **Checkin Control Field Implementation** - Added `checkin: bool = True` to ImportSpec and LockEntry classes
+  - [x] Added checkin field to ImportSpec with default=True for backward compatibility
+  - [x] Added checkin field to LockEntry with default=True
+  - [x] Updated installer.install_library() to propagate checkin field from ImportSpec to LockEntry
+  - [x] Implemented comprehensive test coverage (5 new tests) following TDD practices
+  - [x] Validated backward compatibility with existing analog-hub.yaml configuration
+  - [x] Started .gitignore injection logic (failing tests written)
 
 ## Completed This Sprint ✅
 - [x] **🛡️ CRITICAL: Enhanced Filtering System for Real Repositories** - Comprehensive filtering prevents extraction issues
