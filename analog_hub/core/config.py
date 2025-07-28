@@ -25,6 +25,10 @@ class ImportSpec(BaseModel):
         default_factory=list,
         description="Additional gitignore-style patterns to ignore during extraction"
     )
+    license: Optional[str] = Field(
+        default=None,
+        description="Override for library license (auto-detected if not specified)"
+    )
 
 
 class LockEntry(BaseModel):
@@ -42,6 +46,8 @@ class LockEntry(BaseModel):
     last_validated: Optional[str] = Field(default=None, description="Last validation timestamp")
     validation_status: str = Field(default="unknown", description="Validation status: valid/modified/missing/unknown")
     checkin: bool = Field(default=True, description="Whether library is included in version control")
+    license: Optional[str] = Field(default=None, description="Library license (user-specified or auto-detected)")
+    detected_license: Optional[str] = Field(default=None, description="Auto-detected license from repository")
 
 
 class AnalogHubConfig(BaseModel):

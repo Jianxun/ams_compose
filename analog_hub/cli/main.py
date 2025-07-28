@@ -112,10 +112,21 @@ def list_libraries(detailed: bool):
                 click.echo(f"  Reference:  {lock_entry.ref}")
                 click.echo(f"  Commit:     {lock_entry.commit}")
                 click.echo(f"  Path:       {lock_entry.local_path}")
+                click.echo(f"  License:    {lock_entry.license or 'Not detected'}")
+                if lock_entry.detected_license and lock_entry.license != lock_entry.detected_license:
+                    click.echo(f"  Auto-detected: {lock_entry.detected_license}")
                 click.echo(f"  Installed:  {lock_entry.installed_at}")
+                
+                # Show license compatibility warning
+                from analog_hub.utils.license import LicenseDetector
+                license_detector = LicenseDetector()
+                warning = license_detector.get_license_compatibility_warning(lock_entry.license)
+                if warning:
+                    click.echo(f"  ⚠️  WARNING: {warning}")
                 click.echo()
             else:
-                click.echo(f"  {library_name:<20} {lock_entry.commit[:8]} ({lock_entry.ref})")
+                license_display = lock_entry.license or "None"
+                click.echo(f"  {library_name:<20} {lock_entry.commit[:8]} ({lock_entry.ref}) [{license_display}]")
                 
     except InstallationError as e:
         _handle_installation_error(e)
