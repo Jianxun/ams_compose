@@ -291,11 +291,18 @@ build/
         installed_libs = self.installer.install_all()
         assert "test_library" in installed_libs
         
-        # Check that existing content is preserved and new entry is added
+        # Check that existing content is preserved (main .gitignore unchanged)
         final_content = self._read_gitignore()
         assert "*.log" in final_content           # Existing content preserved
         assert "build/" in final_content          # Existing content preserved
-        assert "libs/test_library/" in final_content  # New entry added
+        # Note: With new per-library .gitignore approach, main .gitignore is not modified
+        
+        # Check that library-specific .gitignore was created instead
+        library_gitignore = self.project_root / "libs" / "test_library" / ".gitignore"
+        assert library_gitignore.exists()
+        library_content = library_gitignore.read_text()
+        assert "checkin: false" in library_content
+        assert "!.gitignore" in library_content  # Self-referential
     
     def test_checkin_setting_change_from_false_to_true(self):
         """Test changing checkin from false to true removes library-specific .gitignore."""
@@ -385,9 +392,11 @@ build/
         installed_libs = self.installer.install_all(force=True)
         assert "switchable_lib" in installed_libs
         
-        # Verify library is added to .gitignore
-        final_gitignore = self._read_gitignore()
-        assert "libs/switchable_lib/" in final_gitignore
+        # Verify library-specific .gitignore was created (new per-library approach)
+        library_gitignore = self.project_root / "libs" / "switchable_lib" / ".gitignore"
+        assert library_gitignore.exists()
+        library_content = library_gitignore.read_text()
+        assert "checkin: false" in library_content
     
     def test_gitignore_creation_when_none_exists(self):
         """Test that .gitignore file is created when it doesn't exist."""

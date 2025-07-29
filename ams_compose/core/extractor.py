@@ -4,11 +4,15 @@ import shutil
 from pathlib import Path
 from typing import Optional, Dict, Callable, Set, List
 from dataclasses import dataclass
+from datetime import datetime, timezone
 
 import pathspec
+import yaml
 
 from .config import ImportSpec
 from ..utils.checksum import ChecksumCalculator
+from ..utils.license import LicenseDetector
+from .. import __version__
 
 
 @dataclass
@@ -61,6 +65,7 @@ class PathExtractor:
             project_root: Root directory of the project (default: current directory)
         """
         self.project_root = Path(project_root).resolve()
+        self.license_detector = LicenseDetector()
     
     @classmethod
     def get_builtin_ignore_patterns(cls) -> Set[str]:
@@ -97,7 +102,8 @@ class PathExtractor:
     def _create_ignore_function(
         self, 
         custom_ignore_hook: Optional[Callable[[str, Set[str]], Set[str]]] = None,
-        library_ignore_patterns: Optional[List[str]] = None
+        library_ignore_patterns: Optional[List[str]] = None,
+        preserve_license_files: bool = False
     ) -> Callable[[str, list], list]:
         """Create ignore function for shutil.copytree with three-tier filtering.
         
@@ -106,9 +112,12 @@ class PathExtractor:
         2. Global .ams-compose-ignore patterns (gitignore-style)
         3. Per-library ignore_patterns (gitignore-style)
         
+        Special handling: LICENSE files are preserved when preserve_license_files=True
+        
         Args:
             library_ignore_patterns: Library-specific ignore patterns
             custom_ignore_hook: Optional function for additional custom ignores
+            preserve_license_files: If True, always preserve LICENSE files regardless of patterns
         
         Returns:
             Function compatible with shutil.copytree ignore parameter
@@ -133,6 +142,13 @@ class PathExtractor:
         def ignore_function(directory: str, filenames: list) -> list:
             ignored = set()
             filenames_set = set(filenames)
+            
+            # Identify LICENSE files if preservation is enabled
+            license_files = set()
+            if preserve_license_files:
+                for filename in filenames:
+                    if filename in self.license_detector.LICENSE_FILENAMES:
+                        license_files.add(filename)
             
             # Tier 1: Apply built-in ignore patterns (exact filename matches)
             builtin_ignores = self.get_builtin_ignore_patterns()
@@ -167,9 +183,66 @@ class PathExtractor:
                 additional_ignores = custom_ignore_hook(directory, filenames_set)
                 ignored.update(additional_ignores)
             
+            # Override: Never ignore LICENSE files when preservation is enabled
+            if preserve_license_files:
+                ignored -= license_files
+            
             return list(ignored)
         
         return ignore_function
+    
+    def _generate_provenance_metadata(
+        self,
+        library_name: str,
+        import_spec: ImportSpec,
+        mirror_path: Path,
+        resolved_commit: str,
+        local_path: Path
+    ) -> None:
+        """Generate provenance metadata file for checkin=true libraries.
+        
+        Args:
+            library_name: Name of the library
+            import_spec: Import specification
+            mirror_path: Path to the mirror directory
+            resolved_commit: Resolved commit hash
+            local_path: Local installation path
+        """
+        # Only generate provenance for libraries that will be checked in
+        if not import_spec.checkin:
+            return
+        
+        # Detect license information from mirror
+        license_info = self.license_detector.detect_license(mirror_path)
+        
+        # Create provenance metadata
+        provenance = {
+            'ams_compose_version': __version__,
+            'extraction_timestamp': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+            'library_name': library_name,
+            'source': {
+                'repository': import_spec.repo,
+                'reference': import_spec.ref,
+                'commit': resolved_commit,
+                'source_path': import_spec.source_path
+            },
+            'license': {
+                'type': license_info.license_type,
+                'file': license_info.license_file,
+                'snippet': license_info.content_snippet
+            },
+            'compliance_notes': [
+                'This library was extracted from the source repository listed above.',
+                'License information is auto-detected and may require manual verification.',
+                'Original LICENSE file (if found) has been preserved in this directory.',
+                'For IP compliance questions, refer to the original repository.'
+            ]
+        }
+        
+        # Write provenance file
+        provenance_file = local_path / '.ams-compose-provenance.yaml'
+        with open(provenance_file, 'w') as f:
+            yaml.dump(provenance, f, default_flow_style=False, sort_keys=False)
     
     
     def _resolve_local_path(self, library_name: str, import_spec: ImportSpec, library_root: str) -> Path:
@@ -244,8 +317,10 @@ class PathExtractor:
             # Copy source to destination
             if source_full_path.is_dir():
                 # Create ignore function with three-tier filtering
+                # Preserve LICENSE files for libraries that will be checked in
                 ignore_func = self._create_ignore_function(
-                    library_ignore_patterns=import_spec.ignore_patterns
+                    library_ignore_patterns=import_spec.ignore_patterns,
+                    preserve_license_files=import_spec.checkin
                 )
                 
                 shutil.copytree(
@@ -260,7 +335,13 @@ class PathExtractor:
                 # Single file - copy to parent directory with same name
                 shutil.copy2(source_full_path, local_path)
             
-            # Calculate checksum of extracted content
+            # Generate provenance metadata for checkin=true libraries  
+            if local_path.is_dir():
+                self._generate_provenance_metadata(
+                    library_name, import_spec, mirror_path, resolved_commit, local_path
+                )
+            
+            # Calculate checksum of extracted content (after provenance generation)
             if local_path.is_dir():
                 checksum = ChecksumCalculator.calculate_directory_checksum(local_path)
             else:
