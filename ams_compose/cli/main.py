@@ -35,10 +35,10 @@ def _auto_generate_gitignore() -> None:
         # Add mirror entry
         if not content.endswith('\n'):
             content += '\n'
-        content += f"\n# analog-hub mirrors\n{mirror_entry}\n"
+        content += f"\n# ams-compose mirrors\n{mirror_entry}\n"
     else:
         # Create new .gitignore
-        content = f"# analog-hub mirrors\n{mirror_entry}\n"
+        content = f"# ams-compose mirrors\n{mirror_entry}\n"
     
     gitignore_path.write_text(content)
     click.echo(f"Added '{mirror_entry}' to .gitignore")
@@ -47,7 +47,7 @@ def _auto_generate_gitignore() -> None:
 @click.group()
 @click.version_option(version=__version__)
 def main():
-    """analog-hub: Dependency management for analog IC design repositories."""
+    """ams-compose: Dependency management for analog IC design repositories."""
     pass
 
 
@@ -58,7 +58,7 @@ def main():
 @click.option('--force', is_flag=True, default=False,
               help='Force reinstall all libraries (ignore up-to-date check)')
 def install(libraries: tuple, auto_gitignore: bool, force: bool):
-    """Install libraries from analog-hub.yaml.
+    """Install libraries from ams-compose.yaml.
     
     LIBRARIES: Optional list of specific libraries to install.
                If not provided, installs all libraries from configuration.
@@ -76,7 +76,7 @@ def install(libraries: tuple, auto_gitignore: bool, force: bool):
         if library_list:
             click.echo(f"Installing libraries: {', '.join(library_list)}")
         else:
-            click.echo("Installing all libraries from analog-hub.yaml")
+            click.echo("Installing all libraries from ams-compose.yaml")
         
         installed = installer.install_all(library_list, force=force)
         
@@ -134,7 +134,7 @@ def list_libraries(detailed: bool):
 
 @main.command()
 def validate():
-    """Validate analog-hub.yaml configuration and installation state."""
+    """Validate ams-compose.yaml configuration and installation state."""
     try:
         installer = _get_installer()
         
@@ -165,14 +165,14 @@ def validate():
 @click.option('--library-root', default='designs/libs', 
               help='Default directory for library installations (default: libs)')
 @click.option('--force', is_flag=True, 
-              help='Overwrite existing analog-hub.yaml file')
+              help='Overwrite existing ams-compose.yaml file')
 def init(library_root: str, force: bool):
     """Initialize a new analog-hub project.
     
-    Creates an analog-hub.yaml configuration file and sets up the project
+    Creates an ams-compose.yaml configuration file and sets up the project
     directory structure for analog IC design dependency management.
     """
-    config_path = Path.cwd() / "analog-hub.yaml"
+    config_path = Path.cwd() / "ams-compose.yaml"
     
     # Check if config already exists
     if config_path.exists() and not force:

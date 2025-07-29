@@ -37,11 +37,11 @@ class LibraryInstaller:
         self.license_detector = LicenseDetector()
         
         # Configuration paths
-        self.config_path = self.project_root / "analog-hub.yaml"
-        self.lock_path = self.project_root / ".analog-hub.lock"
+        self.config_path = self.project_root / "ams-compose.yaml"
+        self.lock_path = self.project_root / ".ams-compose.lock"
     
     def load_config(self) -> AnalogHubConfig:
-        """Load analog-hub.yaml configuration."""
+        """Load ams-compose.yaml configuration."""
         if not self.config_path.exists():
             raise InstallationError(f"Configuration file not found: {self.config_path}")
         
@@ -375,7 +375,7 @@ class LibraryInstaller:
     def validate_installation(self) -> Tuple[List[str], List[str]]:
         """Validate current installation state.
         
-        Only validates libraries currently defined in analog-hub.yaml config.
+        Only validates libraries currently defined in ams-compose.yaml config.
         Libraries in lockfile but not in config are considered orphaned and warned about.
         
         Returns:
@@ -398,7 +398,7 @@ class LibraryInstaller:
         if orphaned_libraries:
             invalid_libraries.append(f"WARNING: Found {len(orphaned_libraries)} orphaned libraries in lockfile but not in config:")
             for orphaned_lib in sorted(orphaned_libraries):
-                invalid_libraries.append(f"  {orphaned_lib}: no longer defined in analog-hub.yaml")
+                invalid_libraries.append(f"  {orphaned_lib}: no longer defined in ams-compose.yaml")
             invalid_libraries.append("  To fix: Run 'analog-hub clean' to remove orphaned libraries from lockfile")
         
         # Only validate libraries that exist in current config

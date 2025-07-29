@@ -51,7 +51,7 @@ class LockEntry(BaseModel):
 
 
 class AnalogHubConfig(BaseModel):
-    """Main configuration model for analog-hub.yaml."""
+    """Main configuration model for ams-compose.yaml."""
     model_config = ConfigDict(extra="allow")
     
     library_root: str = Field(

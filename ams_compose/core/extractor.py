@@ -52,7 +52,7 @@ class PathExtractor:
     }
     
     # Global ignore file name
-    GLOBAL_IGNORE_FILE = '.analog-hub-ignore'
+    GLOBAL_IGNORE_FILE = '.ams-compose-ignore'
     
     def __init__(self, project_root: Path = Path(".")):
         """Initialize path extractor.
@@ -72,7 +72,7 @@ class PathExtractor:
         return cls.VCS_IGNORE_PATTERNS | cls.DEV_TOOL_IGNORE_PATTERNS | cls.OS_IGNORE_PATTERNS
     
     def _load_global_ignore_patterns(self) -> List[str]:
-        """Load global ignore patterns from .analog-hub-ignore file.
+        """Load global ignore patterns from .ams-compose-ignore file.
         
         Returns:
             List of ignore patterns from global ignore file
@@ -103,7 +103,7 @@ class PathExtractor:
         
         Three-tier filtering system:
         1. Built-in defaults (VCS, development tools, OS files)
-        2. Global .analog-hub-ignore patterns (gitignore-style)
+        2. Global .ams-compose-ignore patterns (gitignore-style)
         3. Per-library ignore_patterns (gitignore-style)
         
         Args:

@@ -1,5 +1,5 @@
-# analog-hub configuration file
-# For more information, see: https://github.com/Jianxun/analog-hub
+# ams-compose configuration file
+# For more information, see: https://github.com/Jianxun/ams-compose
 
 # Default directory where libraries will be installed
 library-root: designs/libs
