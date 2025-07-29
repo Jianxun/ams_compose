@@ -1,4 +1,4 @@
-"""Checksum calculation utilities for analog-hub.
+"""Checksum calculation utilities for ams-compose.
 
 This module provides centralized checksum operations for:
 - Directory content validation
@@ -34,7 +34,7 @@ class ChecksumCalculator:
         for file_path in files:
             if file_path.is_file():
                 # Skip metadata files when calculating checksum
-                if file_path.name.startswith(".analog-hub-meta"):
+                if file_path.name.startswith(".ams-compose-meta"):
                     continue
                 
                 # Include relative path in hash for structure validation

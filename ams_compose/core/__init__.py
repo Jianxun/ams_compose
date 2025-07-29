@@ -1,1 +1,1 @@
-"""Core business logic for analog-hub."""
+"""Core business logic for ams-compose."""

@@ -1,4 +1,4 @@
-"""Main CLI entry point for analog-hub."""
+"""Main CLI entry point for ams-compose."""
 
 import sys
 from pathlib import Path
@@ -167,7 +167,7 @@ def validate():
 @click.option('--force', is_flag=True, 
               help='Overwrite existing ams-compose.yaml file')
 def init(library_root: str, force: bool):
-    """Initialize a new analog-hub project.
+    """Initialize a new ams-compose project.
     
     Creates an ams-compose.yaml configuration file and sets up the project
     directory structure for analog IC design dependency management.
@@ -186,8 +186,8 @@ def init(library_root: str, force: bool):
         click.echo(f"Created directory: {library_root}/")
     
     # Generate template configuration
-    template_config = f"""# analog-hub configuration file
-# For more information, see: https://github.com/Jianxun/analog-hub
+    template_config = f"""# ams-compose configuration file
+# For more information, see: https://github.com/Jianxun/ams-compose
 
 # Default directory where libraries will be installed
 library-root: {library_root}
@@ -206,14 +206,14 @@ imports:
 # 2. Specify the git repository URL
 # 3. Set the reference (branch/tag/commit)  
 # 4. Define the source path within the repository
-# 5. Run 'analog-hub install' to fetch the library
+# 5. Run 'ams-compose install' to fetch the library
 #
 # Example commands:
-#   analog-hub install           # Install missing libraries, update outdated ones
-#   analog-hub install my_lib    # Install/update specific library  
-#   analog-hub install --force   # Force reinstall all libraries
-#   analog-hub list             # List installed libraries
-#   analog-hub validate         # Validate configuration
+#   ams-compose install           # Install missing libraries, update outdated ones
+#   ams-compose install my_lib    # Install/update specific library  
+#   ams-compose install --force   # Force reinstall all libraries
+#   ams-compose list             # List installed libraries
+#   ams-compose validate         # Validate configuration
 """
     
     # Write configuration file
@@ -222,8 +222,8 @@ imports:
     # Auto-generate .gitignore
     _auto_generate_gitignore()
     
-    click.echo(f"Initialized analog-hub project in {Path.cwd()}")
-    click.echo(f"Edit {config_path.name} to add library dependencies, then run 'analog-hub install'")
+    click.echo(f"Initialized ams-compose project in {Path.cwd()}")
+    click.echo(f"Edit {config_path.name} to add library dependencies, then run 'ams-compose install'")
 
 
 @main.command()

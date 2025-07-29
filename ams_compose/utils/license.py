@@ -1,4 +1,4 @@
-"""License detection utilities for analog-hub."""
+"""License detection utilities for ams-compose."""
 
 import re
 from pathlib import Path

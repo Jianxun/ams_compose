@@ -1,1 +1,1 @@
-"""CLI interface for analog-hub."""
+"""CLI interface for ams-compose."""

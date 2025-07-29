@@ -1,4 +1,4 @@
-"""Configuration models for analog-hub."""
+"""Configuration models for ams-compose."""
 
 from pathlib import Path
 from typing import Dict, Optional, Any, List
@@ -39,7 +39,7 @@ class LockEntry(BaseModel):
     ref: str = Field(..., description="Original git reference")
     commit: str = Field(..., description="Resolved commit hash")
     source_path: str = Field(..., description="Source path in repository")
-    local_path: str = Field(..., description="Local path under analog-hub-root")
+    local_path: str = Field(..., description="Local path under ams-compose-root")
     checksum: str = Field(..., description="Content checksum for validation")
     installed_at: str = Field(..., description="Installation timestamp")
     updated_at: str = Field(..., description="Last update timestamp")

@@ -1,4 +1,4 @@
-"""Path extraction operations for analog-hub."""
+"""Path extraction operations for ams-compose."""
 
 import shutil
 from pathlib import Path

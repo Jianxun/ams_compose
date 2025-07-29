@@ -1,4 +1,4 @@
-"""Repository mirroring operations for analog-hub."""
+"""Repository mirroring operations for ams-compose."""
 
 import shutil
 import tempfile

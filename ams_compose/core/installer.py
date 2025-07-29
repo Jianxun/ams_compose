@@ -1,4 +1,4 @@
-"""Installation orchestration for analog-hub."""
+"""Installation orchestration for ams-compose."""
 
 from datetime import datetime
 from pathlib import Path
@@ -399,7 +399,7 @@ class LibraryInstaller:
             invalid_libraries.append(f"WARNING: Found {len(orphaned_libraries)} orphaned libraries in lockfile but not in config:")
             for orphaned_lib in sorted(orphaned_libraries):
                 invalid_libraries.append(f"  {orphaned_lib}: no longer defined in ams-compose.yaml")
-            invalid_libraries.append("  To fix: Run 'analog-hub clean' to remove orphaned libraries from lockfile")
+            invalid_libraries.append("  To fix: Run 'ams-compose clean' to remove orphaned libraries from lockfile")
         
         # Only validate libraries that exist in current config
         for library_name in current_library_names:
