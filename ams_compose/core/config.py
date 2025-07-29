@@ -8,7 +8,7 @@ import yaml
 
 class ImportSpec(BaseModel):
     """Specification for an imported library."""
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="forbid")
     
     repo: str = Field(..., description="Git repository URL")
     ref: str = Field(..., description="Git reference (branch, tag, or commit)")
@@ -33,7 +33,7 @@ class ImportSpec(BaseModel):
 
 class LockEntry(BaseModel):
     """Lock file entry for tracking installed libraries."""
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="forbid")
     
     repo: str = Field(..., description="Repository URL")
     ref: str = Field(..., description="Original git reference")
@@ -52,7 +52,7 @@ class LockEntry(BaseModel):
 
 class AnalogHubConfig(BaseModel):
     """Main configuration model for ams-compose.yaml."""
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="forbid")
     
     library_root: str = Field(
         default="libs", 
@@ -80,7 +80,7 @@ class AnalogHubConfig(BaseModel):
 
 class LockFile(BaseModel):
     """Lock file model for tracking installed state."""
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="forbid")
     
     version: str = Field(default="1", description="Lock file format version")
     library_root: str = Field(..., description="Default root directory for libraries")

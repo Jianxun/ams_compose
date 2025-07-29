@@ -20,11 +20,17 @@ Designed for open source IC toolchains, specifically the IIC-OSIC-TOOLS Docker c
 
 ## Installation
 
-Currently in development. Install from source:
+Install directly from GitHub:
 
 ```bash
-git clone https://github.com/Jianxun/ams-compose.git
-cd ams-compose
+pip install git+https://github.com/Jianxun/ams_compose.git
+```
+
+Or install from source for development:
+
+```bash
+git clone https://github.com/Jianxun/ams_compose.git
+cd ams_compose
 pip install -e .
 ```
 
