@@ -5,8 +5,8 @@ import shutil
 from pathlib import Path
 from unittest.mock import patch
 
-from analog_hub.core.extractor import PathExtractor
-from analog_hub.utils.checksum import ChecksumCalculator
+from ams_compose.core.extractor import PathExtractor
+from ams_compose.utils.checksum import ChecksumCalculator
 
 
 class TestChecksumOperations:

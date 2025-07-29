@@ -29,9 +29,15 @@ imports:
     ref: main                    
     source_path: .
     #local_path: designs/libs/gf180mcu_fd_sc_mcu9t5v0_symbols
+    chekin: false
 
   switch_matrix_gf180mcu_9t5v0:
     repo: https://github.com/mosbiuschip/switch_matrix_gf180mcu_9t5v0
     ref: main
     source_path: .
     license: N/A
+
+  tgate:
+    repo: https://github.com/JorgeMarinN/SSCS-Chipathon-2025_AC3E-Chile-team
+    ref: main
+    source_path: xschem

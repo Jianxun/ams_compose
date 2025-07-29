@@ -5,9 +5,9 @@ from pathlib import Path
 from typing import Optional, List
 
 import click
-from analog_hub import __version__
-from analog_hub.core.installer import LibraryInstaller, InstallationError
-from analog_hub.core.config import AnalogHubConfig
+from ams_compose import __version__
+from ams_compose.core.installer import LibraryInstaller, InstallationError
+from ams_compose.core.config import AnalogHubConfig
 
 
 def _get_installer() -> LibraryInstaller:
@@ -118,7 +118,7 @@ def list_libraries(detailed: bool):
                 click.echo(f"  Installed:  {lock_entry.installed_at}")
                 
                 # Show license compatibility warning
-                from analog_hub.utils.license import LicenseDetector
+                from ams_compose.utils.license import LicenseDetector
                 license_detector = LicenseDetector()
                 warning = license_detector.get_license_compatibility_warning(lock_entry.license)
                 if warning:

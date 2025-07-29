@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 from tempfile import TemporaryDirectory
 
-from analog_hub.utils.license import LicenseDetector, LicenseInfo
+from ams_compose.utils.license import LicenseDetector, LicenseInfo
 
 
 class TestLicenseDetector:

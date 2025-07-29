@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from analog_hub.core.extractor import PathExtractor
-from analog_hub.core.config import ImportSpec
+from ams_compose.core.extractor import PathExtractor
+from ams_compose.core.config import ImportSpec
 
 
 class TestPathResolution:

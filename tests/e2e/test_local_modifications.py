@@ -14,8 +14,8 @@ import os
 import pytest
 import git
 
-from analog_hub.core.installer import LibraryInstaller
-from analog_hub.core.config import AnalogHubConfig
+from ams_compose.core.installer import LibraryInstaller
+from ams_compose.core.config import AnalogHubConfig
 
 
 class TestLocalModificationDetection:

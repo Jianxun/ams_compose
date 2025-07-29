@@ -7,9 +7,9 @@ from unittest.mock import patch
 
 import pytest
 
-from analog_hub.core.extractor import PathExtractor, ExtractionState
-from analog_hub.core.config import ImportSpec
-from analog_hub.utils.checksum import ChecksumCalculator
+from ams_compose.core.extractor import PathExtractor, ExtractionState
+from ams_compose.core.config import ImportSpec
+from ams_compose.utils.checksum import ChecksumCalculator
 
 
 class TestExtractionOperations:

@@ -4,7 +4,7 @@ import pytest
 from pathlib import Path
 from click.testing import CliRunner
 
-from analog_hub.cli.main import main
+from ams_compose.cli.main import main
 
 
 class TestInitCommand:

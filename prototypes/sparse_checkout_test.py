@@ -14,7 +14,7 @@ from pathlib import Path
 import sys
 import os
 
-# Add parent directory to path to import analog_hub modules if needed
+# Add parent directory to path to import ams_compose modules if needed
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 def sparse_checkout_library(repo_url: str, ref: str, source_path: str, dest_path: str):

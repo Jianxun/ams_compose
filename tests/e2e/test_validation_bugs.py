@@ -12,7 +12,7 @@ from typing import Dict, Any
 
 import git
 
-from analog_hub.core.installer import LibraryInstaller
+from ams_compose.core.installer import LibraryInstaller
 
 
 class TestValidationBugs:

@@ -6,8 +6,8 @@ import shutil
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from analog_hub.core.installer import LibraryInstaller
-from analog_hub.core.config import AnalogHubConfig, LockFile, LockEntry
+from ams_compose.core.installer import LibraryInstaller
+from ams_compose.core.config import AnalogHubConfig, LockFile, LockEntry
 
 
 class TestInstallerManagement:

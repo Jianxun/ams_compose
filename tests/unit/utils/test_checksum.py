@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from analog_hub.utils.checksum import ChecksumCalculator
+from ams_compose.utils.checksum import ChecksumCalculator
 
 
 class TestChecksumCalculator:

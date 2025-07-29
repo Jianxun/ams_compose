@@ -6,10 +6,10 @@ import shutil
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from analog_hub.core.installer import LibraryInstaller, InstallationError
-from analog_hub.core.config import AnalogHubConfig, ImportSpec, LockEntry
-from analog_hub.core.extractor import ExtractionState
-from analog_hub.core.mirror import MirrorState
+from ams_compose.core.installer import LibraryInstaller, InstallationError
+from ams_compose.core.config import AnalogHubConfig, ImportSpec, LockEntry
+from ams_compose.core.extractor import ExtractionState
+from ams_compose.core.mirror import MirrorState
 
 
 class TestSingleLibraryInstaller:
