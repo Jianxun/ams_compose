@@ -29,7 +29,7 @@ imports:
     ref: main                    
     source_path: .
     #local_path: designs/libs/gf180mcu_fd_sc_mcu9t5v0_symbols
-    chekin: false
+    checkin: false
 
   switch_matrix_gf180mcu_9t5v0:
     repo: https://github.com/mosbiuschip/switch_matrix_gf180mcu_9t5v0

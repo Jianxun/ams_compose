@@ -29,12 +29,14 @@ class TestInstallerGitignore:
         )
     
     def test_update_gitignore_for_checkin_false_library(self, installer, temp_project):
-        """Test gitignore injection for checkin=false library."""
-        # This test will fail until we implement the functionality
-        gitignore_path = temp_project / ".gitignore"
+        """Test that checkin=false library gets its own .gitignore file."""
+        # Create library directory
+        library_path = temp_project / "designs/libs/test_lib"
+        library_path.mkdir(parents=True)
         
-        # Create initial .gitignore with some content
-        gitignore_path.write_text("# existing content\n*.log\n")
+        # Create main project .gitignore with some content (should remain unchanged)
+        main_gitignore_path = temp_project / ".gitignore"
+        main_gitignore_path.write_text("# existing content\n*.log\n")
         
         # Create library with checkin=false
         lock_entry = LockEntry(
@@ -49,20 +51,32 @@ class TestInstallerGitignore:
             checkin=False
         )
         
-        # Call method that should update .gitignore (to be implemented)
+        # Call method that should create library-specific .gitignore
         installer._update_gitignore_for_library("test_lib", lock_entry)
         
-        # Assert library path is in .gitignore
-        gitignore_content = gitignore_path.read_text()
-        assert "designs/libs/test_lib/" in gitignore_content
-        assert "*.log" in gitignore_content  # Existing content preserved
+        # Assert library-specific .gitignore is created with enhanced content
+        library_gitignore_path = library_path / ".gitignore"
+        assert library_gitignore_path.exists()
+        gitignore_content = library_gitignore_path.read_text()
+        assert "# Library: test_lib (checkin: false)" in gitignore_content
+        assert "# This library is not checked into version control" in gitignore_content
+        assert "# Run 'ams-compose install' to download this library" in gitignore_content
+        assert "*\n!.gitignore" in gitignore_content
+        
+        # Assert main .gitignore is unchanged
+        main_gitignore_content = main_gitignore_path.read_text()
+        assert "designs/libs/test_lib/" not in main_gitignore_content
+        assert "*.log" in main_gitignore_content  # Existing content preserved
     
     def test_update_gitignore_for_checkin_true_library(self, installer, temp_project):
-        """Test that checkin=true libraries are NOT added to .gitignore."""
-        gitignore_path = temp_project / ".gitignore"
+        """Test that checkin=true libraries do NOT get their own .gitignore file."""
+        # Create library directory
+        library_path = temp_project / "designs/libs/test_lib"
+        library_path.mkdir(parents=True)
         
-        # Create initial .gitignore
-        gitignore_path.write_text("# existing content\n*.log\n")
+        # Create main project .gitignore (should remain unchanged)
+        main_gitignore_path = temp_project / ".gitignore"
+        main_gitignore_path.write_text("# existing content\n*.log\n")
         
         # Create library with checkin=true (default)
         lock_entry = LockEntry(
@@ -77,20 +91,27 @@ class TestInstallerGitignore:
             checkin=True
         )
         
-        # Call method that should NOT update .gitignore
+        # Call method that should NOT create library-specific .gitignore
         installer._update_gitignore_for_library("test_lib", lock_entry)
         
-        # Assert library path is NOT in .gitignore
-        gitignore_content = gitignore_path.read_text()
-        assert "designs/libs/test_lib/" not in gitignore_content
-        assert "*.log" in gitignore_content  # Existing content preserved
-    
-    def test_create_new_gitignore_for_checkin_false_library(self, installer, temp_project):
-        """Test creating new .gitignore when none exists."""
-        gitignore_path = temp_project / ".gitignore"
+        # Assert library-specific .gitignore is NOT created
+        library_gitignore_path = library_path / ".gitignore"
+        assert not library_gitignore_path.exists()
         
-        # Ensure no .gitignore exists
-        assert not gitignore_path.exists()
+        # Assert main .gitignore is unchanged
+        main_gitignore_content = main_gitignore_path.read_text()
+        assert "designs/libs/test_lib/" not in main_gitignore_content
+        assert "*.log" in main_gitignore_content  # Existing content preserved
+    
+    def test_create_library_gitignore_when_library_directory_exists(self, installer, temp_project):
+        """Test creating library-specific .gitignore when library directory exists."""
+        # Create library directory
+        library_path = temp_project / "designs/libs/test_lib"
+        library_path.mkdir(parents=True)
+        
+        # Ensure no main .gitignore exists (should not be created)
+        main_gitignore_path = temp_project / ".gitignore"
+        assert not main_gitignore_path.exists()
         
         # Create library with checkin=false
         lock_entry = LockEntry(
@@ -105,24 +126,30 @@ class TestInstallerGitignore:
             checkin=False
         )
         
-        # Call method that should create .gitignore
+        # Call method that should create library-specific .gitignore
         installer._update_gitignore_for_library("test_lib", lock_entry)
         
-        # Assert .gitignore was created with library path
-        assert gitignore_path.exists()
-        gitignore_content = gitignore_path.read_text()
-        assert "designs/libs/test_lib/" in gitignore_content
-    
-    def test_remove_library_from_gitignore_when_checkin_changes_to_true(self, installer, temp_project):
-        """Test removing library from .gitignore when checkin changes from false to true."""
-        gitignore_path = temp_project / ".gitignore"
+        # Assert library-specific .gitignore was created with enhanced content
+        library_gitignore_path = library_path / ".gitignore"
+        assert library_gitignore_path.exists()
+        gitignore_content = library_gitignore_path.read_text()
+        assert "# Library: test_lib (checkin: false)" in gitignore_content
+        assert "*\n!.gitignore" in gitignore_content
         
-        # Create .gitignore with library already ignored
-        gitignore_path.write_text("""# ams-compose libraries
-*.log
-designs/libs/test_lib/
-designs/libs/other_lib/
-""")
+        # Assert main .gitignore was NOT created
+        assert not main_gitignore_path.exists()
+    
+    def test_remove_library_gitignore_when_checkin_changes_to_true(self, installer, temp_project):
+        """Test removing library-specific .gitignore when checkin changes from false to true."""
+        # Create library directory with existing .gitignore
+        library_path = temp_project / "designs/libs/test_lib"
+        library_path.mkdir(parents=True)
+        library_gitignore_path = library_path / ".gitignore"
+        library_gitignore_path.write_text("# Library: test_lib (checkin: false)\n*\n!.gitignore\n")
+        
+        # Create main .gitignore (should remain unchanged)
+        main_gitignore_path = temp_project / ".gitignore"
+        main_gitignore_path.write_text("# ams-compose libraries\n*.log\n")
         
         # Create library with checkin=true (was previously false)
         lock_entry = LockEntry(
@@ -137,11 +164,13 @@ designs/libs/other_lib/
             checkin=True
         )
         
-        # Call method that should remove library from .gitignore
+        # Call method that should remove library-specific .gitignore
         installer._update_gitignore_for_library("test_lib", lock_entry)
         
-        # Assert library path is removed but other content preserved
-        gitignore_content = gitignore_path.read_text()
-        assert "designs/libs/test_lib/" not in gitignore_content
-        assert "designs/libs/other_lib/" in gitignore_content  # Other ignored libs preserved
-        assert "*.log" in gitignore_content  # Existing content preserved
+        # Assert library-specific .gitignore is removed
+        assert not library_gitignore_path.exists()
+        
+        # Assert main .gitignore is unchanged
+        main_gitignore_content = main_gitignore_path.read_text()
+        assert "*.log" in main_gitignore_content  # Existing content preserved
+        assert "designs/libs/test_lib/" not in main_gitignore_content  # Library was never in main .gitignore

@@ -84,7 +84,7 @@ build/
         
         # Create configuration without library-specific patterns
         config = AnalogHubConfig(
-            library_root="libs",
+            **{"library-root": "libs"},
             imports={
                 "test_lib": ImportSpec(
                     repo=str(self.mock_repo),
@@ -150,7 +150,7 @@ build/
         """Test filtering with library-specific ignore patterns."""
         # Create configuration with library-specific patterns
         config = AnalogHubConfig(
-            library_root="libs",
+            **{"library-root": "libs"},
             imports={
                 "test_lib": ImportSpec(
                     repo=str(self.mock_repo),
@@ -226,7 +226,7 @@ build/
         
         # Create configuration with library-specific patterns
         config = AnalogHubConfig(
-            library_root="libs",
+            **{"library-root": "libs"},
             imports={
                 "test_lib": ImportSpec(
                     repo=str(self.mock_repo),
@@ -278,7 +278,7 @@ build/
         """Test graceful handling of empty or missing pattern configurations."""
         # No global ignore file, no library patterns
         config = AnalogHubConfig(
-            library_root="libs",
+            **{"library-root": "libs"},
             imports={
                 "test_lib": ImportSpec(
                     repo=str(self.mock_repo),

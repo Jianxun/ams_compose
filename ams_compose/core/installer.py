@@ -492,33 +492,32 @@ class LibraryInstaller:
         return list(orphaned_libraries)
     
     def _update_gitignore_for_library(self, library_name: str, lock_entry: LockEntry) -> None:
-        """Update .gitignore file based on library's checkin setting.
+        """Update library-specific .gitignore file based on library's checkin setting.
+        
+        Creates individual .gitignore files inside each library directory that has checkin=false,
+        containing '*' to ignore all files in that directory. This keeps the main project
+        .gitignore clean and avoids conflicts with user modifications.
         
         Args:
             library_name: Name of the library
             lock_entry: Lock entry containing checkin setting and local_path
         """
-        gitignore_path = self.project_root / ".gitignore"
-        
-        # Prepare library entry for .gitignore (always with trailing slash for directories)
-        library_ignore_line = f"{lock_entry.local_path}/"
-        
-        # Read existing .gitignore content
-        if gitignore_path.exists():
-            gitignore_lines = gitignore_path.read_text().splitlines()
-        else:
-            gitignore_lines = []
-        
-        # Check if library is already in .gitignore
-        library_already_ignored = library_ignore_line in gitignore_lines
+        library_path = self.project_root / lock_entry.local_path
+        library_gitignore_path = library_path / ".gitignore"
         
         if not lock_entry.checkin:
-            # Library should be ignored - add to .gitignore if not already there
-            if not library_already_ignored:
-                gitignore_lines.append(library_ignore_line)
-                gitignore_path.write_text('\n'.join(gitignore_lines) + '\n')
+            # Library should be ignored - create .gitignore inside library directory
+            if library_path.exists():
+                # Create .gitignore that ignores all files but keeps itself tracked
+                # This makes the directory visible in git while ignoring library content
+                gitignore_content = f"""# Library: {library_name} (checkin: false)
+# This library is not checked into version control
+# Run 'ams-compose install' to download this library
+*
+!.gitignore
+"""
+                library_gitignore_path.write_text(gitignore_content)
         else:
-            # Library should be checked in - remove from .gitignore if present
-            if library_already_ignored:
-                gitignore_lines.remove(library_ignore_line)
-                gitignore_path.write_text('\n'.join(gitignore_lines) + '\n')
+            # Library should be checked in - remove library-specific .gitignore if it exists
+            if library_gitignore_path.exists():
+                library_gitignore_path.unlink()
