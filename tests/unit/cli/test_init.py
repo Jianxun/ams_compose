@@ -8,7 +8,7 @@ from ams_compose.cli.main import main
 
 
 class TestInitCommand:
-    """Test cases for the analog-hub init command."""
+    """Test cases for the ams-compose init command."""
     
     def test_init_creates_config_and_directory(self, tmp_path):
         """Test that init creates config file and library directory."""
@@ -25,7 +25,7 @@ class TestInitCommand:
             assert result.exit_code == 0
             
             # Check config file was created
-            config_file = tmp_path / "analog-hub.yaml"
+            config_file = tmp_path / "ams-compose.yaml"
             assert config_file.exists()
             
             # Check default library directory was created
@@ -59,7 +59,7 @@ class TestInitCommand:
             assert custom_dir.is_dir()
             
             # Check config contains custom library-root
-            config_file = tmp_path / "analog-hub.yaml"
+            config_file = tmp_path / "ams-compose.yaml"
             config_content = config_file.read_text()
             assert "library-root: custom/libs" in config_content
             
@@ -78,7 +78,7 @@ class TestInitCommand:
             
             assert result.exit_code == 0
             
-            config_file = tmp_path / "analog-hub.yaml"
+            config_file = tmp_path / "ams-compose.yaml"
             content = config_file.read_text()
             
             # Check required sections are present
@@ -94,14 +94,14 @@ class TestInitCommand:
             os.chdir(original_cwd)
     
     def test_init_fails_if_config_exists(self, tmp_path):
-        """Test that init fails if analog-hub.yaml already exists."""
+        """Test that init fails if ams-compose.yaml already exists."""
         original_cwd = Path.cwd()
         try:
             import os
             os.chdir(tmp_path)
             
             # Create existing config file
-            config_file = tmp_path / "analog-hub.yaml"
+            config_file = tmp_path / "ams-compose.yaml"
             config_file.write_text("existing config")
             
             runner = CliRunner()
@@ -126,7 +126,7 @@ class TestInitCommand:
             os.chdir(tmp_path)
             
             # Create existing config file
-            config_file = tmp_path / "analog-hub.yaml"
+            config_file = tmp_path / "ams-compose.yaml"
             config_file.write_text("existing config")
             
             runner = CliRunner()
@@ -134,7 +134,7 @@ class TestInitCommand:
             
             # Should succeed
             assert result.exit_code == 0
-            assert "Initialized analog-hub project" in result.output
+            assert "Initialized ams-compose project" in result.output
             
             # Config should be overwritten
             content = config_file.read_text()
@@ -181,13 +181,11 @@ class TestInitCommand:
             assert result.exit_code == 0
             
             output = result.output
-            assert "✓ Initialized analog-hub project" in output
-            assert "Created analog-hub.yaml" in output
-            assert "Created designs/libs/ directory" in output
-            assert "Updated .gitignore" in output
-            assert "Next steps:" in output
-            assert "Edit analog-hub.yaml to add your library dependencies" in output
-            assert "Run 'analog-hub install' to fetch libraries" in output
+            assert "Initialized ams-compose project" in output
+            assert "Created directory: designs/libs/" in output
+            assert "Added '.mirror/' to .gitignore" in output
+            assert "Edit ams-compose.yaml to add library dependencies" in output
+            assert "run 'ams-compose install'" in output
             
         finally:
             os.chdir(original_cwd)
@@ -213,7 +211,7 @@ class TestInitCommand:
             assert "*.pyc" in content  # Original content preserved
             assert "__pycache__/" in content
             assert ".mirror/" in content  # New content added
-            assert "# analog-hub mirrors" in content
+            assert "# ams-compose mirrors" in content
             
         finally:
             os.chdir(original_cwd)

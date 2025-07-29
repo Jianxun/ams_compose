@@ -32,7 +32,7 @@ class TestSingleLibraryInstaller:
     
     @pytest.fixture
     def sample_config(self, temp_project):
-        """Create sample analog-hub.yaml configuration."""
+        """Create sample ams-compose.yaml configuration."""
         config = AnalogHubConfig()
         config.library_root = "designs/libs"
         config.imports = {
@@ -44,14 +44,14 @@ class TestSingleLibraryInstaller:
         }
         
         # Save config to file
-        config_path = temp_project / "analog-hub.yaml"
+        config_path = temp_project / "ams-compose.yaml"
         config.to_yaml(config_path)
         
         return config
     
-    @patch('analog_hub.core.installer.ChecksumCalculator')
-    @patch('analog_hub.core.installer.RepositoryMirror')
-    @patch('analog_hub.core.installer.PathExtractor')
+    @patch('ams_compose.core.installer.ChecksumCalculator')
+    @patch('ams_compose.core.installer.RepositoryMirror')
+    @patch('ams_compose.core.installer.PathExtractor')
     def test_install_library_success(self, mock_extractor_class, mock_mirror_class, mock_checksum_class, installer, sample_config):
         """Test successful single library installation."""
         # Mock ChecksumCalculator
@@ -109,7 +109,7 @@ class TestSingleLibraryInstaller:
         assert lock_entry.installed_at is not None
         assert lock_entry.updated_at is not None
     
-    @patch('analog_hub.core.installer.RepositoryMirror')
+    @patch('ams_compose.core.installer.RepositoryMirror')
     def test_install_library_mirror_failure(self, mock_mirror_class, installer, sample_config):
         """Test library installation when mirror operation fails."""
         # Mock mirror manager to raise exception

@@ -1,6 +1,6 @@
 """End-to-end tests for branch update detection scenarios.
 
-Tests Use Case 1: Source repo branch updated → analog-hub install should update library
+Tests Use Case 1: Source repo branch updated → ams-compose install should update library
 """
 
 import tempfile
@@ -95,7 +95,7 @@ class TestBranchUpdateDetection:
         return commit.hexsha
     
     def _create_analog_config(self, imports_config: Dict[str, Any]) -> None:
-        """Create analog-hub.yaml configuration file.
+        """Create ams-compose.yaml configuration file.
         
         Args:
             imports_config: Dictionary of import specifications
@@ -105,7 +105,7 @@ class TestBranchUpdateDetection:
             'imports': imports_config
         }
         
-        config_path = self.project_root / "analog-hub.yaml"
+        config_path = self.project_root / "ams-compose.yaml"
         with open(config_path, 'w') as f:
             yaml.dump(config_data, f, default_flow_style=False)
     

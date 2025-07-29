@@ -29,7 +29,7 @@ class TestInstallerConfig:
     
     @pytest.fixture
     def sample_config(self, temp_project):
-        """Create sample analog-hub.yaml configuration."""
+        """Create sample ams-compose.yaml configuration."""
         config = AnalogHubConfig()
         config.library_root = "designs/libs"
         config.imports = {
@@ -47,7 +47,7 @@ class TestInstallerConfig:
         }
         
         # Save config to file
-        config_path = temp_project / "analog-hub.yaml"
+        config_path = temp_project / "ams-compose.yaml"
         config.to_yaml(config_path)
         
         return config
@@ -67,7 +67,7 @@ class TestInstallerConfig:
     
     def test_load_config_invalid_yaml(self, installer, temp_project):
         """Test loading invalid YAML config."""
-        config_path = temp_project / "analog-hub.yaml"
+        config_path = temp_project / "ams-compose.yaml"
         config_path.write_text("invalid: yaml: content: [")
         
         with pytest.raises(InstallationError, match="Failed to load configuration"):
@@ -99,7 +99,7 @@ class TestInstallerConfig:
             }
         )
         
-        lock_path = temp_project / ".analog-hub.lock"
+        lock_path = temp_project / ".ams-compose.lock"
         lock_data.to_yaml(lock_path)
         
         # Create minimal config
@@ -135,7 +135,7 @@ class TestInstallerConfig:
         installer.save_lock_file(lock_data)
         
         # Verify file was created
-        lock_path = temp_project / ".analog-hub.lock"
+        lock_path = temp_project / ".ams-compose.lock"
         assert lock_path.exists()
         
         # Verify content can be loaded back
@@ -198,7 +198,7 @@ class TestInstallerConfig:
         }
         
         # Save and reload config
-        config_path = temp_project / "analog-hub.yaml"
+        config_path = temp_project / "ams-compose.yaml"
         config.to_yaml(config_path)
         
         loaded_config = AnalogHubConfig.from_yaml(config_path)
@@ -221,7 +221,7 @@ class TestInstallerConfig:
             )
         }
         
-        config_path = temp_project / "analog-hub.yaml"
+        config_path = temp_project / "ams-compose.yaml"
         config.to_yaml(config_path)
         
         # Mock the mirror manager and path extractor to avoid actual git operations

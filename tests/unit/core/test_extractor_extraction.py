@@ -322,7 +322,7 @@ class TestExtractionOperations:
         )
         
         # Mock ChecksumCalculator to raise an exception after successful copy
-        with patch('analog_hub.core.extractor.ChecksumCalculator.calculate_directory_checksum') as mock_checksum:
+        with patch('ams_compose.core.extractor.ChecksumCalculator.calculate_directory_checksum') as mock_checksum:
             mock_checksum.side_effect = OSError("Checksum calculation failed")
             
             # Verify extraction fails

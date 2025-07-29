@@ -118,7 +118,7 @@ class TestInstallerGitignore:
         gitignore_path = temp_project / ".gitignore"
         
         # Create .gitignore with library already ignored
-        gitignore_path.write_text("""# analog-hub libraries
+        gitignore_path.write_text("""# ams-compose libraries
 *.log
 designs/libs/test_lib/
 designs/libs/other_lib/

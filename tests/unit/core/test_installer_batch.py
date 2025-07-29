@@ -30,7 +30,7 @@ class TestBatchInstaller:
     
     @pytest.fixture
     def sample_config(self, temp_project):
-        """Create sample analog-hub.yaml configuration."""
+        """Create sample ams-compose.yaml configuration."""
         config = AnalogHubConfig()
         config.library_root = "designs/libs"
         config.imports = {
@@ -48,12 +48,12 @@ class TestBatchInstaller:
         }
         
         # Save config to file
-        config_path = temp_project / "analog-hub.yaml"
+        config_path = temp_project / "ams-compose.yaml"
         config.to_yaml(config_path)
         
         return config
     
-    @patch('analog_hub.core.installer.LibraryInstaller.install_library')
+    @patch('ams_compose.core.installer.LibraryInstaller.install_library')
     def test_install_all_success(self, mock_install_library, installer, sample_config):
         """Test successful installation of all libraries."""
         # Mock successful installations
@@ -96,7 +96,7 @@ class TestBatchInstaller:
         assert result["another_lib"].repo == "https://github.com/example/another-repo"
         assert result["another_lib"].local_path == "custom/path"
     
-    @patch('analog_hub.core.installer.LibraryInstaller.install_library')
+    @patch('ams_compose.core.installer.LibraryInstaller.install_library')
     def test_install_all_specific_libraries(self, mock_install_library, installer, sample_config):
         """Test installation of specific libraries only."""
         # Mock successful installation
@@ -127,7 +127,7 @@ class TestBatchInstaller:
         with pytest.raises(InstallationError, match=r"Libraries not found in configuration: \{'nonexistent'\}"):
             installer.install_all(library_names=["nonexistent"])
     
-    @patch('analog_hub.core.installer.LibraryInstaller.install_library')
+    @patch('ams_compose.core.installer.LibraryInstaller.install_library')
     def test_install_all_partial_failure(self, mock_install_library, installer, sample_config):
         """Test installation when some libraries fail."""
         # Mock mixed success/failure

@@ -67,7 +67,7 @@ class TestValidationBugs:
         return repo_path
     
     def _create_config_file(self, config_data: Dict[str, Any]) -> Path:
-        """Create analog-hub.yaml configuration file.
+        """Create ams-compose.yaml configuration file.
         
         Args:
             config_data: Configuration data to write
@@ -75,7 +75,7 @@ class TestValidationBugs:
         Returns:
             Path to created config file
         """
-        config_path = self.project_root / "analog-hub.yaml"
+        config_path = self.project_root / "ams-compose.yaml"
         with open(config_path, 'w') as f:
             yaml.dump(config_data, f)
         return config_path
@@ -164,8 +164,8 @@ class TestValidationBugs:
         lib_b_mentioned_in_warning = any('lib_b' in msg for msg in invalid_libraries)
         assert lib_b_mentioned_in_warning, "lib_b should be mentioned in orphaned warning"
         
-        fix_suggestion_found = any('analog-hub clean' in msg for msg in invalid_libraries) 
-        assert fix_suggestion_found, "Should suggest running 'analog-hub clean' to fix"
+        fix_suggestion_found = any('ams-compose clean' in msg for msg in invalid_libraries) 
+        assert fix_suggestion_found, "Should suggest running 'ams-compose clean' to fix"
 
     def test_file_vs_directory_checksum_bug(self):
         """Test Fix 2: Validation uses correct checksum method for files and directories.

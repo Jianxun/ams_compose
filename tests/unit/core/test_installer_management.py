@@ -69,7 +69,7 @@ class TestInstallerManagement:
             }
         )
         
-        lock_path = temp_project / ".analog-hub.lock"
+        lock_path = temp_project / ".ams-compose.lock"
         lock_data.to_yaml(lock_path)
         
         # Test listing
@@ -89,7 +89,7 @@ class TestInstallerManagement:
         assert lib2_info.repo == "https://github.com/example/repo2"
         assert lib2_info.ref == "v1.0"
     
-    @patch('analog_hub.core.installer.ChecksumCalculator')
+    @patch('ams_compose.core.installer.ChecksumCalculator')
     def test_validate_installation_success(self, mock_checksum_class, installer, temp_project):
         """Test successful installation validation."""
         # Create sample library directory
@@ -116,11 +116,11 @@ class TestInstallerManagement:
             }
         )
         
-        lock_path = temp_project / ".analog-hub.lock"
+        lock_path = temp_project / ".ams-compose.lock"
         lock_data.to_yaml(lock_path)
         
         # Create matching config file with the library
-        config_path = temp_project / "analog-hub.yaml"
+        config_path = temp_project / "ams-compose.yaml"
         config_content = """library_root: designs/libs
 imports:
   test_lib:
@@ -158,11 +158,11 @@ imports:
             }
         )
         
-        lock_path = temp_project / ".analog-hub.lock"
+        lock_path = temp_project / ".ams-compose.lock"
         lock_data.to_yaml(lock_path)
         
         # Create matching config file with the library
-        config_path = temp_project / "analog-hub.yaml"
+        config_path = temp_project / "ams-compose.yaml"
         config_content = """library_root: designs/libs
 imports:
   missing_lib:
@@ -178,7 +178,7 @@ imports:
         
         assert result is False
     
-    @patch('analog_hub.core.installer.RepositoryMirror')
+    @patch('ams_compose.core.installer.RepositoryMirror')
     def test_clean_unused_mirrors(self, mock_mirror_class, installer, temp_project):
         """Test cleaning unused mirror directories."""
         # Create lockfile with one entry
@@ -198,7 +198,7 @@ imports:
             }
         )
         
-        lock_path = temp_project / ".analog-hub.lock"
+        lock_path = temp_project / ".ams-compose.lock"
         lock_data.to_yaml(lock_path)
         
         # Mock mirror manager
