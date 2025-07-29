@@ -1,6 +1,6 @@
-# Analog-Hub Development Guidelines
+# AMS-Compose Development Guidelines
 
-Test-driven development guidelines for the analog-hub dependency management tool, designed for multi-session continuity and consistent development practices.
+Test-driven development guidelines for the ams-compose dependency management tool, designed for multi-session continuity and consistent development practices.
 
 ## Development Workflow
 
@@ -17,8 +17,8 @@ Test-driven development guidelines for the analog-hub dependency management tool
 - **Refactor**: Improve code while maintaining test coverage
 - Run full test suite after each change
 
-### 3. Analog-Hub Specific Practices
-- **Module Structure**: Follow `analog_hub/core/`, `analog_hub/cli/`, `analog_hub/utils/` organization
+### 3. AMS-Compose Specific Practices
+- **Module Structure**: Follow `ams_compose/core/`, `ams_compose/cli/`, `ams_compose/utils/` organization
 - **Configuration**: Use Pydantic models for YAML validation
 - **Git Operations**: Use GitPython for repository operations
 - **CLI Commands**: Use Click framework with descriptive help text
@@ -43,7 +43,7 @@ tests/
 │   ├── test_update.py      # CLI update command
 │   └── test_list.py        # CLI list command
 └── fixtures/
-    ├── sample_configs/     # Test analog-hub.yaml files
+    ├── sample_configs/     # Test ams-compose.yaml files
     └── mock_repos/         # Test repository structures
 ```
 
@@ -51,7 +51,7 @@ tests/
 - Use pytest with descriptive test names: `test_install_extracts_correct_library_path`
 - Mock git operations in unit tests, use real repos in integration tests
 - Test both success and failure scenarios for git operations
-- Validate generated `.analog-hub-meta.yaml` files in tests
+- Validate generated `.ams-compose-meta.yaml` files in tests
 - Test configuration validation with invalid YAML structures
 
 ## Code Quality Standards
@@ -62,7 +62,7 @@ tests/
 - Document classes and functions with Google-style docstrings
 - Import organization: standard library, third-party, local modules
 
-### Analog-Hub Conventions
+### AMS-Compose Conventions
 - Use descriptive variable names reflecting analog design context
 - Error messages should be helpful for analog IC designers
 - Log git operations at appropriate levels (debug for verbose, info for user actions)
@@ -213,4 +213,4 @@ tests/
 - Validate checksums for library integrity
 - Clean up temporary directories properly
 
-Remember: The analog-hub tool serves analog IC designers who may not be git experts. Prioritize clear error messages and reliable operations over performance optimizations.
+Remember: The ams-compose tool serves analog IC designers who may not be git experts. Prioritize clear error messages and reliable operations over performance optimizations.

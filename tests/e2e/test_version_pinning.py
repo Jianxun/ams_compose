@@ -13,8 +13,8 @@ from typing import Dict, Any
 import pytest
 import git
 
-from analog_hub.core.installer import LibraryInstaller
-from analog_hub.core.config import AnalogHubConfig
+from ams_compose.core.installer import LibraryInstaller
+from ams_compose.core.config import AnalogHubConfig
 
 
 class TestVersionPinning:
@@ -95,7 +95,7 @@ class TestVersionPinning:
         return commit.hexsha
     
     def _create_analog_config(self, imports_config: Dict[str, Any]) -> None:
-        """Create analog-hub.yaml configuration file.
+        """Create ams-compose.yaml configuration file.
         
         Args:
             imports_config: Dictionary of import specifications
@@ -105,7 +105,7 @@ class TestVersionPinning:
             'imports': imports_config
         }
         
-        config_path = self.project_root / "analog-hub.yaml"
+        config_path = self.project_root / "ams-compose.yaml"
         with open(config_path, 'w') as f:
             yaml.dump(config_data, f, default_flow_style=False)
     

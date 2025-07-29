@@ -5,8 +5,8 @@ import shutil
 from pathlib import Path
 from unittest.mock import patch
 
-from analog_hub.core.extractor import PathExtractor
-from analog_hub.core.config import ImportSpec
+from ams_compose.core.extractor import PathExtractor
+from ams_compose.core.config import ImportSpec
 
 
 class TestValidationOperations:
@@ -223,7 +223,7 @@ class TestValidationOperations:
         (lib_path / "file.txt").write_text("content")
         
         # Mock ChecksumCalculator to raise exception
-        with patch('analog_hub.core.extractor.ChecksumCalculator.calculate_directory_checksum') as mock_calc:
+        with patch('ams_compose.core.extractor.ChecksumCalculator.calculate_directory_checksum') as mock_calc:
             mock_calc.side_effect = OSError("Permission denied")
             
             checksum = self.extractor.validate_library(lib_path)
@@ -237,7 +237,7 @@ class TestValidationOperations:
         lib_path.write_text("spice content")
         
         # Mock ChecksumCalculator to raise exception
-        with patch('analog_hub.core.extractor.ChecksumCalculator.calculate_file_checksum') as mock_calc:
+        with patch('ams_compose.core.extractor.ChecksumCalculator.calculate_file_checksum') as mock_calc:
             mock_calc.side_effect = OSError("Permission denied")
             
             checksum = self.extractor.validate_library(lib_path)

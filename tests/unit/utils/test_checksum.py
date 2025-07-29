@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from analog_hub.utils.checksum import ChecksumCalculator
+from ams_compose.utils.checksum import ChecksumCalculator
 
 
 class TestChecksumCalculator:
@@ -92,14 +92,14 @@ class TestChecksumCalculator:
         checksum1 = ChecksumCalculator.calculate_directory_checksum(self.test_lib_dir)
         
         # Add metadata file
-        (self.test_lib_dir / ".analog-hub-meta.yaml").write_text("metadata: test")
+        (self.test_lib_dir / ".ams-compose-meta.yaml").write_text("metadata: test")
         checksum2 = ChecksumCalculator.calculate_directory_checksum(self.test_lib_dir)
         
         # Checksum should be the same
         assert checksum1 == checksum2
         
         # Add another metadata file variant
-        (self.test_lib_dir / ".analog-hub-meta-test.yaml").write_text("metadata: test2")
+        (self.test_lib_dir / ".ams-compose-meta-test.yaml").write_text("metadata: test2")
         checksum3 = ChecksumCalculator.calculate_directory_checksum(self.test_lib_dir)
         
         assert checksum1 == checksum3

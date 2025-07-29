@@ -3,11 +3,11 @@ requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "analog-hub"
+name = "ams-compose"
 version = "0.0.0"
-description = "Dependency management tool for analog IC design repositories"
+description = "Dependency management tool for analog/mixed-signal IC design repositories"
 authors = [
-    {name = "analog-hub contributors"}
+    {name = "ams-compose contributors"}
 ]
 readme = "README.md"
 license = {text = "MIT"}
@@ -27,7 +27,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: System :: Software Distribution",
 ]
-keywords = ["analog", "ic", "design", "dependency", "management", "eda"]
+keywords = ["analog", "mixed-signal", "ams", "ic", "design", "dependency", "management", "eda"]
 
 dependencies = [
     "GitPython>=3.1.40",
@@ -54,15 +54,15 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Jianxun/analog-hub"
-Repository = "https://github.com/Jianxun/analog-hub"
-Issues = "https://github.com/Jianxun/analog-hub/issues"
+Homepage = "https://github.com/Jianxun/ams-compose"
+Repository = "https://github.com/Jianxun/ams-compose"
+Issues = "https://github.com/Jianxun/ams-compose/issues"
 
 [project.scripts]
-analog-hub = "analog_hub.cli.main:main"
+ams-compose = "ams_compose.cli.main:main"
 
 [tool.setuptools.packages.find]
-include = ["analog_hub*"]
+include = ["ams_compose*"]
 
 [tool.black]
 line-length = 88
@@ -81,7 +81,7 @@ disallow_untyped_defs = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
-addopts = "--cov=analog_hub --cov-report=term-missing"
+addopts = "--cov=ams_compose --cov-report=term-missing"
 
 [tool.sphinx]
 source-dir = "docs"

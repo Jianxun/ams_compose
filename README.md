@@ -1,10 +1,10 @@
-# analog-hub
+# ams-compose
 
 Dependency management tool for analog IC design repositories that enables selective import of IP libraries without copying entire repository structures.
 
 ## Overview
 
-analog-hub solves the problem of fragmented analog IP libraries by allowing selective import of specific libraries from repositories without copying unwanted boilerplate code.
+ams-compose solves the problem of fragmented analog IP libraries by allowing selective import of specific libraries from repositories without copying unwanted boilerplate code.
 
 ### Key Features
 
@@ -23,8 +23,8 @@ Designed for open source IC toolchains, specifically the IIC-OSIC-TOOLS Docker c
 Currently in development. Install from source:
 
 ```bash
-git clone https://github.com/Jianxun/analog-hub.git
-cd analog-hub
+git clone https://github.com/Jianxun/ams-compose.git
+cd ams-compose
 pip install -e .
 ```
 
@@ -33,10 +33,10 @@ pip install -e .
 1. Initialize a new project:
 
 ```bash
-analog-hub init
+ams-compose init
 ```
 
-2. Edit the generated `analog-hub.yaml` configuration file:
+2. Edit the generated `ams-compose.yaml` configuration file:
 
 ```yaml
 # Default directory where libraries will be installed
@@ -59,23 +59,23 @@ imports:
 3. Install libraries:
 
 ```bash
-analog-hub install
+ams-compose install
 ```
 
 ## Commands
 
-- `analog-hub init` - Initialize a new analog-hub project
-- `analog-hub install [LIBRARIES...]` - Install libraries from analog-hub.yaml
+- `ams-compose init` - Initialize a new ams-compose project
+- `ams-compose install [LIBRARIES...]` - Install libraries from ams-compose.yaml
   - `--force` - Force reinstall all libraries (ignore up-to-date check)
   - `--auto-gitignore` - Automatically add .mirror/ to .gitignore (default: enabled)
-- `analog-hub list` - List installed libraries
+- `ams-compose list` - List installed libraries
   - `--detailed` - Show detailed library information
-- `analog-hub validate` - Validate analog-hub.yaml configuration and installation state
-- `analog-hub clean` - Clean unused mirrors, orphaned libraries, and validate installation
+- `ams-compose validate` - Validate ams-compose.yaml configuration and installation state
+- `ams-compose clean` - Clean unused mirrors, orphaned libraries, and validate installation
 
 ## Configuration
 
-The `analog-hub.yaml` file supports the following structure:
+The `ams-compose.yaml` file supports the following structure:
 
 ```yaml
 library-root: designs/libs  # Default installation directory

@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from analog_hub.core.extractor import PathExtractor
-from analog_hub.core.config import ImportSpec
+from ams_compose.core.extractor import PathExtractor
+from ams_compose.core.config import ImportSpec
 
 
 class TestThreeTierFiltering:
@@ -65,7 +65,7 @@ class TestThreeTierFiltering:
     
     def test_load_global_ignore_patterns_with_file(self):
         """Test loading global ignore patterns from file."""
-        # Create .analog-hub-ignore file
+        # Create .ams-compose-ignore file
         ignore_file = self.project_root / self.extractor.GLOBAL_IGNORE_FILE
         ignore_content = """# Global ignore patterns
 *.log
@@ -107,7 +107,7 @@ build/
         assert 'normal_file.txt' not in ignored
     
     def test_tier2_global_ignore_patterns(self):
-        """Test tier 2 global .analog-hub-ignore patterns."""
+        """Test tier 2 global .ams-compose-ignore patterns."""
         # Create global ignore file
         ignore_file = self.project_root / self.extractor.GLOBAL_IGNORE_FILE
         ignore_file.write_text("*.log\n*.tmp\nbuild/\n")

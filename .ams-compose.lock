@@ -1,0 +1,65 @@
+version: '1'
+library_root: designs/libs
+libraries:
+  designinit:
+    repo: https://github.com/Jianxun/iic-osic-tools-project-template
+    ref: main
+    commit: f9750b160fc0413076514db22a3133bec0bba039
+    source_path: designs/.designinit
+    local_path: designs/.designinit
+    checksum: 6dd12e47ef481c9a73ae99c08cbdc50187732e9fd93dc99cc601d6f96574c16c
+    installed_at: '2025-07-26T23:13:02.200380'
+    updated_at: '2025-07-28T01:52:18.659729'
+    validation_status: unknown
+    checkin: true
+    license: MIT
+    detected_license: MIT
+  scripts:
+    repo: https://github.com/Jianxun/iic-osic-tools-project-template
+    ref: main
+    commit: f9750b160fc0413076514db22a3133bec0bba039
+    source_path: designs/scripts
+    local_path: designs/scripts
+    checksum: 5f53de1eecfce0b3a85ce10ad47952913e9a38a607f37d2445bde0de50029844
+    installed_at: '2025-07-26T23:13:02.677481'
+    updated_at: '2025-07-28T01:52:18.863816'
+    validation_status: unknown
+    checkin: true
+    license: MIT
+    detected_license: MIT
+  gf180mcu_fd_sc_mcu9t5v0_symbols:
+    repo: https://github.com/peterkinget/gf180mcu_fd_sc_mcu9t5v0_symbols
+    ref: main
+    commit: f2f0712700c7cafae42022a3da764e179b33c94c
+    source_path: .
+    local_path: designs/libs/gf180mcu_fd_sc_mcu9t5v0_symbols
+    checksum: 4078153c63397b3894877c453947317dfc9c18e3e3a63a2d4747b6f8dd536c5e
+    installed_at: '2025-07-27T09:04:59.581598'
+    updated_at: '2025-07-28T01:52:19.241862'
+    validation_status: unknown
+    checkin: true
+  switch_matrix_gf180mcu_9t5v0:
+    repo: https://github.com/mosbiuschip/switch_matrix_gf180mcu_9t5v0
+    ref: main
+    commit: 0a7e1150f8accd444ffb7e6ab7bebeff61687b01
+    source_path: .
+    local_path: designs/libs/switch_matrix_gf180mcu_9t5v0
+    checksum: 36bfc1fed995aa802bceaaeb53cabf9635df29a92111aaf4c912a2c5e4f0d95d
+    installed_at: '2025-07-27T09:05:32.135934'
+    updated_at: '2025-07-28T01:52:19.763122'
+    validation_status: unknown
+    checkin: true
+    license: N/A
+  tgate:
+    repo: https://github.com/JorgeMarinN/SSCS-Chipathon-2025_AC3E-Chile-team
+    ref: main
+    commit: cf06f65be41ecaecd3c8072082ee8bb83bf407c2
+    source_path: xschem
+    local_path: designs/libs/tgate
+    checksum: bbdbf5881fc9e3656b8e860c64a8c546bc8b07f661f05264970a439c75f93f59
+    installed_at: '2025-07-28T01:50:58.282773'
+    updated_at: '2025-07-28T01:52:20.001894'
+    validation_status: unknown
+    checkin: true
+    license: Apache-2.0
+    detected_license: Apache-2.0

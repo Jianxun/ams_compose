@@ -1,40 +1,52 @@
-# Current Sprint: Supply Chain Management Features
+# Current Sprint: Project Rename (analog-hub → ams-compose)
 
 ## Sprint Goal
-Implement supply chain management features: checkin control ✅, automatic .gitignore injection ✅, three-tier filtering system ✅, and license compliance tracking.
+Systematic 6-phase project rename for better AMS IC market positioning. Supply chain management features complete ✅.
 
-## Test Status Summary 📊
-- **E2E Tests**: 28 passed, 0 failed (100% pass rate) ✅✅✅
-- **Core Unit Tests**: All 71/71 passing ✅ (7 new filtering tests added)
-- **System Status**: Fully stable, all workflows validated ✅
+## Test Status Summary 📊  
+- **E2E Tests**: 29 passed, 0 failed (100% pass rate) ✅✅✅
+- **Core Unit Tests**: ❌ Tests failing due to config file renames (Phase 2D in progress)
+- **System Status**: Phase 2A-2C complete, Phase 2D needed for test stability ⚠️
 
 ## In Progress  
-- [ ] **No active tasks** - Ready to start next priority item
+- [x] **Phase 1: Core Python Module Rename** - Directory and import updates ✅ COMPLETE
 
-## Priority 1 (HIGH) - Feature Development: Supply Chain Management
+## Priority 1 (HIGH) - Project Rename Phases
+
+### ✅ COMPLETE: Supply Chain Management Features
 - [x] **Implement Checkin Control Field** - Add `checkin: bool = True` to ImportSpec and LockEntry classes ✅
 - [x] **Implement .gitignore Injection Logic** - Automatically exclude checkin=false libraries from version control ✅
 - [x] **Implement Three-Tier Filtering System** - Built-in defaults + Global .analog-hub-ignore + Per-library patterns using pathspec library ✅
-- [ ] **Implement License Detection and Tracking** - Auto-detect LICENSE files, add license field to config/lockfile schemas
-- [ ] **Add License Compliance Display** - Show license status in install/list commands, warn on license changes during updates
+- [x] **Implement License Detection and Tracking** - Auto-detect LICENSE files, add license field to config/lockfile schemas ✅
+- [x] **Add License Compliance Display** - Show license status in install/list commands, warn on license changes during updates ✅
 
-## Priority 2 (MEDIUM) - Test Coverage Improvement
+### 🚀 CURRENT: Project Rename Phases  
+- [x] **Phase 1: Core Python Module Rename** - Directory and import updates ✅ COMPLETE
+- [x] **Phase 2A: Configuration Files** - Config filenames (.yaml/.lock) ✅ COMPLETE
+- [x] **Phase 2B: Package Infrastructure** - pyproject.toml, CLI commands, URLs ✅ COMPLETE  
+- [x] **Phase 2C: Source Code Comments & Strings** - All ams_compose/ modules ✅ COMPLETE
+- [ ] **Phase 2D: Test Suite Updates** - 18 test files (47+ config file references)
+- [ ] **Phase 2E: Development Files** - README.md, CLAUDE.md, scripts, prototypes  
+- [ ] **Phase 2F: Build Artifacts Cleanup** - dist/, venv/, .devcontainer cleanup
+- [ ] **Phase 3: Final Validation & Testing** - Complete system validation with new package name
+
+## Priority 2 (MEDIUM) - Post-Rename Tasks
 - [ ] **Create mirror.py Unit Tests** - Currently 20% coverage, needs dedicated unit test module
 - [ ] **Improve installer.py Test Coverage** - Currently 76%, test new remote update logic and timestamp handling
-
-## Priority 3 (MEDIUM) - Test Coverage Improvement  
 - [ ] **Add CLI Unit Tests** - Create unit tests for install, update, list, validate, clean commands
-- [ ] **Improve CLI Test Coverage** - Focus on CLI main.py (currently 0%)
-
-## Priority 2 (MEDIUM) - Development 
 - [ ] **Update Test Documentation** - Reflect optimized 2-tier test strategy in CLAUDE.md guidelines
-- [ ] **CLI Feature Development** - Enhance existing commands or add new functionality
 
-## Backlog (LOW PRIORITY) - Future Enhancements
-- [ ] **Project Rename: analog-hub → ams-compose** - Comprehensive rename after core features complete (package, config files, CLI, docs)
+## Backlog (LOW PRIORITY) - Future Enhancements  
 - [ ] **Advanced Filtering Features** - Regex patterns, file size limits, content-based filtering for large repositories
+- [ ] **Integration with foundry PDKs** - Standard cell libraries for analog design flows
 
 ## Current Session Progress ✅
+- [x] **✅ COMPLETE: Phase 2A - Configuration Files** - Renamed analog-hub.yaml → ams-compose.yaml, .analog-hub.lock → .ams-compose.lock
+- [x] **✅ COMPLETE: Phase 2B - Package Infrastructure** - Updated pyproject.toml name, CLI entry points, URLs, keywords
+- [x] **✅ COMPLETE: Phase 2C - Source Code Comments** - Updated all 10 ams_compose/ module docstrings and user-facing strings
+- [ ] **NEXT: Phase 2D - Test Suite Updates** - 18 test files need config file reference updates
+
+## Previous Session Progress ✅
 - [x] **✅ COMPLETE: Three-Tier Filtering System Implementation** - User-configurable extraction filtering with pathspec library
   - [x] Refactored built-in ignore patterns into clean, maintainable class constants (VCS, dev tools, OS files)
   - [x] Implemented global .analog-hub-ignore file parsing with comment and blank line support

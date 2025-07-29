@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from analog_hub.core.config import AnalogHubConfig, ImportSpec
-from analog_hub.core.extractor import PathExtractor
+from ams_compose.core.config import AnalogHubConfig, ImportSpec
+from ams_compose.core.extractor import PathExtractor
 
 
 class TestThreeTierFilteringE2E:
@@ -71,9 +71,9 @@ class TestThreeTierFilteringE2E:
         return repo_path
     
     def test_filtering_with_global_ignore_only(self):
-        """Test filtering with only global .analog-hub-ignore file."""
+        """Test filtering with only global .ams-compose-ignore file."""
         # Create global ignore file
-        global_ignore = self.project_root / ".analog-hub-ignore"
+        global_ignore = self.project_root / ".ams-compose-ignore"
         global_ignore.write_text("""
 # Global ignore patterns
 *.log
@@ -95,7 +95,7 @@ build/
         )
         
         # Create config file
-        config_path = self.project_root / "analog-hub.yaml"
+        config_path = self.project_root / "ams-compose.yaml"
         with open(config_path, 'w') as f:
             # Convert to dict and write YAML manually for simplicity
             import yaml
@@ -162,7 +162,7 @@ build/
         )
         
         # Create config file
-        config_path = self.project_root / "analog-hub.yaml"
+        config_path = self.project_root / "ams-compose.yaml"
         with open(config_path, 'w') as f:
             import yaml
             config_dict = {
@@ -217,7 +217,7 @@ build/
     def test_all_three_tiers_combined(self):
         """Test all three filtering tiers working together."""
         # Create global ignore file
-        global_ignore = self.project_root / ".analog-hub-ignore"
+        global_ignore = self.project_root / ".ams-compose-ignore"
         global_ignore.write_text("""
 # Global ignore patterns
 *.log

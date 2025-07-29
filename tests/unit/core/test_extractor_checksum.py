@@ -5,8 +5,8 @@ import shutil
 from pathlib import Path
 from unittest.mock import patch
 
-from analog_hub.core.extractor import PathExtractor
-from analog_hub.utils.checksum import ChecksumCalculator
+from ams_compose.core.extractor import PathExtractor
+from ams_compose.utils.checksum import ChecksumCalculator
 
 
 class TestChecksumOperations:
@@ -134,14 +134,14 @@ class TestPathExtractorChecksum:
     def test_calculate_library_checksum_exception_handling(self):
         """Test exception handling during checksum calculation."""
         # Mock ChecksumCalculator to raise exception
-        with patch('analog_hub.core.extractor.ChecksumCalculator.calculate_directory_checksum') as mock_calc:
+        with patch('ams_compose.core.extractor.ChecksumCalculator.calculate_directory_checksum') as mock_calc:
             mock_calc.side_effect = OSError("Permission denied")
             
             checksum = self.extractor.calculate_library_checksum(self.lib_dir)
             assert checksum is None
         
         # Test with single file exception
-        with patch('analog_hub.core.extractor.ChecksumCalculator.calculate_file_checksum') as mock_calc:
+        with patch('ams_compose.core.extractor.ChecksumCalculator.calculate_file_checksum') as mock_calc:
             mock_calc.side_effect = OSError("Permission denied")
             
             checksum = self.extractor.calculate_library_checksum(self.single_file)

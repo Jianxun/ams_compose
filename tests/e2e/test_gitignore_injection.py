@@ -1,6 +1,6 @@
 """End-to-end tests for .gitignore injection functionality.
 
-This test suite verifies that the analog-hub system correctly manages .gitignore entries
+This test suite verifies that the ams-compose system correctly manages .gitignore entries
 based on the `checkin` field in library configurations, testing from a user's perspective.
 
 Test Cases:
@@ -21,7 +21,7 @@ from typing import Dict, Any
 
 import git
 
-from analog_hub.core.installer import LibraryInstaller
+from ams_compose.core.installer import LibraryInstaller
 
 
 class TestGitignoreInjection:
@@ -76,7 +76,7 @@ class TestGitignoreInjection:
         return repo_path
     
     def _create_config(self, libraries: Dict[str, Dict[str, Any]]) -> None:
-        """Create analog-hub.yaml configuration file.
+        """Create ams-compose.yaml configuration file.
         
         Args:
             libraries: Dictionary of library configurations
@@ -86,7 +86,7 @@ class TestGitignoreInjection:
             "imports": libraries
         }
         
-        config_path = self.project_root / "analog-hub.yaml"
+        config_path = self.project_root / "ams-compose.yaml"
         with open(config_path, 'w') as f:
             yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
     

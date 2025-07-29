@@ -1,0 +1,43 @@
+# ams-compose configuration file
+# For more information, see: https://github.com/Jianxun/ams-compose
+
+# Default directory where libraries will be installed
+library-root: designs/libs
+
+# Library imports - add your dependencies here
+imports:
+  designinit:
+    repo: https://github.com/Jianxun/iic-osic-tools-project-template
+    ref: main                      # branch, tag, or commit
+    source_path: designs/.designinit   # path within the repository
+    local_path: designs/.designinit   # optional: override library-root location
+
+  scripts:
+    repo: https://github.com/Jianxun/iic-osic-tools-project-template
+    ref: main                      # branch, tag, or commit
+    source_path: designs/scripts   # path within the repository
+    local_path: designs/scripts    # optional: override library-root location
+
+  # start_chipathon_vnc:
+  #   repo: https://github.com/Jianxun/iic-osic-tools-project-template
+  #   ref: main                      # branch, tag, or commit
+  #   source_path: start_chipathon_vnc.sh   # path within the repository
+  #   local_path: start_chipathon_vnc.sh   # optional: override library-root location
+
+  gf180mcu_fd_sc_mcu9t5v0_symbols:
+    repo: https://github.com/peterkinget/gf180mcu_fd_sc_mcu9t5v0_symbols
+    ref: main                    
+    source_path: .
+    #local_path: designs/libs/gf180mcu_fd_sc_mcu9t5v0_symbols
+    chekin: false
+
+  switch_matrix_gf180mcu_9t5v0:
+    repo: https://github.com/mosbiuschip/switch_matrix_gf180mcu_9t5v0
+    ref: main
+    source_path: .
+    license: N/A
+
+  tgate:
+    repo: https://github.com/JorgeMarinN/SSCS-Chipathon-2025_AC3E-Chile-team
+    ref: main
+    source_path: xschem

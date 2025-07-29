@@ -6,8 +6,8 @@ import shutil
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from analog_hub.core.installer import LibraryInstaller, InstallationError
-from analog_hub.core.config import AnalogHubConfig, ImportSpec, LockFile, LockEntry
+from ams_compose.core.installer import LibraryInstaller, InstallationError
+from ams_compose.core.config import AnalogHubConfig, ImportSpec, LockFile, LockEntry
 
 
 class TestInstallerGitignore:
@@ -118,7 +118,7 @@ class TestInstallerGitignore:
         gitignore_path = temp_project / ".gitignore"
         
         # Create .gitignore with library already ignored
-        gitignore_path.write_text("""# analog-hub libraries
+        gitignore_path.write_text("""# ams-compose libraries
 *.log
 designs/libs/test_lib/
 designs/libs/other_lib/

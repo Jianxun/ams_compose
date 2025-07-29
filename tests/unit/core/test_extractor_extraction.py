@@ -7,9 +7,9 @@ from unittest.mock import patch
 
 import pytest
 
-from analog_hub.core.extractor import PathExtractor, ExtractionState
-from analog_hub.core.config import ImportSpec
-from analog_hub.utils.checksum import ChecksumCalculator
+from ams_compose.core.extractor import PathExtractor, ExtractionState
+from ams_compose.core.config import ImportSpec
+from ams_compose.utils.checksum import ChecksumCalculator
 
 
 class TestExtractionOperations:
@@ -322,7 +322,7 @@ class TestExtractionOperations:
         )
         
         # Mock ChecksumCalculator to raise an exception after successful copy
-        with patch('analog_hub.core.extractor.ChecksumCalculator.calculate_directory_checksum') as mock_checksum:
+        with patch('ams_compose.core.extractor.ChecksumCalculator.calculate_directory_checksum') as mock_checksum:
             mock_checksum.side_effect = OSError("Checksum calculation failed")
             
             # Verify extraction fails
