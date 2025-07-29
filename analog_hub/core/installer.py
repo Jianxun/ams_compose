@@ -8,6 +8,7 @@ from .config import AnalogHubConfig, LockFile, LockEntry, ImportSpec
 from .mirror import RepositoryMirror
 from .extractor import PathExtractor
 from ..utils.checksum import ChecksumCalculator
+from ..utils.license import LicenseDetector
 
 
 class InstallationError(Exception):
@@ -33,6 +34,7 @@ class LibraryInstaller:
         # Initialize components
         self.mirror_manager = RepositoryMirror(self.mirror_root)
         self.path_extractor = PathExtractor(self.project_root)
+        self.license_detector = LicenseDetector()
         
         # Configuration paths
         self.config_path = self.project_root / "analog-hub.yaml"
@@ -108,7 +110,13 @@ class LibraryInstaller:
                 resolved_commit=resolved_commit
             )
             
-            # Step 3: Create lock entry
+            # Step 3: Detect license information
+            license_info = self.license_detector.detect_license(mirror_path)
+            
+            # Determine final license: user-specified takes precedence over auto-detected
+            final_license = import_spec.license if import_spec.license else license_info.license_type
+            
+            # Step 4: Create lock entry
             timestamp = datetime.now().isoformat()
             
             # Handle timestamps: preserve installed_at for updates, set both for new installs
@@ -129,8 +137,14 @@ class LibraryInstaller:
                 local_path=library_metadata.local_path,
                 checksum=library_metadata.checksum,
                 installed_at=installed_at,
-                updated_at=updated_at
+                updated_at=updated_at,
+                checkin=import_spec.checkin,
+                license=final_license,
+                detected_license=license_info.license_type
             )
+            
+            # Step 5: Update .gitignore based on checkin field
+            self._update_gitignore_for_library(library_name, lock_entry)
             
             return lock_entry
             
@@ -261,14 +275,31 @@ class LibraryInstaller:
                 
                 # Determine if this was an install or update
                 commit_hash = lock_entry.commit[:8]
+                license_info = f" license: {lock_entry.license}" if lock_entry.license else " license: None"
+                
                 if library_name in lock_file.libraries:
                     old_commit = lock_file.libraries[library_name].commit
+                    old_license = lock_file.libraries[library_name].license
+                    
                     if old_commit != lock_entry.commit:
-                        print(f"Library: {library_name} (commit {commit_hash}) [updated]")
+                        # Check if license changed during update
+                        if old_license != lock_entry.license and old_license is not None:
+                            license_change = f" (license changed: {old_license} → {lock_entry.license})"
+                            print(f"Library: {library_name} (commit {commit_hash}){license_info}{license_change} [updated]")
+                            # Show compatibility warning if needed
+                            warning = self.license_detector.get_license_compatibility_warning(lock_entry.license)
+                            if warning:
+                                print(f"  WARNING: {warning}")
+                        else:
+                            print(f"Library: {library_name} (commit {commit_hash}){license_info} [updated]")
                     else:
-                        print(f"Library: {library_name} (commit {commit_hash}) [installed]")
+                        print(f"Library: {library_name} (commit {commit_hash}){license_info} [installed]")
                 else:
-                    print(f"Library: {library_name} (commit {commit_hash}) [installed]")
+                    print(f"Library: {library_name} (commit {commit_hash}){license_info} [installed]")
+                    # Show compatibility warning for new installations
+                    warning = self.license_detector.get_license_compatibility_warning(lock_entry.license)
+                    if warning:
+                        print(f"  WARNING: {warning}")
                 
             except Exception as e:
                 failed_libraries.append((library_name, str(e)))
@@ -459,3 +490,35 @@ class LibraryInstaller:
         self.save_lock_file(lock_file)
         
         return list(orphaned_libraries)
+    
+    def _update_gitignore_for_library(self, library_name: str, lock_entry: LockEntry) -> None:
+        """Update .gitignore file based on library's checkin setting.
+        
+        Args:
+            library_name: Name of the library
+            lock_entry: Lock entry containing checkin setting and local_path
+        """
+        gitignore_path = self.project_root / ".gitignore"
+        
+        # Prepare library entry for .gitignore (always with trailing slash for directories)
+        library_ignore_line = f"{lock_entry.local_path}/"
+        
+        # Read existing .gitignore content
+        if gitignore_path.exists():
+            gitignore_lines = gitignore_path.read_text().splitlines()
+        else:
+            gitignore_lines = []
+        
+        # Check if library is already in .gitignore
+        library_already_ignored = library_ignore_line in gitignore_lines
+        
+        if not lock_entry.checkin:
+            # Library should be ignored - add to .gitignore if not already there
+            if not library_already_ignored:
+                gitignore_lines.append(library_ignore_line)
+                gitignore_path.write_text('\n'.join(gitignore_lines) + '\n')
+        else:
+            # Library should be checked in - remove from .gitignore if present
+            if library_already_ignored:
+                gitignore_lines.remove(library_ignore_line)
+                gitignore_path.write_text('\n'.join(gitignore_lines) + '\n')

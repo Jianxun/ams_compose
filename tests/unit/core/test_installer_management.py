@@ -119,14 +119,24 @@ class TestInstallerManagement:
         lock_path = temp_project / ".analog-hub.lock"
         lock_data.to_yaml(lock_path)
         
+        # Create matching config file with the library
+        config_path = temp_project / "analog-hub.yaml"
+        config_content = """library_root: designs/libs
+imports:
+  test_lib:
+    repo: https://github.com/example/repo
+    ref: main
+    source_path: lib
+"""
+        config_path.write_text(config_content)
+        
         # Mock checksum calculator to return matching checksum
         mock_checksum_class.calculate_directory_checksum.return_value = "expected_checksum"
         
         # Test validation
         valid_libs, invalid_libs = installer.validate_installation()
-        result = "test_lib" in valid_libs
         
-        assert result is True
+        assert "test_lib" in valid_libs
         mock_checksum_class.calculate_directory_checksum.assert_called_once_with(lib_path)
     
     def test_validate_installation_missing_directory(self, installer, temp_project):
@@ -150,6 +160,17 @@ class TestInstallerManagement:
         
         lock_path = temp_project / ".analog-hub.lock"
         lock_data.to_yaml(lock_path)
+        
+        # Create matching config file with the library
+        config_path = temp_project / "analog-hub.yaml"
+        config_content = """library_root: designs/libs
+imports:
+  missing_lib:
+    repo: https://github.com/example/repo
+    ref: main
+    source_path: lib
+"""
+        config_path.write_text(config_content)
         
         # Test validation  
         valid_libs, invalid_libs = installer.validate_installation()

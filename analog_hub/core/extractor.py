@@ -2,8 +2,10 @@
 
 import shutil
 from pathlib import Path
-from typing import Optional, Dict, Callable, Set
+from typing import Optional, Dict, Callable, Set, List
 from dataclasses import dataclass
+
+import pathspec
 
 from .config import ImportSpec
 from ..utils.checksum import ChecksumCalculator
@@ -21,6 +23,37 @@ class ExtractionState:
 class PathExtractor:
     """Manages selective path extraction from mirrors to project directories."""
     
+    # Built-in ignore patterns - easily maintainable and extensible
+    VCS_IGNORE_PATTERNS = {
+        '.git',              # Git repository metadata
+        '.gitignore',        # Git ignore rules
+        '.gitmodules',       # Git submodules configuration
+        '.gitattributes',    # Git attributes configuration
+        '.svn',              # SVN metadata
+        '.hg',               # Mercurial metadata
+        '.bzr',              # Bazaar metadata
+        'CVS',               # CVS metadata
+    }
+    
+    DEV_TOOL_IGNORE_PATTERNS = {
+        '.ipynb_checkpoints', # Jupyter notebook checkpoints
+        '__pycache__',       # Python cache directories
+        '*.pyc',             # Python compiled files
+        '*.pyo',             # Python optimized files
+        'node_modules',      # Node.js dependencies
+        '.vscode',           # VS Code settings
+        '.idea',             # IntelliJ IDEA settings
+    }
+    
+    OS_IGNORE_PATTERNS = {
+        '.DS_Store',         # macOS system files
+        'Thumbs.db',         # Windows thumbnail cache
+        'desktop.ini',       # Windows desktop settings
+    }
+    
+    # Global ignore file name
+    GLOBAL_IGNORE_FILE = '.analog-hub-ignore'
+    
     def __init__(self, project_root: Path = Path(".")):
         """Initialize path extractor.
         
@@ -29,42 +62,107 @@ class PathExtractor:
         """
         self.project_root = Path(project_root).resolve()
     
-    def _create_ignore_function(self, custom_ignore_hook: Optional[Callable[[str, Set[str]], Set[str]]] = None) -> Callable[[str, list], list]:
-        """Create ignore function for shutil.copytree to filter out unwanted files.
+    @classmethod
+    def get_builtin_ignore_patterns(cls) -> Set[str]:
+        """Get all built-in ignore patterns combined.
         
-        This method provides a default ignore pattern for version control files
-        and allows for future extensibility via custom ignore hooks.
+        Returns:
+            Set of all built-in ignore patterns
+        """
+        return cls.VCS_IGNORE_PATTERNS | cls.DEV_TOOL_IGNORE_PATTERNS | cls.OS_IGNORE_PATTERNS
+    
+    def _load_global_ignore_patterns(self) -> List[str]:
+        """Load global ignore patterns from .analog-hub-ignore file.
+        
+        Returns:
+            List of ignore patterns from global ignore file
+        """
+        global_ignore_file = self.project_root / self.GLOBAL_IGNORE_FILE
+        if not global_ignore_file.exists():
+            return []
+        
+        try:
+            with open(global_ignore_file, 'r') as f:
+                patterns = []
+                for line in f:
+                    line = line.strip()
+                    # Skip empty lines and comments
+                    if line and not line.startswith('#'):
+                        patterns.append(line)
+                return patterns
+        except Exception:
+            # If there's any error reading the file, return empty list
+            return []
+    
+    def _create_ignore_function(
+        self, 
+        custom_ignore_hook: Optional[Callable[[str, Set[str]], Set[str]]] = None,
+        library_ignore_patterns: Optional[List[str]] = None
+    ) -> Callable[[str, list], list]:
+        """Create ignore function for shutil.copytree with three-tier filtering.
+        
+        Three-tier filtering system:
+        1. Built-in defaults (VCS, development tools, OS files)
+        2. Global .analog-hub-ignore patterns (gitignore-style)
+        3. Per-library ignore_patterns (gitignore-style)
         
         Args:
-            custom_ignore_hook: Optional function that takes (directory_path, filenames_set) 
-                               and returns set of additional filenames to ignore
+            library_ignore_patterns: Library-specific ignore patterns
+            custom_ignore_hook: Optional function for additional custom ignores
         
         Returns:
             Function compatible with shutil.copytree ignore parameter
         """
+        # Load global ignore patterns
+        global_patterns = self._load_global_ignore_patterns()
+        
+        # Combine all gitignore-style patterns
+        all_patterns = global_patterns.copy()
+        if library_ignore_patterns:
+            all_patterns.extend(library_ignore_patterns)
+        
+        # Create pathspec matcher if we have patterns
+        pathspec_matcher = None
+        if all_patterns:
+            try:
+                pathspec_matcher = pathspec.PathSpec.from_lines('gitwildmatch', all_patterns)
+            except Exception:
+                # If pathspec fails, continue without pattern matching
+                pathspec_matcher = None
+        
         def ignore_function(directory: str, filenames: list) -> list:
             ignored = set()
             filenames_set = set(filenames)
             
-            # Default ignore patterns for version control and development tools
-            default_ignores = {
-                '.git',              # Git repository metadata
-                '.gitignore',        # Git ignore rules
-                '.gitmodules',       # Git submodules configuration
-                '.gitattributes',    # Git attributes configuration
-                '.svn',              # SVN metadata
-                '.hg',               # Mercurial metadata
-                '.bzr',              # Bazaar metadata
-                'CVS',               # CVS metadata
-                '.ipynb_checkpoints', # Jupyter notebook checkpoints
-                '__pycache__',       # Python cache directories
-                '.DS_Store',         # macOS system files
-            }
+            # Tier 1: Apply built-in ignore patterns (exact filename matches)
+            builtin_ignores = self.get_builtin_ignore_patterns()
+            ignored.update(filenames_set.intersection(builtin_ignores))
             
-            # Apply default ignores
-            ignored.update(filenames_set.intersection(default_ignores))
+            # Tier 2 & 3: Apply gitignore-style patterns from global and library configs
+            if pathspec_matcher:
+                for filename in filenames:
+                    # Check if this is a directory by looking at the path
+                    file_path = Path(directory) / filename
+                    is_directory = file_path.is_dir() if file_path.exists() else False
+                    
+                    # Test multiple pattern variants for better matching
+                    test_paths = [
+                        filename,           # Direct filename
+                        f"./{filename}",    # Relative path
+                    ]
+                    
+                    # For directories, also test with trailing slash
+                    if is_directory:
+                        test_paths.extend([
+                            f"{filename}/",
+                            f"./{filename}/"
+                        ])
+                    
+                    # Check if any variant matches
+                    if any(pathspec_matcher.match_file(test_path) for test_path in test_paths):
+                        ignored.add(filename)
             
-            # Provisional hook for future custom ignore patterns
+            # Backward compatibility: Apply custom ignore hook
             if custom_ignore_hook:
                 additional_ignores = custom_ignore_hook(directory, filenames_set)
                 ignored.update(additional_ignores)
@@ -145,15 +243,17 @@ class PathExtractor:
         try:
             # Copy source to destination
             if source_full_path.is_dir():
-                # Create ignore function to filter out version control files
-                ignore_func = self._create_ignore_function()
+                # Create ignore function with three-tier filtering
+                ignore_func = self._create_ignore_function(
+                    library_ignore_patterns=import_spec.ignore_patterns
+                )
                 
                 shutil.copytree(
                     source_full_path, 
                     local_path,
                     symlinks=True,  # Preserve symlinks
                     ignore_dangling_symlinks=True,
-                    ignore=ignore_func,  # Filter out .git and other VCS files
+                    ignore=ignore_func,  # Apply three-tier filtering
                     dirs_exist_ok=False  # Should not exist due to cleanup above
                 )
             else:
