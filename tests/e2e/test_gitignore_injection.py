@@ -125,11 +125,14 @@ class TestGitignoreInjection:
         # Verify library was installed
         assert "stable_library" in installed_libs
         
-        # Check that library-specific .gitignore was created with '*' content
+        # Check that library-specific .gitignore was created with enhanced content
         library_path = self.project_root / "libs" / "stable_library"
         library_gitignore_path = library_path / ".gitignore"
         assert library_gitignore_path.exists()
-        assert library_gitignore_path.read_text() == "*\n"
+        gitignore_content = library_gitignore_path.read_text()
+        assert "# Library: stable_library (checkin: false)" in gitignore_content
+        assert "# This library is not checked into version control" in gitignore_content
+        assert "*\n!.gitignore" in gitignore_content
         
         # Verify main .gitignore does NOT contain the library path
         if (self.project_root / ".gitignore").exists():
@@ -244,7 +247,9 @@ class TestGitignoreInjection:
         stable_lib_path = self.project_root / "libs" / "stable_lib"
         stable_lib_gitignore = stable_lib_path / ".gitignore"
         assert stable_lib_gitignore.exists()      # checkin=false gets .gitignore
-        assert stable_lib_gitignore.read_text() == "*\n"
+        gitignore_content = stable_lib_gitignore.read_text()
+        assert "# Library: stable_lib (checkin: false)" in gitignore_content
+        assert "*\n!.gitignore" in gitignore_content
         
         custom_lib_path = self.project_root / "libs" / "custom_lib"
         custom_lib_gitignore = custom_lib_path / ".gitignore"
@@ -312,11 +317,13 @@ build/
         installed_libs = self.installer.install_all()
         assert "changeable_lib" in installed_libs
         
-        # Verify library-specific .gitignore was created
+        # Verify library-specific .gitignore was created with enhanced content
         library_path = self.project_root / "libs" / "changeable_lib"
         library_gitignore_path = library_path / ".gitignore"
         assert library_gitignore_path.exists()
-        assert library_gitignore_path.read_text() == "*\n"
+        gitignore_content = library_gitignore_path.read_text()
+        assert "# Library: changeable_lib (checkin: false)" in gitignore_content
+        assert "*\n!.gitignore" in gitignore_content
         
         # Step 2: Change configuration to checkin=true
         self._create_config({

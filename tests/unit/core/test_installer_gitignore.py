@@ -54,10 +54,14 @@ class TestInstallerGitignore:
         # Call method that should create library-specific .gitignore
         installer._update_gitignore_for_library("test_lib", lock_entry)
         
-        # Assert library-specific .gitignore is created with '*' content
+        # Assert library-specific .gitignore is created with enhanced content
         library_gitignore_path = library_path / ".gitignore"
         assert library_gitignore_path.exists()
-        assert library_gitignore_path.read_text() == "*\n"
+        gitignore_content = library_gitignore_path.read_text()
+        assert "# Library: test_lib (checkin: false)" in gitignore_content
+        assert "# This library is not checked into version control" in gitignore_content
+        assert "# Run 'ams-compose install' to download this library" in gitignore_content
+        assert "*\n!.gitignore" in gitignore_content
         
         # Assert main .gitignore is unchanged
         main_gitignore_content = main_gitignore_path.read_text()
@@ -125,10 +129,12 @@ class TestInstallerGitignore:
         # Call method that should create library-specific .gitignore
         installer._update_gitignore_for_library("test_lib", lock_entry)
         
-        # Assert library-specific .gitignore was created
+        # Assert library-specific .gitignore was created with enhanced content
         library_gitignore_path = library_path / ".gitignore"
         assert library_gitignore_path.exists()
-        assert library_gitignore_path.read_text() == "*\n"
+        gitignore_content = library_gitignore_path.read_text()
+        assert "# Library: test_lib (checkin: false)" in gitignore_content
+        assert "*\n!.gitignore" in gitignore_content
         
         # Assert main .gitignore was NOT created
         assert not main_gitignore_path.exists()
@@ -139,7 +145,7 @@ class TestInstallerGitignore:
         library_path = temp_project / "designs/libs/test_lib"
         library_path.mkdir(parents=True)
         library_gitignore_path = library_path / ".gitignore"
-        library_gitignore_path.write_text("*\n")
+        library_gitignore_path.write_text("# Library: test_lib (checkin: false)\n*\n!.gitignore\n")
         
         # Create main .gitignore (should remain unchanged)
         main_gitignore_path = temp_project / ".gitignore"

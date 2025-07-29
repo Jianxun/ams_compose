@@ -7,11 +7,11 @@
 
 ## Recent Major Changes (Last 2-3 Sessions Only)
 
-### Critical Bug Fixes: Strict Validation & Package Installation - 2025-07-29
-- **Problem**: Two user-reported issues: (1) YAML typos silently ignored, (2) .gitignore injection investigation needed
-- **Solution**: Fixed Pydantic validation from extra="allow" to extra="forbid", added missing pathspec dependency, updated GitHub installation
-- **Status**: Complete - Issue 1 fully resolved, validation now catches typos like 'libraryroot', 'repository', 'checkins'
-- **Benefits**: Clear error messages for config typos, reliable pip installation from GitHub, foundation for .gitignore debugging
+### Critical Bug Fixes: .gitignore Injection & Strict Validation - 2025-07-29
+- **Problem**: Two user-reported issues: (1) YAML typos silently ignored, (2) .gitignore injection modifying main .gitignore file
+- **Solution**: Fixed Pydantic validation extra="allow" → extra="forbid", redesigned .gitignore injection to use per-library .gitignore files
+- **Status**: Complete - Both issues fully resolved with comprehensive test coverage and real-world validation
+- **Benefits**: Clear error messages for config typos, clean main .gitignore approach, no user conflicts, self-managed library exclusion
 
 ### Project Package Distribution & Installation - 2025-07-29
 - **Problem**: Need to rename project from analog-hub to ams-compose for broader AMS IC market positioning
@@ -136,15 +136,15 @@
 - **Timing**: Post-MVP rename after core functionality (checkin, filtering, license features) is complete and stable
 
 ## Active Issues & Next Steps
-- **Current Priority**: Debug .gitignore injection issue reported by user - tests pass but real-world behavior needs investigation
+- **Current Priority**: All user-reported issues resolved ✅ - Both YAML validation and .gitignore injection working correctly
 - **Blockers**: None - All validation fixes complete, all 120 unit + 29 E2E tests passing
-- **Next Session Goals**: Create manual test scenario for .gitignore injection, identify root cause if exists, add debugging/logging if needed
-- **Development Focus**: User-reported bug resolution and reliability improvements
-- **Branch Status**: Feature branch `fix/strict-validation-and-gitignore-debug` created with validation fixes
-- **Test Strategy**: Unit tests (mocked) → E2E tests (mock repos) → Real repository validation → Manual testing
-- **E2E Status**: 29 passed, 0 failed (100% pass rate) ✅ - System fully validated including strict validation
+- **Next Session Goals**: Ready for merge to main branch and potential new feature development
+- **Development Focus**: Feature branch ready for integration, system fully stable
+- **Branch Status**: Feature branch `fix/strict-validation-and-gitignore-debug` ready for merge with complete fixes
+- **Test Strategy**: ✅ Complete - Unit tests (mocked) → E2E tests (mock repos) → Real repository validation → Manual testing all passed
+- **E2E Status**: 29 passed, 0 failed (100% pass rate) ✅ - System fully validated including strict validation and new .gitignore approach
 - **Installation Status**: Successfully builds and installs from GitHub: `pip install git+https://github.com/Jianxun/ams_compose.git` ✅
-- **Validation Status**: Now catches YAML typos with clear error messages ✅
+- **Validation Status**: ✅ Now catches YAML typos with clear error messages, .gitignore injection uses per-library approach
 
 ## Backlog & Future Enhancements
 - **Low Priority**: Advanced filtering features (regex patterns, file size limits, content-based filtering)

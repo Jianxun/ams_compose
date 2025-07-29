@@ -508,8 +508,15 @@ class LibraryInstaller:
         if not lock_entry.checkin:
             # Library should be ignored - create .gitignore inside library directory
             if library_path.exists():
-                # Create .gitignore with '*' to ignore all files in this directory
-                library_gitignore_path.write_text("*\n")
+                # Create .gitignore that ignores all files but keeps itself tracked
+                # This makes the directory visible in git while ignoring library content
+                gitignore_content = f"""# Library: {library_name} (checkin: false)
+# This library is not checked into version control
+# Run 'ams-compose install' to download this library
+*
+!.gitignore
+"""
+                library_gitignore_path.write_text(gitignore_content)
         else:
             # Library should be checked in - remove library-specific .gitignore if it exists
             if library_gitignore_path.exists():
