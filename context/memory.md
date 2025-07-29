@@ -1,13 +1,19 @@
 # Project Memory
 
 ## Current Status
-- **Project**: analog-hub → ams-compose (rename in progress)
-- **Stage**: MVP Complete, Supply Chain Management Features Complete, Project Rename Phase 1 Complete
+- **Project**: ams-compose (renamed from analog-hub)
+- **Stage**: MVP Complete, Supply Chain Management Features Complete, Critical Bug Fixes Complete
 - **Last Updated**: 2025-07-29
 
 ## Recent Major Changes (Last 2-3 Sessions Only)
 
-### Project Rename Phase 1 Implementation - 2025-07-29
+### Critical Bug Fixes: Strict Validation & Package Installation - 2025-07-29
+- **Problem**: Two user-reported issues: (1) YAML typos silently ignored, (2) .gitignore injection investigation needed
+- **Solution**: Fixed Pydantic validation from extra="allow" to extra="forbid", added missing pathspec dependency, updated GitHub installation
+- **Status**: Complete - Issue 1 fully resolved, validation now catches typos like 'libraryroot', 'repository', 'checkins'
+- **Benefits**: Clear error messages for config typos, reliable pip installation from GitHub, foundation for .gitignore debugging
+
+### Project Package Distribution & Installation - 2025-07-29
 - **Problem**: Need to rename project from analog-hub to ams-compose for broader AMS IC market positioning
 - **Solution**: Systematic 6-phase rename approach starting with core Python module structure
 - **Status**: Phase 1 Complete - Core Python module renamed (analog_hub/ → ams_compose/), all imports updated (21 files, 41 import statements)
@@ -130,14 +136,15 @@
 - **Timing**: Post-MVP rename after core functionality (checkin, filtering, license features) is complete and stable
 
 ## Active Issues & Next Steps
-- **Current Priority**: Project Rename Phase 2-6 - Configuration files, package infrastructure, tests, documentation, and validation
-- **Blockers**: None - Phase 1 complete, all tests passing with ams_compose imports
-- **Next Session Goals**: Continue systematic rename - Phase 2 (Configuration & File References: 1143 occurrences across 76+ files)
-- **Development Focus**: Complete comprehensive project rename for better AMS IC market positioning
-- **Test Strategy**: Unit tests (mocked) → E2E tests (mock repos) → Real repository validation
-- **E2E Status**: 29 passed, 0 failed (100% pass rate) ✅ - System fully validated including license detection
-- **Real Repository Status**: Successfully tested with peterkinget/gf180mcu_fd_sc_mcu9t5v0_symbols and mosbiuschip/switch_matrix_gf180mcu_9t5v0 ✅
-- **Coverage Status**: license.py 93% (license detection), extractor.py 97% (three-tier filtering), installer.py 73% (license integration)
+- **Current Priority**: Debug .gitignore injection issue reported by user - tests pass but real-world behavior needs investigation
+- **Blockers**: None - All validation fixes complete, all 120 unit + 29 E2E tests passing
+- **Next Session Goals**: Create manual test scenario for .gitignore injection, identify root cause if exists, add debugging/logging if needed
+- **Development Focus**: User-reported bug resolution and reliability improvements
+- **Branch Status**: Feature branch `fix/strict-validation-and-gitignore-debug` created with validation fixes
+- **Test Strategy**: Unit tests (mocked) → E2E tests (mock repos) → Real repository validation → Manual testing
+- **E2E Status**: 29 passed, 0 failed (100% pass rate) ✅ - System fully validated including strict validation
+- **Installation Status**: Successfully builds and installs from GitHub: `pip install git+https://github.com/Jianxun/ams_compose.git` ✅
+- **Validation Status**: Now catches YAML typos with clear error messages ✅
 
 ## Backlog & Future Enhancements
 - **Low Priority**: Advanced filtering features (regex patterns, file size limits, content-based filtering)
