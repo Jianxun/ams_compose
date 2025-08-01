@@ -72,6 +72,16 @@ class RepositoryMirror:
             signal.alarm(0)
             signal.signal(signal.SIGALRM, old_handler)
     
+    def _update_submodules(self, repo: git.Repo) -> None:
+        """Update all submodules to match remote state.
+        
+        Args:
+            repo: Git repository object with submodules to update
+        """
+        self._with_timeout(
+            lambda: repo.git.submodule('update', '--init', '--recursive'),
+            timeout=180  # 3 minutes for submodule operations
+        )
     
     def get_mirror_path(self, repo_url: str) -> Path:
         """Get mirror directory path for repository.
@@ -152,9 +162,9 @@ class RepositoryMirror:
             with tempfile.TemporaryDirectory() as temp_dir:
                 temp_path = Path(temp_dir) / "repo"
                 
-                # Clone repository with timeout
+                # Clone repository with timeout and submodule support
                 repo = self._with_timeout(
-                    lambda: git.Repo.clone_from(url=repo_url, to_path=temp_path),
+                    lambda: git.Repo.clone_from(url=repo_url, to_path=temp_path, recurse_submodules=True),
                     timeout=300  # Increase timeout to 5 minutes for problematic repos
                 )
                 
@@ -267,6 +277,10 @@ class RepositoryMirror:
                 actual_commit = repo.head.commit.hexsha
                 if actual_commit != resolved_commit:
                     raise ValueError(f"Checkout failed: expected {resolved_commit}, got {actual_commit}")
+                
+                # Update submodules if they exist
+                if repo.submodules:
+                    self._update_submodules(repo)
                     
             except git.GitCommandError as e:
                 if "pathspec" in str(e).lower():
