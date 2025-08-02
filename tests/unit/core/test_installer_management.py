@@ -91,7 +91,7 @@ class TestInstallerManagement:
     
     @patch('ams_compose.core.installer.ChecksumCalculator')
     def test_validate_installation_success(self, mock_checksum_class, installer, temp_project):
-        """Test successful installation validation."""
+        """Test successful installation validation with new Dict[str, LockEntry] return type."""
         # Create sample library directory
         lib_root = temp_project / "designs" / "libs"
         lib_root.mkdir(parents=True)
@@ -133,14 +133,23 @@ imports:
         # Mock checksum calculator to return matching checksum
         mock_checksum_class.calculate_directory_checksum.return_value = "expected_checksum"
         
-        # Test validation
-        valid_libs, invalid_libs = installer.validate_installation()
+        # Test validation - expecting Dict[str, LockEntry] instead of tuple
+        validation_results = installer.validate_installation()
         
-        assert "test_lib" in valid_libs
+        # Verify return type is dict
+        assert isinstance(validation_results, dict)
+        assert "test_lib" in validation_results
+        
+        # Verify validation_status is set correctly
+        test_lib_entry = validation_results["test_lib"]
+        assert test_lib_entry.validation_status == "valid"
+        assert test_lib_entry.repo == "https://github.com/example/repo"
+        assert test_lib_entry.checksum == "expected_checksum"
+        
         mock_checksum_class.calculate_directory_checksum.assert_called_once_with(lib_path)
     
     def test_validate_installation_missing_directory(self, installer, temp_project):
-        """Test validation when library directory is missing."""
+        """Test validation when library directory is missing with new Dict[str, LockEntry] return type."""
         # Create lockfile entry for non-existent library
         lock_data = LockFile(
             library_root="designs/libs",
@@ -172,11 +181,17 @@ imports:
 """
         config_path.write_text(config_content)
         
-        # Test validation  
-        valid_libs, invalid_libs = installer.validate_installation()
-        result = "missing_lib" not in valid_libs and "missing_lib" in invalid_libs
+        # Test validation - expecting Dict[str, LockEntry] instead of tuple
+        validation_results = installer.validate_installation()
         
-        assert result is False
+        # Verify return type is dict
+        assert isinstance(validation_results, dict)
+        assert "missing_lib" in validation_results
+        
+        # Verify validation_status shows missing
+        missing_lib_entry = validation_results["missing_lib"]
+        assert missing_lib_entry.validation_status == "missing"
+        assert missing_lib_entry.repo == "https://github.com/example/repo"
     
     @patch('ams_compose.core.installer.RepositoryMirror')
     def test_clean_unused_mirrors(self, mock_mirror_class, installer, temp_project):
@@ -219,3 +234,125 @@ imports:
         # We can't easily test the exact removed repos without knowing the hash generation,
         # but we can verify the method completed
         assert isinstance(removed, list)
+    
+    @patch('ams_compose.core.installer.ChecksumCalculator')
+    def test_validate_library_valid(self, mock_checksum_class, installer, temp_project):
+        """Test validate_library method with valid library."""
+        # Create sample library directory
+        lib_root = temp_project / "designs" / "libs"
+        lib_root.mkdir(parents=True)
+        lib_path = lib_root / "test_lib"
+        lib_path.mkdir()
+        (lib_path / "test.sch").write_text("content")
+        
+        # Create LockEntry for validation
+        lock_entry = LockEntry(
+            repo="https://github.com/example/repo",
+            ref="main",
+            commit="abc123",
+            source_path="lib",
+            local_path="designs/libs/test_lib",
+            checksum="expected_checksum",
+            installed_at="2025-01-01T00:00:00",
+            updated_at="2025-01-01T00:00:00",
+            validation_status="unknown"
+        )
+        
+        # Mock checksum calculator to return matching checksum
+        mock_checksum_class.calculate_directory_checksum.return_value = "expected_checksum"
+        
+        # Test validate_library method
+        result = installer.validate_library("test_lib", lock_entry)
+        
+        assert result.validation_status == "valid"
+        assert result.repo == lock_entry.repo
+        assert result.checksum == lock_entry.checksum
+        mock_checksum_class.calculate_directory_checksum.assert_called_once_with(lib_path)
+    
+    @patch('ams_compose.core.installer.ChecksumCalculator')
+    def test_validate_library_modified(self, mock_checksum_class, installer, temp_project):
+        """Test validate_library method with modified library."""
+        # Create sample library directory
+        lib_root = temp_project / "designs" / "libs"
+        lib_root.mkdir(parents=True)
+        lib_path = lib_root / "test_lib"
+        lib_path.mkdir()
+        (lib_path / "test.sch").write_text("modified_content")
+        
+        # Create LockEntry for validation
+        lock_entry = LockEntry(
+            repo="https://github.com/example/repo",
+            ref="main",
+            commit="abc123",
+            source_path="lib",
+            local_path="designs/libs/test_lib",
+            checksum="expected_checksum",
+            installed_at="2025-01-01T00:00:00",
+            updated_at="2025-01-01T00:00:00",
+            validation_status="unknown"
+        )
+        
+        # Mock checksum calculator to return different checksum
+        mock_checksum_class.calculate_directory_checksum.return_value = "different_checksum"
+        
+        # Test validate_library method
+        result = installer.validate_library("test_lib", lock_entry)
+        
+        assert result.validation_status == "modified"
+        assert result.repo == lock_entry.repo
+        assert result.checksum == lock_entry.checksum  # Original checksum preserved
+        mock_checksum_class.calculate_directory_checksum.assert_called_once_with(lib_path)
+    
+    def test_validate_library_missing(self, installer, temp_project):
+        """Test validate_library method with missing library."""
+        # Create LockEntry for non-existent library
+        lock_entry = LockEntry(
+            repo="https://github.com/example/repo",
+            ref="main",
+            commit="abc123",
+            source_path="lib",
+            local_path="designs/libs/missing_lib",
+            checksum="expected_checksum",
+            installed_at="2025-01-01T00:00:00",
+            updated_at="2025-01-01T00:00:00",
+            validation_status="unknown"
+        )
+        
+        # Test validate_library method
+        result = installer.validate_library("missing_lib", lock_entry)
+        
+        assert result.validation_status == "missing"
+        assert result.repo == lock_entry.repo
+        assert result.checksum == lock_entry.checksum
+    
+    def test_validate_library_error(self, installer, temp_project):
+        """Test validate_library method with validation error."""
+        # Create sample library directory
+        lib_root = temp_project / "designs" / "libs"
+        lib_root.mkdir(parents=True)
+        lib_path = lib_root / "test_lib"
+        lib_path.mkdir()
+        
+        # Create LockEntry for validation
+        lock_entry = LockEntry(
+            repo="https://github.com/example/repo",
+            ref="main",
+            commit="abc123",
+            source_path="lib",
+            local_path="designs/libs/test_lib",
+            checksum="expected_checksum",
+            installed_at="2025-01-01T00:00:00",
+            updated_at="2025-01-01T00:00:00",
+            validation_status="unknown"
+        )
+        
+        # Mock checksum calculator to raise exception
+        with patch('ams_compose.core.installer.ChecksumCalculator.calculate_directory_checksum') as mock_checksum:
+            mock_checksum.side_effect = Exception("Checksum calculation failed")
+            
+            # Test validate_library method
+            result = installer.validate_library("test_lib", lock_entry)
+            
+            assert result.validation_status == "error"
+            assert result.repo == lock_entry.repo
+            assert result.checksum == lock_entry.checksum

@@ -372,20 +372,61 @@ class LibraryInstaller:
         lock_file = self.load_lock_file()
         return lock_file.libraries.copy()
     
-    def validate_installation(self) -> Tuple[List[str], List[str]]:
+    def validate_library(self, library_name: str, lock_entry: LockEntry) -> LockEntry:
+        """Validate a single library installation.
+        
+        Args:
+            library_name: Name of the library to validate
+            lock_entry: Lock entry for the library
+            
+        Returns:
+            LockEntry with updated validation_status field
+        """
+        try:
+            # Check if library exists
+            library_path = self.project_root / lock_entry.local_path
+            if not library_path.exists():
+                # Return a copy with updated validation_status
+                updated_entry = lock_entry.model_copy()
+                updated_entry.validation_status = "missing"
+                return updated_entry
+            
+            # Verify checksum using correct method for files vs directories
+            if library_path.is_dir():
+                current_checksum = ChecksumCalculator.calculate_directory_checksum(library_path)
+            else:
+                current_checksum = ChecksumCalculator.calculate_file_checksum(library_path)
+                
+            # Check if checksum matches
+            if current_checksum != lock_entry.checksum:
+                updated_entry = lock_entry.model_copy()
+                updated_entry.validation_status = "modified"
+                return updated_entry
+            
+            # Library is valid
+            updated_entry = lock_entry.model_copy()
+            updated_entry.validation_status = "valid"
+            return updated_entry
+            
+        except Exception:
+            # Return error status for any validation exception
+            updated_entry = lock_entry.model_copy()
+            updated_entry.validation_status = "error"
+            return updated_entry
+    
+    def validate_installation(self) -> Dict[str, LockEntry]:
         """Validate current installation state.
         
         Only validates libraries currently defined in ams-compose.yaml config.
         Libraries in lockfile but not in config are considered orphaned and warned about.
         
         Returns:
-            Tuple of (valid_libraries, invalid_libraries_and_warnings)
+            Dictionary mapping library names to their lock entries with validation_status updated
         """
         lock_file = self.load_lock_file()
         config = self.load_config()
         
-        valid_libraries = []
-        invalid_libraries = []
+        validation_results = {}
         
         # Get current library names from config
         current_library_names = set(config.imports.keys())
@@ -394,43 +435,37 @@ class LibraryInstaller:
         # Find orphaned libraries (in lockfile but not in current config)
         orphaned_libraries = lockfile_library_names - current_library_names
         
-        # Add warnings for orphaned libraries
-        if orphaned_libraries:
-            invalid_libraries.append(f"WARNING: Found {len(orphaned_libraries)} orphaned libraries in lockfile but not in config:")
-            for orphaned_lib in sorted(orphaned_libraries):
-                invalid_libraries.append(f"  {orphaned_lib}: no longer defined in ams-compose.yaml")
-            invalid_libraries.append("  To fix: Run 'ams-compose clean' to remove orphaned libraries from lockfile")
+        # Include orphaned libraries in results with special status
+        for orphaned_lib in orphaned_libraries:
+            orphaned_entry = lock_file.libraries[orphaned_lib].model_copy()
+            orphaned_entry.validation_status = "orphaned"
+            validation_results[orphaned_lib] = orphaned_entry
         
-        # Only validate libraries that exist in current config
+        # Validate libraries that exist in current config
         for library_name in current_library_names:
             if library_name not in lock_file.libraries:
-                invalid_libraries.append(f"{library_name}: not installed (missing from lockfile)")
+                # Create a placeholder entry for missing libraries
+                # This allows CLI to show missing libraries consistently
+                missing_entry = LockEntry(
+                    repo="unknown",
+                    ref="unknown", 
+                    commit="unknown",
+                    source_path="unknown",
+                    local_path="unknown",
+                    checksum="unknown",
+                    installed_at="unknown",
+                    updated_at="unknown",
+                    validation_status="not_installed"
+                )
+                validation_results[library_name] = missing_entry
                 continue
                 
             lock_entry = lock_file.libraries[library_name]
-            try:
-                # Check if library still exists
-                library_path = self.project_root / lock_entry.local_path
-                if not library_path.exists():
-                    invalid_libraries.append(f"{library_name}: library not found at {lock_entry.local_path}")
-                    continue
-                
-                # Verify checksum using correct method for files vs directories
-                if library_path.is_dir():
-                    current_checksum = ChecksumCalculator.calculate_directory_checksum(library_path)
-                else:
-                    current_checksum = ChecksumCalculator.calculate_file_checksum(library_path)
-                    
-                if current_checksum != lock_entry.checksum:
-                    invalid_libraries.append(f"{library_name}: checksum mismatch (modified?)")
-                    continue
-                
-                valid_libraries.append(library_name)
-                
-            except Exception as e:
-                invalid_libraries.append(f"{library_name}: validation error - {e}")
+            # Use the new validate_library method
+            validated_entry = self.validate_library(library_name, lock_entry)
+            validation_results[library_name] = validated_entry
         
-        return valid_libraries, invalid_libraries
+        return validation_results
     
     def clean_unused_mirrors(self) -> List[str]:
         """Remove unused mirrors not referenced by any installed library.

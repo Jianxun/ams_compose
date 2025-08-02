@@ -2,7 +2,7 @@
 
 ## Current Status
 - **Project**: ams-compose (renamed from analog-hub)
-- **Stage**: Architectural Review & Security Analysis Complete
+- **Stage**: Unified LockEntry Architecture Implementation (TDD Cycles 1-3 Complete)
 - **Last Updated**: 2025-08-02
 
 ## Critical Bugs Identified - License File Feature Branch
@@ -16,6 +16,18 @@
 - disclaimer that `ams-compose` is a dependency management tool, the repo owner is solely responsible to be meet all license compliance with the IPs checked into their repos.
 
 ## Recent Major Changes (Last 2-3 Sessions Only)
+
+### Unified LockEntry Architecture Implementation (TDD Cycles 1-3) - 2025-08-02
+- **Problem**: CLI/core separation violations with inconsistent data contracts - validate_installation() returned tuple, install had print statements, validate/install/list used different return types
+- **Solution**: Complete TDD implementation of unified architecture where all operations return Dict[str, LockEntry] with validation_status field
+- **Status**: Cycles 1-3 Complete - validate_library() method, validate_installation() unified return type, CLI validate command updated, all E2E tests fixed
+- **Benefits**: Perfect consistency across CLI commands, rich structured data, clean core/CLI separation, extensible validation framework
+
+### CLI/Core Separation Analysis & Unified LockEntry Architecture Design - 2025-08-02
+- **Problem**: Inconsistent data contracts across CLI commands - list uses Dict[str, LockEntry], validate uses Tuple[List[str], List[str]], install mixes print statements
+- **Solution**: Proposed unified LockEntry architecture where all operations return Dict[str, LockEntry] with validation_status field, single-library validation methods, orchestration-level iteration
+- **Status**: Analysis Complete - Identified clean separation violations, designed unified approach with validate_library() taking single LockEntry parameter
+- **Benefits**: Perfect consistency across commands, rich error context, better composability, simpler CLI formatting, extensible validation framework
 
 ### Comprehensive Architectural Review & Security Analysis - 2025-08-02
 - **Problem**: Need thorough architectural assessment to identify design issues, security vulnerabilities, and production readiness gaps
@@ -188,13 +200,13 @@
 - **Timing**: Post-MVP rename after core functionality (checkin, filtering, license features) is complete and stable
 
 ## Active Issues & Next Steps
-- **Current Priority**: Address critical security vulnerabilities identified in architectural review
-- **Next Phase**: Fix license file feature bugs, then implement security hardening and architectural fixes
-- **Critical Security Issues**: Path traversal vulnerability, unsafe git operations, checksum calculation race condition
-- **Code Consistency**: AnalogHubConfig → ComposeConfig rename across 14 files scheduled for next session
-- **Critical Gaps**: ✅ Submodule support (RESOLVED), ✅ Architectural review (COMPLETE), nested ams-compose dependencies unresolved, path security validation URGENT
-- **Test Strategy**: Maintain high test coverage - currently 125 unit + 33 E2E tests (expanded for submodule support)
-- **System Status**: MVP with known security vulnerabilities requiring immediate attention before production deployment
+- **Current Priority**: Complete unified LockEntry architecture - Cycles 4-5 remaining (install method print statement removal)
+- **Next Phase**: Address critical security vulnerabilities and license file bugs after architecture completion
+- **Architectural Achievement**: TDD Cycles 1-3 complete - validate_library() method, validate_installation() unified return, CLI validate command fixed
+- **Remaining Work**: Remove print statements from install methods (Cycle 4), unify CLI install command formatting (Cycle 5)
+- **Critical Security Issues**: Path traversal vulnerability, unsafe git operations, checksum race condition (to address after architecture completion)
+- **Test Strategy**: Maintained 100% test pass rate throughout refactor - all unit + E2E tests updated for new return types
+- **System Status**: Core validation architecture unified, install methods need similar treatment
 
 ## Tool Integration Complexity Analysis - 2025-08-01
 - **Problem**: Beyond file copying, analog tools (xschem, Magic, ngspice) require path rewriting and library registration for proper integration

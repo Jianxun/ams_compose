@@ -47,7 +47,7 @@ def _auto_generate_gitignore() -> None:
 @click.group()
 @click.version_option(version=__version__)
 def main():
-    """ams-compose: Dependency management for analog IC design repositories."""
+    """ams-compose: Dependency management for analog/mixed-signal IC design repositories."""
     pass
 
 
@@ -105,8 +105,8 @@ def list_libraries(detailed: bool):
         
         click.echo(f"Installed libraries ({len(installed)}):")
         
-        for library_name, lock_entry in installed.items():
-            if detailed:
+        if detailed:
+            for library_name, lock_entry in installed.items():
                 click.echo(f"{library_name}")
                 click.echo(f"  Repository: {lock_entry.repo}")
                 click.echo(f"  Reference:  {lock_entry.ref}")
@@ -124,9 +124,14 @@ def list_libraries(detailed: bool):
                 if warning:
                     click.echo(f"  ⚠️  WARNING: {warning}")
                 click.echo()
-            else:
+        else:
+            # Calculate column widths for neat alignment
+            max_name_width = max(len(name) for name in installed.keys())
+            max_ref_width = max(len(lock_entry.ref) for lock_entry in installed.values())
+            
+            for library_name, lock_entry in installed.items():
                 license_display = lock_entry.license or "None"
-                click.echo(f"  {library_name:<20} {lock_entry.commit[:8]} ({lock_entry.ref}) [{license_display}]")
+                click.echo(f"{library_name:<{max_name_width}} | commit:{lock_entry.commit[:8]} | ref:{lock_entry.ref:<{max_ref_width}} | license:{license_display}")
                 
     except InstallationError as e:
         _handle_installation_error(e)
@@ -147,7 +152,17 @@ def validate():
             sys.exit(1)
         
         # Validate installation state
-        valid_libraries, invalid_libraries = installer.validate_installation()
+        validation_results = installer.validate_installation()
+        
+        # Separate libraries by validation status
+        valid_libraries = []
+        invalid_libraries = []
+        
+        for library_name, lock_entry in validation_results.items():
+            if lock_entry.validation_status == "valid":
+                valid_libraries.append(library_name)
+            else:
+                invalid_libraries.append(f"{library_name}: {lock_entry.validation_status}")
         
         if invalid_libraries:
             click.echo(f"Invalid libraries ({len(invalid_libraries)}):")
@@ -249,17 +264,22 @@ def clean():
             click.echo("No orphaned libraries found")
         
         # Run validation after cleanup
-        valid_libraries, invalid_libraries = installer.validate_installation()
+        validation_results = installer.validate_installation()
         
-        if invalid_libraries:
-            # Filter out warnings (since we just cleaned orphaned libraries)
-            actual_issues = [issue for issue in invalid_libraries if not issue.startswith('WARNING')]
-            if actual_issues:
-                click.echo(f"Found {len(actual_issues)} remaining issues:")
-                for issue in actual_issues:
-                    click.echo(f"  {issue}")
-            else:
-                click.echo(f"All {len(valid_libraries)} libraries are valid")
+        # Separate libraries by validation status
+        valid_libraries = []
+        remaining_issues = []
+        
+        for library_name, lock_entry in validation_results.items():
+            if lock_entry.validation_status == "valid":
+                valid_libraries.append(library_name)
+            elif lock_entry.validation_status != "orphaned":  # Skip orphaned since we just cleaned them
+                remaining_issues.append(f"{library_name}: {lock_entry.validation_status}")
+        
+        if remaining_issues:
+            click.echo(f"Found {len(remaining_issues)} remaining issues:")
+            for issue in remaining_issues:
+                click.echo(f"  {issue}")
         else:
             click.echo(f"All {len(valid_libraries)} libraries are valid")
             

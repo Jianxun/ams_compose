@@ -8,12 +8,23 @@ Transform ams-compose from production-ready MVP to architecturally complete syst
 - **Core Unit Tests**: 125 passed, 0 failed (100% pass rate) ✅✅✅
 - **System Status**: Critical submodule gap resolved, ready for remaining architectural completeness items 🎯
 
-## In Progress
-- [x] **Complete comprehensive architectural review** - Analyze all core components, identify security vulnerabilities and design issues ✅
+## In Progress  
+- [ ] **Complete unified LockEntry architecture (TDD Cycles 4-5)** - Remove print statements from install methods, unify CLI install command formatting
 
-## Priority 1 (CRITICAL) - Security Vulnerabilities Requiring Immediate Fix
+## Priority 1 (CRITICAL) - Architectural Consistency & Security Fixes
 
-### Phase 1A: Critical Security Issues (URGENT)
+### ✅ Phase 1A: Unified Architecture Implementation (HIGH) - CYCLES 1-3 COMPLETE
+- [x] **Create validate_library() method** - Single LockEntry parameter, returns LockEntry with updated validation_status ✅
+- [x] **Refactor validate_installation()** - Return Dict[str, LockEntry] instead of tuple, orchestration-level iteration ✅
+- [x] **Unify CLI formatting** - Extend list command formatting to handle validation_status as status column ✅
+- [ ] **Update install command** - Remove print statements from core, return structured data with status info (TDD Cycle 4)
+- [x] **Update all call sites** - CLI commands and tests expecting old formats ✅
+
+### Phase 1A-Remaining: Complete Unified Architecture (TDD Cycles 4-5)
+- [ ] **TDD Cycle 4: Remove install method print statements** - Test-driven removal of print() calls from installer.py core methods
+- [ ] **TDD Cycle 5: Unify CLI install command formatting** - Update install command to use structured data, consistent with validate/list commands
+
+### Phase 1B: Critical Security Issues (URGENT)
 - [ ] **Fix path traversal vulnerability** - Add path validation to prevent local_path from escaping project directory (extractor.py, installer.py)
 - [ ] **Add git URL validation** - Prevent file:// URLs and command injection in mirror operations (mirror.py lines 155-159)
 - [ ] **Fix checksum calculation race condition** - Move .gitignore injection before checksum calculation (installer.py:147 vs extractor.py:344-348)
