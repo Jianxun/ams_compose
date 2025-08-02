@@ -83,20 +83,21 @@ class TestBatchInstaller:
         ]
         
         # Install all libraries
-        result = installer.install_all()
+        installed, up_to_date = installer.install_all()
         
         # Verify all libraries were installed
-        assert len(result) == 2
-        assert "test_library" in result
-        assert "another_lib" in result
+        assert len(installed) == 2
+        assert "test_library" in installed
+        assert "another_lib" in installed
+        assert len(up_to_date) == 0  # No libraries should be up-to-date in this test
         
         # Verify install_library was called for each library
         assert mock_install_library.call_count == 2
         
         # Verify lock entries
-        assert result["test_library"].repo == "https://github.com/example/test-repo"
-        assert result["another_lib"].repo == "https://github.com/example/another-repo"
-        assert result["another_lib"].local_path == "custom/path"
+        assert installed["test_library"].repo == "https://github.com/example/test-repo"
+        assert installed["another_lib"].repo == "https://github.com/example/another-repo"
+        assert installed["another_lib"].local_path == "custom/path"
     
     @patch('ams_compose.core.installer.LibraryInstaller.install_library')
     def test_install_all_specific_libraries(self, mock_install_library, installer, sample_config):

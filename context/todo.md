@@ -9,20 +9,39 @@ Transform ams-compose from production-ready MVP to architecturally complete syst
 - **System Status**: Critical submodule gap resolved, ready for remaining architectural completeness items 🎯
 
 ## In Progress  
-- [ ] **Complete unified LockEntry architecture (TDD Cycles 4-5)** - Remove print statements from install methods, unify CLI install command formatting
+- [ ] **Orchestrator Architecture Refactoring** - Execute 4-module refactoring plan starting with Phase 1 (LibraryValidator extraction)
 
-## Priority 1 (CRITICAL) - Architectural Consistency & Security Fixes
+## Priority 1 (CRITICAL) - Orchestrator Architecture Refactoring
 
-### ✅ Phase 1A: Unified Architecture Implementation (HIGH) - CYCLES 1-3 COMPLETE
-- [x] **Create validate_library() method** - Single LockEntry parameter, returns LockEntry with updated validation_status ✅
-- [x] **Refactor validate_installation()** - Return Dict[str, LockEntry] instead of tuple, orchestration-level iteration ✅
-- [x] **Unify CLI formatting** - Extend list command formatting to handle validation_status as status column ✅
-- [ ] **Update install command** - Remove print statements from core, return structured data with status info (TDD Cycle 4)
-- [x] **Update all call sites** - CLI commands and tests expecting old formats ✅
+### Phase 1: Extract LibraryValidator Module
+- [ ] **Create validator.py module** - Extract validation methods from installer.py to new LibraryValidator class
+- [ ] **Move validation methods** - Transfer validate_library(), validate_installation(), checksum operations
+- [ ] **Update imports and dependencies** - Fix all references to moved validation methods
+- [ ] **Migrate validation tests** - Move validation tests to new test_validator.py module
 
-### Phase 1A-Remaining: Complete Unified Architecture (TDD Cycles 4-5)
-- [ ] **TDD Cycle 4: Remove install method print statements** - Test-driven removal of print() calls from installer.py core methods
-- [ ] **TDD Cycle 5: Unify CLI install command formatting** - Update install command to use structured data, consistent with validate/list commands
+### Phase 2: Extract LibraryCleaner Module  
+- [ ] **Create cleaner.py module** - Extract cleanup methods to new LibraryCleaner class
+- [ ] **Move cleanup operations** - Transfer library removal, gitignore management, orphaned library handling
+- [ ] **Integrate with extractor gitignore** - Move _inject_gitignore_if_needed from extractor to cleaner
+- [ ] **Update cleaner tests** - Migrate cleanup tests to new test_cleaner.py module
+
+### Phase 3: Extract Pure Installation Logic
+- [ ] **Refactor installer.py** - Create focused LibraryInstaller class with pure installation logic
+- [ ] **Move installation methods** - Keep install_library(), install_all(), batch operations
+- [ ] **Remove non-installation code** - Move validation, cleanup to specialist modules
+- [ ] **Update installer tests** - Focus tests on installation logic only
+
+### Phase 4: Create LibraryManager Orchestrator
+- [ ] **Create library_manager.py** - Main orchestrator coordinating specialist modules
+- [ ] **Move config/lockfile management** - Transfer configuration loading, lockfile operations
+- [ ] **Implement orchestration logic** - Coordinate installer, validator, cleaner operations
+- [ ] **Update CLI integration** - Change CLI to use LibraryManager instead of LibraryInstaller
+
+### Phase 5: Fix PathExtractor Nested Functions
+- [ ] **Extract nested ignore_function** - Create _apply_ignore_filters method from nested function
+- [ ] **Move extraction orchestration** - Transfer extract_library workflow to LibraryManager
+- [ ] **Move validation operations** - Transfer library validation to LibraryValidator
+- [ ] **Move cleanup operations** - Transfer library removal to LibraryCleaner
 
 ### Phase 1B: Critical Security Issues (URGENT)
 - [ ] **Fix path traversal vulnerability** - Add path validation to prevent local_path from escaping project directory (extractor.py, installer.py)

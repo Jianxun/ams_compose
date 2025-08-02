@@ -2,7 +2,7 @@
 
 ## Current Status
 - **Project**: ams-compose (renamed from analog-hub)
-- **Stage**: Unified LockEntry Architecture Implementation (TDD Cycles 1-3 Complete)
+- **Stage**: Orchestrator Architecture Refactoring Planning Phase
 - **Last Updated**: 2025-08-02
 
 ## Critical Bugs Identified - License File Feature Branch
@@ -16,6 +16,14 @@
 - disclaimer that `ams-compose` is a dependency management tool, the repo owner is solely responsible to be meet all license compliance with the IPs checked into their repos.
 
 ## Recent Major Changes (Last 2-3 Sessions Only)
+
+### Orchestrator Architecture Refactoring Planning - 2025-08-02
+- **Problem**: Both installer.py (565 lines) and extractor.py (483 lines) have grown too large with multiple responsibilities
+- **Solution**: Comprehensive refactoring plan for 4-module orchestrator architecture: LibraryManager (orchestrator), Installer, Validator, Cleaner
+- **Status**: Planning Complete - Detailed refactoring plans created for both installer and extractor modules
+- **Benefits**: Clear separation of concerns, improved testability, maintainable architecture, elimination of nested function issues
+
+## Recent Major Changes (Previous Sessions)
 
 ### Unified CLI Formatting Implementation (TDD Cycles 1-5) - 2025-08-02
 - **Problem**: CLI/core separation violations with inconsistent data contracts - validate_installation() returned tuple, install had print statements, validate/install/list used different return types
@@ -200,12 +208,12 @@
 - **Timing**: Post-MVP rename after core functionality (checkin, filtering, license features) is complete and stable
 
 ## Active Issues & Next Steps
-- **Current Priority**: Complete unified formatting implementation - Tests need updating for new install_all return type (tuple)
-- **Recent Achievement**: Unified CLI formatting implemented across all commands (list/validate/install)
-- **Architectural Status**: All TDD Cycles 1-5 complete - print statements removed, CLI formatting unified, up-to-date libraries properly displayed
-- **Immediate Task**: Fix tests to handle new install_all return type: (installed_libraries, up_to_date_libraries) tuple
-- **Ready for Commit**: Major unified formatting refactor complete - all commands use consistent tabular format with status columns
-- **Next Session**: Complete test fixes and verify end-to-end functionality
+- **Current Priority**: Execute orchestrator architecture refactoring - Start with Phase 1 (installer.py validator extraction)
+- **Recent Achievement**: Comprehensive refactoring plans completed for both installer and extractor modules
+- **Architectural Status**: Ready to implement 4-module architecture: LibraryManager (orchestrator), Installer, Validator, Cleaner
+- **Planning Complete**: Detailed phase-by-phase implementation strategy defined
+- **Critical Issues Identified**: Nested function in extractor.py, monolithic installer.py responsibilities, coupling issues
+- **Next Session**: Begin Phase 1 - Extract LibraryValidator from installer.py
 
 ## Tool Integration Complexity Analysis - 2025-08-01
 - **Problem**: Beyond file copying, analog tools (xschem, Magic, ngspice) require path rewriting and library registration for proper integration

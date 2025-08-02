@@ -44,12 +44,13 @@ libraries:
     commit: 0a7e1150f8accd444ffb7e6ab7bebeff61687b01
     source_path: .
     local_path: designs/libs/switch_matrix_gf180mcu_9t5v0
-    checksum: b6abca4f1b27441744560c702ffb1ddd174d767b085ab547b27ce5a183d36f11
+    checksum: 6948901b8b0d85d0ab978c7dbbc971caaa92bc4e701576f6a22d7e0065ec34f6
     installed_at: '2025-07-27T09:05:32.135934'
-    updated_at: '2025-08-02T01:41:44.534937'
+    updated_at: '2025-08-02T15:59:52.845035'
     validation_status: unknown
     checkin: true
     license: N/A
+    install_status: installed
   tgate:
     repo: https://github.com/JorgeMarinN/SSCS-Chipathon-2025_AC3E-Chile-team
     ref: main
