@@ -3,11 +3,13 @@
 import pytest
 import tempfile
 import shutil
+import sys
+from io import StringIO
 from pathlib import Path
 from unittest.mock import Mock, patch
 
 from ams_compose.core.installer import LibraryInstaller, InstallationError
-from ams_compose.core.config import AnalogHubConfig, ImportSpec, LockEntry
+from ams_compose.core.config import AnalogHubConfig, ImportSpec, LockEntry, LockFile
 
 
 class TestBatchInstaller:
@@ -148,3 +150,125 @@ class TestBatchInstaller:
         # Installation should raise error on first failure
         with pytest.raises(Exception, match="Installation failed for another_lib"):
             installer.install_all()
+    
+    @patch('ams_compose.core.installer.LibraryInstaller.install_library')
+    @patch('ams_compose.utils.license.LicenseDetector.get_license_compatibility_warning')
+    def test_install_libraries_batch_no_print_output(self, mock_get_warning, mock_install_library, installer, sample_config):
+        """Test that _install_libraries_batch() produces no print output (TDD Cycle 4 RED)."""
+        # Mock license warning
+        mock_get_warning.return_value = "Test license warning"
+        
+        # Mock successful installation
+        mock_install_library.return_value = LockEntry(
+            repo="https://github.com/example/test-repo",
+            ref="main",
+            commit="abc123def",
+            source_path="lib/test",
+            local_path="designs/libs/test_library",
+            checksum="checksum1",
+            installed_at="2025-01-01T00:00:00",
+            updated_at="2025-01-01T00:00:00",
+            license="MIT"
+        )
+        
+        # Create libraries needing work and empty lock file
+        libraries_needing_work = {
+            "test_library": ImportSpec(
+                repo="https://github.com/example/test-repo",
+                ref="main",
+                source_path="lib/test"
+            )
+        }
+        lock_file = LockFile(library_root="designs/libs", libraries={})
+        
+        # Capture stdout to verify no print statements
+        captured_output = StringIO()
+        original_stdout = sys.stdout
+        sys.stdout = captured_output
+        
+        try:
+            # Call the batch installation method directly
+            result = installer._install_libraries_batch(
+                libraries_needing_work,
+                sample_config,
+                lock_file
+            )
+            
+            # Verify the method executed successfully
+            assert len(result) == 1
+            assert "test_library" in result
+            
+        finally:
+            # Restore stdout
+            sys.stdout = original_stdout
+        
+        # Assert that NO output was printed to stdout
+        output = captured_output.getvalue()
+        assert output == "", f"Expected no print output, but got: {repr(output)}"
+        
+        # Verify that status information is captured in the LockEntry
+        assert result["test_library"].install_status == "installed"
+        assert result["test_library"].license_warning is not None  # Should have warning for MIT license
+    
+    @patch('ams_compose.core.installer.LibraryInstaller.install_library')
+    def test_install_libraries_batch_update_scenario_no_print(self, mock_install_library, installer, sample_config):
+        """Test that _install_libraries_batch() handles updates without print output."""
+        # Mock successful installation for an update
+        mock_install_library.return_value = LockEntry(
+            repo="https://github.com/example/test-repo",
+            ref="main",
+            commit="newcommit",
+            source_path="lib/test",
+            local_path="designs/libs/test_library",
+            checksum="newchecksum",
+            installed_at="2025-01-01T00:00:00",
+            updated_at="2025-01-01T12:00:00",
+            license="GPL-3.0"
+        )
+        
+        # Create libraries needing work and lock file with existing entry
+        libraries_needing_work = {
+            "test_library": ImportSpec(
+                repo="https://github.com/example/test-repo",
+                ref="main",
+                source_path="lib/test"
+            )
+        }
+        lock_file = LockFile(
+            library_root="designs/libs", 
+            libraries={
+                "test_library": LockEntry(
+                    repo="https://github.com/example/test-repo",
+                    ref="main",
+                    commit="oldcommit",
+                    source_path="lib/test",
+                    local_path="designs/libs/test_library",
+                    checksum="oldchecksum",
+                    installed_at="2025-01-01T00:00:00",
+                    updated_at="2025-01-01T00:00:00",
+                    license="MIT"
+                )
+            }
+        )
+        
+        # Capture stdout to verify no print statements
+        captured_output = StringIO()
+        original_stdout = sys.stdout
+        sys.stdout = captured_output
+        
+        try:
+            result = installer._install_libraries_batch(
+                libraries_needing_work,
+                sample_config,
+                lock_file
+            )
+        finally:
+            sys.stdout = original_stdout
+        
+        # Assert that NO output was printed
+        output = captured_output.getvalue()
+        assert output == "", f"Expected no print output, but got: {repr(output)}"
+        
+        # Verify update status and license change are captured
+        assert result["test_library"].install_status == "updated"
+        assert result["test_library"].license_change == "license changed: MIT → GPL-3.0"

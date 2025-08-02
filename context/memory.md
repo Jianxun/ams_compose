@@ -17,11 +17,11 @@
 
 ## Recent Major Changes (Last 2-3 Sessions Only)
 
-### Unified LockEntry Architecture Implementation (TDD Cycles 1-3) - 2025-08-02
+### Unified CLI Formatting Implementation (TDD Cycles 1-5) - 2025-08-02
 - **Problem**: CLI/core separation violations with inconsistent data contracts - validate_installation() returned tuple, install had print statements, validate/install/list used different return types
-- **Solution**: Complete TDD implementation of unified architecture where all operations return Dict[str, LockEntry] with validation_status field
-- **Status**: Cycles 1-3 Complete - validate_library() method, validate_installation() unified return type, CLI validate command updated, all E2E tests fixed
-- **Benefits**: Perfect consistency across CLI commands, rich structured data, clean core/CLI separation, extensible validation framework
+- **Solution**: Complete TDD implementation with 5 cycles: unified data structures, removed all print statements from core, implemented tabular formatting across all CLI commands
+- **Status**: Cycles 1-5 Complete - All CLI commands (list/validate/install) now use consistent tabular format with proper column alignment, status display, and license warnings
+- **Benefits**: Clean tabular output, perfect CLI consistency, eliminated core/CLI violations, up-to-date libraries properly displayed, unified warning system
 
 ### CLI/Core Separation Analysis & Unified LockEntry Architecture Design - 2025-08-02
 - **Problem**: Inconsistent data contracts across CLI commands - list uses Dict[str, LockEntry], validate uses Tuple[List[str], List[str]], install mixes print statements
@@ -200,13 +200,12 @@
 - **Timing**: Post-MVP rename after core functionality (checkin, filtering, license features) is complete and stable
 
 ## Active Issues & Next Steps
-- **Current Priority**: Complete unified LockEntry architecture - Cycles 4-5 remaining (install method print statement removal)
-- **Next Phase**: Address critical security vulnerabilities and license file bugs after architecture completion
-- **Architectural Achievement**: TDD Cycles 1-3 complete - validate_library() method, validate_installation() unified return, CLI validate command fixed
-- **Remaining Work**: Remove print statements from install methods (Cycle 4), unify CLI install command formatting (Cycle 5)
-- **Critical Security Issues**: Path traversal vulnerability, unsafe git operations, checksum race condition (to address after architecture completion)
-- **Test Strategy**: Maintained 100% test pass rate throughout refactor - all unit + E2E tests updated for new return types
-- **System Status**: Core validation architecture unified, install methods need similar treatment
+- **Current Priority**: Complete unified formatting implementation - Tests need updating for new install_all return type (tuple)
+- **Recent Achievement**: Unified CLI formatting implemented across all commands (list/validate/install)
+- **Architectural Status**: All TDD Cycles 1-5 complete - print statements removed, CLI formatting unified, up-to-date libraries properly displayed
+- **Immediate Task**: Fix tests to handle new install_all return type: (installed_libraries, up_to_date_libraries) tuple
+- **Ready for Commit**: Major unified formatting refactor complete - all commands use consistent tabular format with status columns
+- **Next Session**: Complete test fixes and verify end-to-end functionality
 
 ## Tool Integration Complexity Analysis - 2025-08-01
 - **Problem**: Beyond file copying, analog tools (xschem, Magic, ngspice) require path rewriting and library registration for proper integration

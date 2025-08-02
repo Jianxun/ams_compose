@@ -48,6 +48,9 @@ class LockEntry(BaseModel):
     checkin: bool = Field(default=True, description="Whether library is included in version control")
     license: Optional[str] = Field(default=None, description="Library license (user-specified or auto-detected)")
     detected_license: Optional[str] = Field(default=None, description="Auto-detected license from repository")
+    install_status: Optional[str] = Field(default=None, description="Install operation status: installed/updated/up_to_date/error")
+    license_change: Optional[str] = Field(default=None, description="License change information for updates") 
+    license_warning: Optional[str] = Field(default=None, description="License compatibility warning")
 
 
 class AnalogHubConfig(BaseModel):

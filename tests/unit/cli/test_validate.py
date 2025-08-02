@@ -79,3 +79,46 @@ class TestValidateCommand:
         
         assert result.exit_code == 1
         assert "Configuration error: Invalid YAML syntax" in result.output
+    
+    @patch('ams_compose.cli.main._get_installer')
+    def test_validate_command_uses_unified_formatting(self, mock_get_installer):
+        """Test that validate command uses the same formatting style as install command."""
+        # Create mock installer
+        mock_installer = Mock()
+        mock_get_installer.return_value = mock_installer
+        
+        # Mock config validation success
+        mock_config = Mock()
+        mock_config.imports = {"test_lib": Mock()}
+        mock_installer.load_config.return_value = mock_config
+        
+        # Mock validate_installation to return valid library with rich data
+        validation_results = {
+            "test_lib": LockEntry(
+                repo="https://github.com/example/test-lib",
+                ref="main",
+                commit="abc123def",
+                source_path="lib",
+                local_path="designs/libs/test_lib",
+                checksum="checksum1",
+                installed_at="2025-01-01T00:00:00",
+                updated_at="2025-01-01T00:00:00",
+                validation_status="valid",
+                license="MIT"
+            )
+        }
+        mock_installer.validate_installation.return_value = validation_results
+        
+        runner = CliRunner()
+        result = runner.invoke(main, ['validate'])
+        
+        # Should succeed with valid library
+        assert result.exit_code == 0
+        
+        # Verify output uses same tabular format as install command:
+        # "test_lib | commit:abc123de | ref:main | license:MIT | status:valid"
+        output = result.output
+        assert "test_lib" in output
+        assert "commit:abc123de" in output  # 8-character commit hash
+        assert "license:MIT" in output
+        assert "status:valid" in output

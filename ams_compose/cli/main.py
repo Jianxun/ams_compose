@@ -2,12 +2,12 @@
 
 import sys
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 import click
 from ams_compose import __version__
 from ams_compose.core.installer import LibraryInstaller, InstallationError
-from ams_compose.core.config import AnalogHubConfig
+from ams_compose.core.config import AnalogHubConfig, LockEntry
 
 
 def _get_installer() -> LibraryInstaller:
@@ -19,6 +19,121 @@ def _handle_installation_error(e: InstallationError) -> None:
     """Handle installation errors with user-friendly messages."""
     click.echo(f"Error: {e}", err=True)
     sys.exit(1)
+
+
+def _format_libraries_tabular(libraries: Dict[str, LockEntry], show_status: bool = False) -> None:
+    """Format libraries in clean tabular format with proper column alignment.
+    
+    Args:
+        libraries: Dictionary of library name to LockEntry
+        show_status: Whether to include status column
+    """
+    if not libraries:
+        return
+        
+    # Calculate column widths for alignment
+    max_name_width = max(len(name) for name in libraries.keys())
+    max_ref_width = max(len(entry.ref) for entry in libraries.values())
+    max_license_width = max(len(entry.license or "None") for entry in libraries.values())
+    
+    if show_status:
+        max_status_width = max(len(entry.install_status or entry.validation_status or "unknown") 
+                              for entry in libraries.values())
+    
+    for library_name, lock_entry in libraries.items():
+        commit_hash = lock_entry.commit[:8]
+        license_display = lock_entry.license or "None"
+        
+        if show_status:
+            status = lock_entry.install_status or lock_entry.validation_status or "unknown"
+            click.echo(f"{library_name:<{max_name_width}} | commit:{commit_hash} | ref:{lock_entry.ref:<{max_ref_width}} | license:{license_display:<{max_license_width}} | status:{status}")
+        else:
+            click.echo(f"{library_name:<{max_name_width}} | commit:{commit_hash} | ref:{lock_entry.ref:<{max_ref_width}} | license:{license_display}")
+        
+        # Show additional info for status commands (install/validate)
+        if show_status:
+            # Show license change if it occurred
+            if lock_entry.license_change:
+                click.echo(f"  ↳ {lock_entry.license_change}")
+            
+            # Show license compatibility warning
+            if lock_entry.license_warning:
+                click.echo(f"  ⚠️  WARNING: {lock_entry.license_warning}")
+            elif lock_entry.license:
+                from ams_compose.utils.license import LicenseDetector
+                license_detector = LicenseDetector()
+                warning = license_detector.get_license_compatibility_warning(lock_entry.license)
+                if warning:
+                    click.echo(f"  ⚠️  WARNING: {warning}")
+
+
+def _format_libraries_detailed(libraries: Dict[str, LockEntry], show_status: bool = False) -> None:
+    """Format libraries in detailed multi-line format.
+    
+    Args:
+        libraries: Dictionary of library name to LockEntry
+        show_status: Whether to show status information
+    """
+    if not libraries:
+        return
+        
+    for library_name, lock_entry in libraries.items():
+        click.echo(f"{library_name}")
+        click.echo(f"  Repository: {lock_entry.repo}")
+        click.echo(f"  Reference:  {lock_entry.ref}")
+        click.echo(f"  Commit:     {lock_entry.commit}")
+        click.echo(f"  Path:       {lock_entry.local_path}")
+        click.echo(f"  License:    {lock_entry.license or 'Not detected'}")
+        
+        if lock_entry.detected_license and lock_entry.license != lock_entry.detected_license:
+            click.echo(f"  Auto-detected: {lock_entry.detected_license}")
+            
+        click.echo(f"  Installed:  {lock_entry.installed_at}")
+        
+        if show_status:
+            status = lock_entry.install_status or lock_entry.validation_status
+            if status:
+                click.echo(f"  Status:     {status}")
+                
+            # Show license change if it occurred
+            if lock_entry.license_change:
+                click.echo(f"  Changes:    {lock_entry.license_change}")
+        
+        # Show license compatibility warning
+        if lock_entry.license_warning:
+            click.echo(f"  ⚠️  WARNING: {lock_entry.license_warning}")
+        elif lock_entry.license:
+            from ams_compose.utils.license import LicenseDetector
+            license_detector = LicenseDetector()
+            warning = license_detector.get_license_compatibility_warning(lock_entry.license)
+            if warning:
+                click.echo(f"  ⚠️  WARNING: {warning}")
+        
+        click.echo()
+
+
+def _format_libraries_summary(libraries: Dict[str, LockEntry], title: str, empty_message: str = None, 
+                             detailed: bool = False, show_status: bool = False) -> None:
+    """Unified formatter for library summaries across all commands.
+    
+    Args:
+        libraries: Dictionary of library name to LockEntry
+        title: Title to display
+        empty_message: Custom message when no libraries found
+        detailed: Whether to use detailed multi-line format
+        show_status: Whether to show status information
+    """
+    if not libraries:
+        message = empty_message or f"No {title.lower()}"
+        click.echo(message)
+        return
+        
+    click.echo(f"{title} ({len(libraries)}):")
+    
+    if detailed:
+        _format_libraries_detailed(libraries, show_status)
+    else:
+        _format_libraries_tabular(libraries, show_status)
 
 
 def _auto_generate_gitignore() -> None:
@@ -78,11 +193,22 @@ def install(libraries: tuple, auto_gitignore: bool, force: bool):
         else:
             click.echo("Installing all libraries from ams-compose.yaml")
         
-        installed = installer.install_all(library_list, force=force)
+        installed, up_to_date = installer.install_all(library_list, force=force)
         
+        # Show up-to-date libraries first
+        if up_to_date:
+            _format_libraries_summary(up_to_date, "Up-to-date libraries", 
+                                     detailed=False, show_status=True)
+        
+        # Show installed/updated libraries
         if installed:
-            click.echo(f"Installed {len(installed)} libraries")
-        else:
+            if up_to_date:
+                click.echo()  # Add blank line between sections
+            _format_libraries_summary(installed, "Processed libraries", 
+                                     detailed=False, show_status=True)
+        
+        # Show summary message if nothing was processed
+        if not installed and not up_to_date:
             click.echo("No libraries to install")
             
     except InstallationError as e:
@@ -99,39 +225,8 @@ def list_libraries(detailed: bool):
         installer = _get_installer()
         installed = installer.list_installed_libraries()
         
-        if not installed:
-            click.echo("No libraries installed")
-            return
-        
-        click.echo(f"Installed libraries ({len(installed)}):")
-        
-        if detailed:
-            for library_name, lock_entry in installed.items():
-                click.echo(f"{library_name}")
-                click.echo(f"  Repository: {lock_entry.repo}")
-                click.echo(f"  Reference:  {lock_entry.ref}")
-                click.echo(f"  Commit:     {lock_entry.commit}")
-                click.echo(f"  Path:       {lock_entry.local_path}")
-                click.echo(f"  License:    {lock_entry.license or 'Not detected'}")
-                if lock_entry.detected_license and lock_entry.license != lock_entry.detected_license:
-                    click.echo(f"  Auto-detected: {lock_entry.detected_license}")
-                click.echo(f"  Installed:  {lock_entry.installed_at}")
-                
-                # Show license compatibility warning
-                from ams_compose.utils.license import LicenseDetector
-                license_detector = LicenseDetector()
-                warning = license_detector.get_license_compatibility_warning(lock_entry.license)
-                if warning:
-                    click.echo(f"  ⚠️  WARNING: {warning}")
-                click.echo()
-        else:
-            # Calculate column widths for neat alignment
-            max_name_width = max(len(name) for name in installed.keys())
-            max_ref_width = max(len(lock_entry.ref) for lock_entry in installed.values())
-            
-            for library_name, lock_entry in installed.items():
-                license_display = lock_entry.license or "None"
-                click.echo(f"{library_name:<{max_name_width}} | commit:{lock_entry.commit[:8]} | ref:{lock_entry.ref:<{max_ref_width}} | license:{license_display}")
+        _format_libraries_summary(installed, "Installed libraries", "No libraries installed", 
+                                 detailed=detailed, show_status=False)
                 
     except InstallationError as e:
         _handle_installation_error(e)
@@ -155,22 +250,27 @@ def validate():
         validation_results = installer.validate_installation()
         
         # Separate libraries by validation status
-        valid_libraries = []
-        invalid_libraries = []
+        valid_libraries = {}
+        invalid_libraries = {}
         
         for library_name, lock_entry in validation_results.items():
             if lock_entry.validation_status == "valid":
-                valid_libraries.append(library_name)
+                valid_libraries[library_name] = lock_entry
             else:
-                invalid_libraries.append(f"{library_name}: {lock_entry.validation_status}")
+                invalid_libraries[library_name] = lock_entry
         
+        # Show validation results using unified formatting
         if invalid_libraries:
-            click.echo(f"Invalid libraries ({len(invalid_libraries)}):")
-            for issue in invalid_libraries:
-                click.echo(f"  {issue}")
+            _format_libraries_summary(invalid_libraries, "Invalid libraries", 
+                                     detailed=False, show_status=True)
+            click.echo()
+            if valid_libraries:
+                _format_libraries_summary(valid_libraries, "Valid libraries", 
+                                         detailed=False, show_status=True)
             sys.exit(1)
         else:
-            click.echo(f"All {len(valid_libraries)} libraries are valid")
+            _format_libraries_summary(valid_libraries, "Valid libraries", "All libraries are valid", 
+                                     detailed=False, show_status=True)
             
     except InstallationError as e:
         _handle_installation_error(e)
