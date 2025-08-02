@@ -19,7 +19,6 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
     'sphinx.ext.napoleon',
-    'myst_parser',
 ]
 
 templates_path = ['_templates']
@@ -39,10 +38,7 @@ import sys
 sys.path.insert(0, os.path.abspath('..'))
 
 # -- Source file formats -----------------------------------------------------
-source_suffix = {
-    '.rst': None,
-    '.md': 'myst_parser',
-}
+source_suffix = '.rst'
 
 # -- Napoleon settings -------------------------------------------------------
 napoleon_google_docstring = True

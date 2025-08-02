@@ -60,7 +60,8 @@ AMS-Compose Documentation
    architecture/overview
    architecture/mirror-system
    architecture/extraction-engine
-   architecture/dependency-resolution
+   architecture/component-interactions
+   architecture/decision-rationales
 
 .. toctree::
    :maxdepth: 2
