@@ -244,6 +244,36 @@ class PathExtractor:
         with open(provenance_file, 'w') as f:
             yaml.dump(provenance, f, default_flow_style=False, sort_keys=False)
     
+    def _inject_gitignore_if_needed(self, library_name: str, checkin: bool, library_path: Path) -> None:
+        """Inject .gitignore file for checkin=false libraries.
+        
+        Creates individual .gitignore files inside each library directory that has checkin=false,
+        containing '*' to ignore all files in that directory. This keeps the main project
+        .gitignore clean and avoids conflicts with user modifications.
+        
+        Args:
+            library_name: Name of the library
+            checkin: Whether library should be checked into version control
+            library_path: Path to the library directory
+        """
+        library_gitignore_path = library_path / ".gitignore"
+        
+        if not checkin:
+            # Library should be ignored - create .gitignore inside library directory
+            # Create .gitignore that ignores all files but keeps itself tracked
+            # This makes the directory visible in git while ignoring library content
+            gitignore_content = f"""# Library: {library_name} (checkin: false)
+# This library is not checked into version control
+# Run 'ams-compose install' to download this library
+*
+!.gitignore
+"""
+            library_gitignore_path.write_text(gitignore_content)
+        else:
+            # Library should be checked in - remove library-specific .gitignore if it exists
+            if library_gitignore_path.exists():
+                library_gitignore_path.unlink()
+    
     
     def _resolve_local_path(self, library_name: str, import_spec: ImportSpec, library_root: str) -> Path:
         """Resolve the local installation path for a library.
@@ -341,7 +371,12 @@ class PathExtractor:
                     library_name, import_spec, mirror_path, resolved_commit, local_path
                 )
             
-            # Calculate checksum of extracted content (after provenance generation)
+            # Inject .gitignore for checkin=false libraries BEFORE checksum calculation
+            # This ensures the checksum includes the .gitignore file for validation consistency
+            if local_path.is_dir():
+                self._inject_gitignore_if_needed(library_name, import_spec.checkin, local_path)
+            
+            # Calculate checksum of extracted content (after provenance and gitignore injection)
             if local_path.is_dir():
                 checksum = ChecksumCalculator.calculate_directory_checksum(local_path)
             else:

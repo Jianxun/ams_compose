@@ -143,8 +143,8 @@ class LibraryInstaller:
                 detected_license=license_info.license_type
             )
             
-            # Step 5: Update .gitignore based on checkin field
-            self._update_gitignore_for_library(library_name, lock_entry)
+            # Note: .gitignore injection now handled in PathExtractor.extract_library()
+            # before checksum calculation to fix race condition
             
             return lock_entry
             

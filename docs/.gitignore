@@ -1,0 +1,14 @@
+# Sphinx build output
+_build/
+build/
+
+# Sphinx temporary files
+.doctrees/
+
+# Auto-generated files
+_static/
+_templates/
+
+# OS files
+.DS_Store
+Thumbs.db
