@@ -399,10 +399,10 @@ build/
         assert "checkin: false" in library_content
     
     def test_gitignore_creation_when_none_exists(self):
-        """Test that .gitignore file is created when it doesn't exist."""
-        # Ensure no .gitignore exists initially
-        gitignore_path = self.project_root / ".gitignore"
-        assert not gitignore_path.exists()
+        """Test that library-specific .gitignore is created for checkin=false libraries."""
+        # Ensure no main .gitignore exists initially
+        main_gitignore_path = self.project_root / ".gitignore"
+        assert not main_gitignore_path.exists()
         
         # Create mock repository and configuration
         repo_path = self._create_mock_repo("new-repo", {
@@ -422,10 +422,17 @@ build/
         installed_libs = self.installer.install_all()
         assert "new_library" in installed_libs
         
-        # Verify .gitignore was created with library entry
-        assert gitignore_path.exists()
-        gitignore_content = self._read_gitignore()
-        assert "libs/new_library/" in gitignore_content
+        # Verify library-specific .gitignore was created (NOT main project .gitignore)
+        library_path = self.project_root / "libs" / "new_library"
+        library_gitignore = library_path / ".gitignore"
+        
+        assert library_gitignore.exists(), "Library-specific .gitignore should be created for checkin=false"
+        gitignore_content = library_gitignore.read_text()
+        assert "checkin: false" in gitignore_content
+        assert "*\n!.gitignore" in gitignore_content
+        
+        # Verify main project .gitignore is NOT created (library-specific approach)
+        assert not main_gitignore_path.exists(), "Main .gitignore should not be created - using library-specific approach"
     
     def test_complex_scenario_with_multiple_operations(self):
         """Test complex scenario with multiple libraries and configuration changes."""
@@ -471,12 +478,22 @@ build/
         installed_libs = self.installer.install_all()
         assert len(installed_libs) == 3
         
-        # Verify initial .gitignore state
-        gitignore_content = self._read_gitignore()
-        assert "*.backup" in gitignore_content        # Original content preserved
-        assert "libs/stable_lib/" in gitignore_content    # checkin=false
-        assert "libs/dev_lib/" not in gitignore_content   # checkin=true  
-        assert "libs/critical_lib/" not in gitignore_content # default checkin=true
+        # Verify initial library-specific .gitignore state (NOT main .gitignore modification)
+        main_gitignore_content = self._read_gitignore()
+        assert "*.backup" in main_gitignore_content        # Original content preserved
+        
+        # Check library-specific .gitignore files
+        stable_lib_gitignore = self.project_root / "libs" / "stable_lib" / ".gitignore"
+        dev_lib_gitignore = self.project_root / "libs" / "dev_lib" / ".gitignore"
+        critical_lib_gitignore = self.project_root / "libs" / "critical_lib" / ".gitignore"
+        
+        assert stable_lib_gitignore.exists(), "stable_lib should have .gitignore (checkin=false)"
+        assert not dev_lib_gitignore.exists(), "dev_lib should not have .gitignore (checkin=true)"
+        assert not critical_lib_gitignore.exists(), "critical_lib should not have .gitignore (default checkin=true)"
+        
+        # Verify stable_lib .gitignore content
+        stable_content = stable_lib_gitignore.read_text()
+        assert "checkin: false" in stable_content
         
         # Step 2: Change dev_lib to checkin=false and critical_lib to checkin=false
         self._create_config({
@@ -504,12 +521,26 @@ build/
         installed_libs = self.installer.install_all(force=True)
         assert len(installed_libs) == 3
         
-        # Verify final .gitignore state
-        final_gitignore = self._read_gitignore()
-        assert "*.backup" in final_gitignore          # Original content still preserved
-        assert "libs/stable_lib/" in final_gitignore      # Still ignored
-        assert "libs/dev_lib/" in final_gitignore         # Now ignored (changed)
-        assert "libs/critical_lib/" in final_gitignore    # Now ignored (changed)
+        # Verify final library-specific .gitignore state
+        final_main_gitignore = self._read_gitignore()
+        assert "*.backup" in final_main_gitignore          # Original content still preserved
+        
+        # Check final library-specific .gitignore files
+        stable_lib_gitignore = self.project_root / "libs" / "stable_lib" / ".gitignore"
+        dev_lib_gitignore = self.project_root / "libs" / "dev_lib" / ".gitignore"
+        critical_lib_gitignore = self.project_root / "libs" / "critical_lib" / ".gitignore"
+        
+        assert stable_lib_gitignore.exists(), "stable_lib should still have .gitignore (checkin=false)"
+        assert dev_lib_gitignore.exists(), "dev_lib should now have .gitignore (changed to checkin=false)"
+        assert critical_lib_gitignore.exists(), "critical_lib should now have .gitignore (changed to checkin=false)"
+        
+        # Verify all library .gitignore files have correct content
+        for lib_name, lib_gitignore in [("stable_lib", stable_lib_gitignore), 
+                                       ("dev_lib", dev_lib_gitignore),
+                                       ("critical_lib", critical_lib_gitignore)]:
+            content = lib_gitignore.read_text()
+            assert f"Library: {lib_name} (checkin: false)" in content
+            assert "*\n!.gitignore" in content
         
         # Verify all libraries still exist physically
         assert (self.project_root / "libs" / "stable_lib").exists()
@@ -557,24 +588,36 @@ build/
         assert (library_path / "design.sch").exists()
         assert (library_path / "design.sym").exists()
         
-        # Verify IP's .gitignore was NOT copied (filtered out)
-        ip_gitignore_in_lib = library_path / ".gitignore"
-        assert not ip_gitignore_in_lib.exists(), "IP repository .gitignore should be filtered out"
+        # Verify IP's original .gitignore content was filtered out, but NEW library .gitignore created
+        library_gitignore = library_path / ".gitignore"
+        assert library_gitignore.exists(), "Library-specific .gitignore should be created for checkin=false"
         
-        # Verify project .gitignore was updated correctly
+        # Verify the library .gitignore is OUR generated one, not the IP's original
+        library_gitignore_content = library_gitignore.read_text()
+        assert "Library: ip_library (checkin: false)" in library_gitignore_content, "Should be our generated .gitignore"
+        assert "*\n!.gitignore" in library_gitignore_content, "Should have our ignore pattern"
+        
+        # Verify IP's original .gitignore content was NOT copied
+        assert "*.bak" not in library_gitignore_content, "IP's original .gitignore content should be filtered out"
+        assert "*.tmp" not in library_gitignore_content, "IP's original .gitignore content should be filtered out"
+        assert "simulation/" not in library_gitignore_content, "IP's original .gitignore content should be filtered out"
+        
+        # Verify project .gitignore was NOT modified (library-specific approach)
         project_gitignore_content = self._read_gitignore()
         assert "*.log" in project_gitignore_content           # Original content preserved
         assert "build/" in project_gitignore_content          # Original content preserved
-        assert "libs/ip_library/" in project_gitignore_content    # Library path added
-        assert "*.bak" not in project_gitignore_content       # IP's ignore rules not merged
-        assert "simulation/" not in project_gitignore_content # IP's ignore rules not merged
+        assert "libs/ip_library/" not in project_gitignore_content, "Main .gitignore should NOT be modified - using library-specific approach"
         
-        # Verify no extra .gitignore files exist in project workspace (excluding .mirror)
+        # Verify expected .gitignore files exist in project workspace (excluding .mirror)
         workspace_gitignores = []
         for gitignore_path in self.project_root.rglob(".gitignore"):
             # Skip .gitignore files in the .mirror directory (those are expected)
             if ".mirror" not in str(gitignore_path):
                 workspace_gitignores.append(gitignore_path)
         
-        assert len(workspace_gitignores) == 1, f"Should only have project .gitignore in workspace, found: {workspace_gitignores}"
-        assert workspace_gitignores[0] == project_gitignore
+        # Should have 2 .gitignore files: main project + library-specific for checkin=false
+        assert len(workspace_gitignores) == 2, f"Should have project + library .gitignore files, found: {workspace_gitignores}"
+        
+        gitignore_paths = {str(path) for path in workspace_gitignores}
+        expected_paths = {str(project_gitignore), str(library_gitignore)}
+        assert gitignore_paths == expected_paths, f"Expected {expected_paths}, but found {gitignore_paths}"
