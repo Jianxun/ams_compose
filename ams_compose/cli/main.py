@@ -21,12 +21,14 @@ def _handle_installation_error(e: InstallationError) -> None:
     sys.exit(1)
 
 
-def _format_libraries_tabular(libraries: Dict[str, LockEntry], show_status: bool = False) -> None:
+def _format_libraries_tabular(libraries: Dict[str, LockEntry], show_status: bool = False, 
+                             command_context: str = "list") -> None:
     """Format libraries in clean tabular format with proper column alignment.
     
     Args:
         libraries: Dictionary of library name to LockEntry
         show_status: Whether to include status column
+        command_context: Command context for status priority ("list", "validate", "install")
     """
     if not libraries:
         return
@@ -37,15 +39,30 @@ def _format_libraries_tabular(libraries: Dict[str, LockEntry], show_status: bool
     max_license_width = max(len(entry.license or "None") for entry in libraries.values())
     
     if show_status:
-        max_status_width = max(len(entry.install_status or entry.validation_status or "unknown") 
-                              for entry in libraries.values())
+        # Calculate status width based on command context
+        status_values = []
+        for entry in libraries.values():
+            if command_context == "validate":
+                status = entry.validation_status or "unknown"
+            elif command_context == "install":
+                status = entry.install_status or entry.validation_status or "unknown"
+            else:  # list or default
+                status = entry.install_status or entry.validation_status or "unknown"
+            status_values.append(status)
+        max_status_width = max(len(status) for status in status_values)
     
     for library_name, lock_entry in libraries.items():
         commit_hash = lock_entry.commit[:8]
         license_display = lock_entry.license or "None"
         
         if show_status:
-            status = lock_entry.install_status or lock_entry.validation_status or "unknown"
+            # Select status based on command context
+            if command_context == "validate":
+                status = lock_entry.validation_status or "unknown"
+            elif command_context == "install":
+                status = lock_entry.install_status or lock_entry.validation_status or "unknown"
+            else:  # list or default
+                status = lock_entry.install_status or lock_entry.validation_status or "unknown"
             click.echo(f"{library_name:<{max_name_width}} | commit:{commit_hash} | ref:{lock_entry.ref:<{max_ref_width}} | license:{license_display:<{max_license_width}} | status:{status}")
         else:
             click.echo(f"{library_name:<{max_name_width}} | commit:{commit_hash} | ref:{lock_entry.ref:<{max_ref_width}} | license:{license_display}")
@@ -113,7 +130,8 @@ def _format_libraries_detailed(libraries: Dict[str, LockEntry], show_status: boo
 
 
 def _format_libraries_summary(libraries: Dict[str, LockEntry], title: str, empty_message: str = None, 
-                             detailed: bool = False, show_status: bool = False) -> None:
+                             detailed: bool = False, show_status: bool = False, 
+                             command_context: str = "list") -> None:
     """Unified formatter for library summaries across all commands.
     
     Args:
@@ -122,6 +140,7 @@ def _format_libraries_summary(libraries: Dict[str, LockEntry], title: str, empty
         empty_message: Custom message when no libraries found
         detailed: Whether to use detailed multi-line format
         show_status: Whether to show status information
+        command_context: Command context for status priority ("list", "validate", "install")
     """
     if not libraries:
         message = empty_message or f"No {title.lower()}"
@@ -133,7 +152,7 @@ def _format_libraries_summary(libraries: Dict[str, LockEntry], title: str, empty
     if detailed:
         _format_libraries_detailed(libraries, show_status)
     else:
-        _format_libraries_tabular(libraries, show_status)
+        _format_libraries_tabular(libraries, show_status, command_context)
 
 
 def _auto_generate_gitignore() -> None:
@@ -198,14 +217,14 @@ def install(libraries: tuple, auto_gitignore: bool, force: bool):
         # Show up-to-date libraries first
         if up_to_date:
             _format_libraries_summary(up_to_date, "Up-to-date libraries", 
-                                     detailed=False, show_status=True)
+                                     detailed=False, show_status=True, command_context="install")
         
         # Show installed/updated libraries
         if installed:
             if up_to_date:
                 click.echo()  # Add blank line between sections
             _format_libraries_summary(installed, "Processed libraries", 
-                                     detailed=False, show_status=True)
+                                     detailed=False, show_status=True, command_context="install")
         
         # Show summary message if nothing was processed
         if not installed and not up_to_date:
@@ -262,15 +281,15 @@ def validate():
         # Show validation results using unified formatting
         if invalid_libraries:
             _format_libraries_summary(invalid_libraries, "Invalid libraries", 
-                                     detailed=False, show_status=True)
+                                     detailed=False, show_status=True, command_context="validate")
             click.echo()
             if valid_libraries:
                 _format_libraries_summary(valid_libraries, "Valid libraries", 
-                                         detailed=False, show_status=True)
+                                         detailed=False, show_status=True, command_context="validate")
             sys.exit(1)
         else:
             _format_libraries_summary(valid_libraries, "Valid libraries", "All libraries are valid", 
-                                     detailed=False, show_status=True)
+                                     detailed=False, show_status=True, command_context="validate")
             
     except InstallationError as e:
         _handle_installation_error(e)
