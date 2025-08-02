@@ -151,21 +151,24 @@ class TestValidationBugs:
         self._create_config_file(updated_config)
         
         # Test fixed behavior - validation only checks libraries in current config
-        valid_libraries, invalid_libraries = self.installer.validate_installation()
+        validation_results = self.installer.validate_installation()
+        
+        # Extract valid libraries and check statuses
+        valid_libraries = [name for name, entry in validation_results.items() if entry.validation_status == "valid"]
+        orphaned_libraries = [name for name, entry in validation_results.items() if entry.validation_status == "orphaned"]
         
         # FIXED: Only libraries in current config should be validated
         assert 'lib_a' in valid_libraries, "lib_a should be validated (in current config)"
         assert 'single_file' in valid_libraries, "single_file should be validated (in current config)"
+        assert 'lib_b' in orphaned_libraries, "lib_b should be marked as orphaned (not in current config)"
         
-        # FIXED: lib_b should be warned about as orphaned, not validated
-        orphaned_warning_found = any('WARNING' in msg and 'orphaned' in msg for msg in invalid_libraries)
-        assert orphaned_warning_found, "Should warn about orphaned libraries"
+        # FIXED: lib_b should be marked as orphaned in the new validation system
+        # With the new unified architecture, orphaned libraries are identified by validation_status
+        assert len(orphaned_libraries) == 1, "Should have exactly 1 orphaned library"
+        assert 'lib_b' in orphaned_libraries, "lib_b should be marked as orphaned"
         
-        lib_b_mentioned_in_warning = any('lib_b' in msg for msg in invalid_libraries)
-        assert lib_b_mentioned_in_warning, "lib_b should be mentioned in orphaned warning"
-        
-        fix_suggestion_found = any('ams-compose clean' in msg for msg in invalid_libraries) 
-        assert fix_suggestion_found, "Should suggest running 'ams-compose clean' to fix"
+        # Verify that current config libraries are properly validated
+        assert len(valid_libraries) == 2, "Should have 2 valid libraries from current config"
 
     def test_file_vs_directory_checksum_bug(self):
         """Test Fix 2: Validation uses correct checksum method for files and directories.
@@ -211,16 +214,19 @@ class TestValidationBugs:
         assert lib_file_path.exists() and lib_file_path.is_file()
         
         # Test fixed behavior - both file and directory validation work correctly
-        valid_libraries, invalid_libraries = self.installer.validate_installation()
+        validation_results = self.installer.validate_installation()
+        
+        # Extract valid libraries
+        valid_libraries = [name for name, entry in validation_results.items() if entry.validation_status == "valid"]
         
         # FIXED: Both file and directory libraries should validate correctly
         assert 'lib_file' in valid_libraries, "File library should validate correctly with proper checksum method"
         assert 'lib_directory' in valid_libraries, "Directory library should validate correctly"
         
         # FIXED: No invalid libraries when everything is properly installed
-        # Filter out any warning messages (which might be present for other reasons)
-        actual_invalid_libraries = [lib for lib in invalid_libraries if not lib.startswith('WARNING')]
-        assert len(actual_invalid_libraries) == 0, f"Should have no invalid libraries, but got: {actual_invalid_libraries}"
+        # Check that all libraries have valid status
+        invalid_libraries = [name for name, entry in validation_results.items() if entry.validation_status != "valid"]
+        assert len(invalid_libraries) == 0, f"Should have no invalid libraries, but got: {invalid_libraries}"
 
     def test_git_directory_filtering_fix(self):
         """Test Fix: .git directory is properly filtered when source_path is '.' to prevent version control issues.
@@ -296,10 +302,14 @@ class TestValidationBugs:
         assert not gitattributes_copied, "FIXED: .gitattributes should NOT be copied and now it isn't"
         
         # Verify that installation still works functionally (checksum validation)
-        valid_libraries, invalid_libraries = self.installer.validate_installation()
-        actual_invalid = [lib for lib in invalid_libraries if not lib.startswith('WARNING')]
+        validation_results = self.installer.validate_installation()
+        
+        # Extract valid libraries
+        valid_libraries = [name for name, entry in validation_results.items() if entry.validation_status == "valid"]
+        invalid_libraries = [name for name, entry in validation_results.items() if entry.validation_status != "valid"]
+        
         assert 'full_repo_library' in valid_libraries, "Library should still validate functionally"
-        assert len(actual_invalid) == 0, "Installation should be functionally valid despite git files"
+        assert len(invalid_libraries) == 0, "Installation should be functionally valid despite git files"
         
         print(f"\\n=== SECURITY/WORKFLOW BENEFITS ===")
         print(f"- Extracted library is clean of version control metadata")

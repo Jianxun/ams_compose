@@ -8,12 +8,42 @@ Transform ams-compose from production-ready MVP to architecturally complete syst
 - **Core Unit Tests**: 125 passed, 0 failed (100% pass rate) ✅✅✅
 - **System Status**: Critical submodule gap resolved, ready for remaining architectural completeness items 🎯
 
-## In Progress
-- [x] **Complete comprehensive architectural review** - Analyze all core components, identify security vulnerabilities and design issues ✅
+## In Progress  
+- [ ] **Orchestrator Architecture Refactoring** - Execute 4-module refactoring plan starting with Phase 1 (LibraryValidator extraction)
 
-## Priority 1 (CRITICAL) - Security Vulnerabilities Requiring Immediate Fix
+## Priority 1 (CRITICAL) - Orchestrator Architecture Refactoring
 
-### Phase 1A: Critical Security Issues (URGENT)
+### Phase 1: Extract LibraryValidator Module
+- [ ] **Create validator.py module** - Extract validation methods from installer.py to new LibraryValidator class
+- [ ] **Move validation methods** - Transfer validate_library(), validate_installation(), checksum operations
+- [ ] **Update imports and dependencies** - Fix all references to moved validation methods
+- [ ] **Migrate validation tests** - Move validation tests to new test_validator.py module
+
+### Phase 2: Extract LibraryCleaner Module  
+- [ ] **Create cleaner.py module** - Extract cleanup methods to new LibraryCleaner class
+- [ ] **Move cleanup operations** - Transfer library removal, gitignore management, orphaned library handling
+- [ ] **Integrate with extractor gitignore** - Move _inject_gitignore_if_needed from extractor to cleaner
+- [ ] **Update cleaner tests** - Migrate cleanup tests to new test_cleaner.py module
+
+### Phase 3: Extract Pure Installation Logic
+- [ ] **Refactor installer.py** - Create focused LibraryInstaller class with pure installation logic
+- [ ] **Move installation methods** - Keep install_library(), install_all(), batch operations
+- [ ] **Remove non-installation code** - Move validation, cleanup to specialist modules
+- [ ] **Update installer tests** - Focus tests on installation logic only
+
+### Phase 4: Create LibraryManager Orchestrator
+- [ ] **Create library_manager.py** - Main orchestrator coordinating specialist modules
+- [ ] **Move config/lockfile management** - Transfer configuration loading, lockfile operations
+- [ ] **Implement orchestration logic** - Coordinate installer, validator, cleaner operations
+- [ ] **Update CLI integration** - Change CLI to use LibraryManager instead of LibraryInstaller
+
+### Phase 5: Fix PathExtractor Nested Functions
+- [ ] **Extract nested ignore_function** - Create _apply_ignore_filters method from nested function
+- [ ] **Move extraction orchestration** - Transfer extract_library workflow to LibraryManager
+- [ ] **Move validation operations** - Transfer library validation to LibraryValidator
+- [ ] **Move cleanup operations** - Transfer library removal to LibraryCleaner
+
+### Phase 1B: Critical Security Issues (URGENT)
 - [ ] **Fix path traversal vulnerability** - Add path validation to prevent local_path from escaping project directory (extractor.py, installer.py)
 - [ ] **Add git URL validation** - Prevent file:// URLs and command injection in mirror operations (mirror.py lines 155-159)
 - [ ] **Fix checksum calculation race condition** - Move .gitignore injection before checksum calculation (installer.py:147 vs extractor.py:344-348)

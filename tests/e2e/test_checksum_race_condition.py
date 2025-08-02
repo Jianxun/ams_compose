@@ -141,13 +141,14 @@ class TestChecksumRaceCondition:
         
         # Step 2: Validate installation (this should pass but currently fails due to race condition)
         print("\\n=== STEP 2: Validating installation ===")
-        valid_libraries, invalid_libraries = self.installer.validate_installation()
+        validation_results = self.installer.validate_installation()
         
-        # Filter out warning messages to get actual validation failures
-        actual_invalid = [lib for lib in invalid_libraries if not lib.startswith('WARNING')]
+        # Extract valid and invalid libraries
+        valid_libraries = [name for name, entry in validation_results.items() if entry.validation_status == "valid"]
+        invalid_libraries = [name for name, entry in validation_results.items() if entry.validation_status != "valid"]
         
         print(f"Valid libraries: {valid_libraries}")
-        print(f"Invalid libraries: {actual_invalid}")
+        print(f"Invalid libraries: {invalid_libraries}")
         
         # BUG DEMONSTRATION: This assertion will currently FAIL due to race condition
         # The checksum was calculated before .gitignore injection, but validation
@@ -200,14 +201,15 @@ class TestChecksumRaceCondition:
         
         # Install and validate
         self.installer.install_all()
-        valid_libraries, invalid_libraries = self.installer.validate_installation()
+        validation_results = self.installer.validate_installation()
         
-        # Filter out warning messages
-        actual_invalid = [lib for lib in invalid_libraries if not lib.startswith('WARNING')]
+        # Extract valid and invalid libraries  
+        valid_libraries = [name for name, entry in validation_results.items() if entry.validation_status == "valid"]
+        invalid_libraries = [name for name, entry in validation_results.items() if entry.validation_status != "valid"]
         
         # This should work fine - no race condition with checkin=true
         assert 'control_lib' in valid_libraries, "checkin=true library should validate successfully"
-        assert len(actual_invalid) == 0, f"checkin=true should have no validation issues: {actual_invalid}"
+        assert len(invalid_libraries) == 0, f"checkin=true should have no validation issues: {invalid_libraries}"
         
         # Verify no .gitignore was injected
         library_path = self.project_root / "libs/control_lib" 

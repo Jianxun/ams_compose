@@ -234,12 +234,9 @@ class LibraryInstaller:
                                 libraries_needing_work[library_name] = import_spec
                             else:
                                 # Library is truly up-to-date
-                                commit_hash = current_entry.commit[:8]
-                                print(f"Library: {library_name} (commit {commit_hash}) [up to date]")
                                 skipped_libraries.append(library_name)
                         except Exception as e:
                             # If we can't check for updates, assume library needs work
-                            print(f"Warning: Could not check for updates for {library_name}: {e}")
                             libraries_needing_work[library_name] = import_spec
         
         return libraries_needing_work, skipped_libraries
@@ -273,37 +270,38 @@ class LibraryInstaller:
                 )
                 installed_libraries[library_name] = lock_entry
                 
-                # Determine if this was an install or update
-                commit_hash = lock_entry.commit[:8]
-                license_info = f" license: {lock_entry.license}" if lock_entry.license else " license: None"
-                
+                # Determine if this was an install or update and set status fields
                 if library_name in lock_file.libraries:
                     old_commit = lock_file.libraries[library_name].commit
                     old_license = lock_file.libraries[library_name].license
                     
                     if old_commit != lock_entry.commit:
+                        # This was an update
+                        lock_entry.install_status = "updated"
+                        
                         # Check if license changed during update
                         if old_license != lock_entry.license and old_license is not None:
-                            license_change = f" (license changed: {old_license} → {lock_entry.license})"
-                            print(f"Library: {library_name} (commit {commit_hash}){license_info}{license_change} [updated]")
-                            # Show compatibility warning if needed
-                            warning = self.license_detector.get_license_compatibility_warning(lock_entry.license)
-                            if warning:
-                                print(f"  WARNING: {warning}")
-                        else:
-                            print(f"Library: {library_name} (commit {commit_hash}){license_info} [updated]")
+                            lock_entry.license_change = f"license changed: {old_license} → {lock_entry.license}"
+                            
+                        # Check for compatibility warning
+                        warning = self.license_detector.get_license_compatibility_warning(lock_entry.license)
+                        if warning:
+                            lock_entry.license_warning = warning
                     else:
-                        print(f"Library: {library_name} (commit {commit_hash}){license_info} [installed]")
+                        # Files were reinstalled but no update needed
+                        lock_entry.install_status = "installed"
                 else:
-                    print(f"Library: {library_name} (commit {commit_hash}){license_info} [installed]")
-                    # Show compatibility warning for new installations
+                    # This was a new installation
+                    lock_entry.install_status = "installed"
+                    
+                    # Check for compatibility warning for new installations
                     warning = self.license_detector.get_license_compatibility_warning(lock_entry.license)
                     if warning:
-                        print(f"  WARNING: {warning}")
+                        lock_entry.license_warning = warning
                 
             except Exception as e:
                 failed_libraries.append((library_name, str(e)))
-                print(f"Library: {library_name} (commit unknown) [error]")
+                # No print statement - error handling moved to structured data
         
         # Handle failures
         if failed_libraries:
@@ -324,7 +322,7 @@ class LibraryInstaller:
         lock_file.libraries.update(installed_libraries)
         self.save_lock_file(lock_file)
 
-    def install_all(self, library_names: Optional[List[str]] = None, force: bool = False) -> Dict[str, LockEntry]:
+    def install_all(self, library_names: Optional[List[str]] = None, force: bool = False) -> Tuple[Dict[str, LockEntry], Dict[str, LockEntry]]:
         """Install all libraries or specific subset with smart skip logic.
         
         Args:
@@ -334,7 +332,9 @@ class LibraryInstaller:
                   If False, skip libraries that are already installed at correct version.
             
         Returns:
-            Dictionary mapping library names to their lock entries (only changed libraries)
+            Tuple of (changed_libraries, up_to_date_libraries) where:
+            - changed_libraries: Libraries that were installed/updated
+            - up_to_date_libraries: Libraries that were already up-to-date
             
         Raises:
             InstallationError: If any installation fails
@@ -344,7 +344,7 @@ class LibraryInstaller:
         libraries_to_install = self._resolve_target_libraries(library_names, config)
         
         if not libraries_to_install:
-            return {}
+            return {}, {}
         
         # Load current lock file and determine what needs work
         lock_file = self.load_lock_file()
@@ -352,8 +352,16 @@ class LibraryInstaller:
             libraries_to_install, lock_file, force
         )
         
+        # Get up-to-date libraries info
+        up_to_date_libraries = {}
+        for library_name in skipped_libraries:
+            if library_name in lock_file.libraries:
+                lock_entry = lock_file.libraries[library_name].model_copy()
+                lock_entry.install_status = "up_to_date"
+                up_to_date_libraries[library_name] = lock_entry
+        
         if not libraries_needing_work:
-            return {}
+            return {}, up_to_date_libraries
         
         # Install/update libraries that need work
         installed_libraries = self._install_libraries_batch(libraries_needing_work, config, lock_file)
@@ -361,7 +369,7 @@ class LibraryInstaller:
         # Update lock file with new installations
         self._update_lock_file(installed_libraries, config)
         
-        return installed_libraries
+        return installed_libraries, up_to_date_libraries
     
     def list_installed_libraries(self) -> Dict[str, LockEntry]:
         """List all currently installed libraries.
@@ -372,20 +380,61 @@ class LibraryInstaller:
         lock_file = self.load_lock_file()
         return lock_file.libraries.copy()
     
-    def validate_installation(self) -> Tuple[List[str], List[str]]:
+    def validate_library(self, library_name: str, lock_entry: LockEntry) -> LockEntry:
+        """Validate a single library installation.
+        
+        Args:
+            library_name: Name of the library to validate
+            lock_entry: Lock entry for the library
+            
+        Returns:
+            LockEntry with updated validation_status field
+        """
+        try:
+            # Check if library exists
+            library_path = self.project_root / lock_entry.local_path
+            if not library_path.exists():
+                # Return a copy with updated validation_status
+                updated_entry = lock_entry.model_copy()
+                updated_entry.validation_status = "missing"
+                return updated_entry
+            
+            # Verify checksum using correct method for files vs directories
+            if library_path.is_dir():
+                current_checksum = ChecksumCalculator.calculate_directory_checksum(library_path)
+            else:
+                current_checksum = ChecksumCalculator.calculate_file_checksum(library_path)
+                
+            # Check if checksum matches
+            if current_checksum != lock_entry.checksum:
+                updated_entry = lock_entry.model_copy()
+                updated_entry.validation_status = "modified"
+                return updated_entry
+            
+            # Library is valid
+            updated_entry = lock_entry.model_copy()
+            updated_entry.validation_status = "valid"
+            return updated_entry
+            
+        except Exception:
+            # Return error status for any validation exception
+            updated_entry = lock_entry.model_copy()
+            updated_entry.validation_status = "error"
+            return updated_entry
+    
+    def validate_installation(self) -> Dict[str, LockEntry]:
         """Validate current installation state.
         
         Only validates libraries currently defined in ams-compose.yaml config.
         Libraries in lockfile but not in config are considered orphaned and warned about.
         
         Returns:
-            Tuple of (valid_libraries, invalid_libraries_and_warnings)
+            Dictionary mapping library names to their lock entries with validation_status updated
         """
         lock_file = self.load_lock_file()
         config = self.load_config()
         
-        valid_libraries = []
-        invalid_libraries = []
+        validation_results = {}
         
         # Get current library names from config
         current_library_names = set(config.imports.keys())
@@ -394,43 +443,37 @@ class LibraryInstaller:
         # Find orphaned libraries (in lockfile but not in current config)
         orphaned_libraries = lockfile_library_names - current_library_names
         
-        # Add warnings for orphaned libraries
-        if orphaned_libraries:
-            invalid_libraries.append(f"WARNING: Found {len(orphaned_libraries)} orphaned libraries in lockfile but not in config:")
-            for orphaned_lib in sorted(orphaned_libraries):
-                invalid_libraries.append(f"  {orphaned_lib}: no longer defined in ams-compose.yaml")
-            invalid_libraries.append("  To fix: Run 'ams-compose clean' to remove orphaned libraries from lockfile")
+        # Include orphaned libraries in results with special status
+        for orphaned_lib in orphaned_libraries:
+            orphaned_entry = lock_file.libraries[orphaned_lib].model_copy()
+            orphaned_entry.validation_status = "orphaned"
+            validation_results[orphaned_lib] = orphaned_entry
         
-        # Only validate libraries that exist in current config
+        # Validate libraries that exist in current config
         for library_name in current_library_names:
             if library_name not in lock_file.libraries:
-                invalid_libraries.append(f"{library_name}: not installed (missing from lockfile)")
+                # Create a placeholder entry for missing libraries
+                # This allows CLI to show missing libraries consistently
+                missing_entry = LockEntry(
+                    repo="unknown",
+                    ref="unknown", 
+                    commit="unknown",
+                    source_path="unknown",
+                    local_path="unknown",
+                    checksum="unknown",
+                    installed_at="unknown",
+                    updated_at="unknown",
+                    validation_status="not_installed"
+                )
+                validation_results[library_name] = missing_entry
                 continue
                 
             lock_entry = lock_file.libraries[library_name]
-            try:
-                # Check if library still exists
-                library_path = self.project_root / lock_entry.local_path
-                if not library_path.exists():
-                    invalid_libraries.append(f"{library_name}: library not found at {lock_entry.local_path}")
-                    continue
-                
-                # Verify checksum using correct method for files vs directories
-                if library_path.is_dir():
-                    current_checksum = ChecksumCalculator.calculate_directory_checksum(library_path)
-                else:
-                    current_checksum = ChecksumCalculator.calculate_file_checksum(library_path)
-                    
-                if current_checksum != lock_entry.checksum:
-                    invalid_libraries.append(f"{library_name}: checksum mismatch (modified?)")
-                    continue
-                
-                valid_libraries.append(library_name)
-                
-            except Exception as e:
-                invalid_libraries.append(f"{library_name}: validation error - {e}")
+            # Use the new validate_library method
+            validated_entry = self.validate_library(library_name, lock_entry)
+            validation_results[library_name] = validated_entry
         
-        return valid_libraries, invalid_libraries
+        return validation_results
     
     def clean_unused_mirrors(self) -> List[str]:
         """Remove unused mirrors not referenced by any installed library.

@@ -2,7 +2,7 @@
 
 ## Current Status
 - **Project**: ams-compose (renamed from analog-hub)
-- **Stage**: Architectural Review & Security Analysis Complete
+- **Stage**: Orchestrator Architecture Refactoring Planning Phase
 - **Last Updated**: 2025-08-02
 
 ## Critical Bugs Identified - License File Feature Branch
@@ -16,6 +16,26 @@
 - disclaimer that `ams-compose` is a dependency management tool, the repo owner is solely responsible to be meet all license compliance with the IPs checked into their repos.
 
 ## Recent Major Changes (Last 2-3 Sessions Only)
+
+### Orchestrator Architecture Refactoring Planning - 2025-08-02
+- **Problem**: Both installer.py (565 lines) and extractor.py (483 lines) have grown too large with multiple responsibilities
+- **Solution**: Comprehensive refactoring plan for 4-module orchestrator architecture: LibraryManager (orchestrator), Installer, Validator, Cleaner
+- **Status**: Planning Complete - Detailed refactoring plans created for both installer and extractor modules
+- **Benefits**: Clear separation of concerns, improved testability, maintainable architecture, elimination of nested function issues
+
+## Recent Major Changes (Previous Sessions)
+
+### Unified CLI Formatting Implementation (TDD Cycles 1-5) - 2025-08-02
+- **Problem**: CLI/core separation violations with inconsistent data contracts - validate_installation() returned tuple, install had print statements, validate/install/list used different return types
+- **Solution**: Complete TDD implementation with 5 cycles: unified data structures, removed all print statements from core, implemented tabular formatting across all CLI commands
+- **Status**: Cycles 1-5 Complete - All CLI commands (list/validate/install) now use consistent tabular format with proper column alignment, status display, and license warnings
+- **Benefits**: Clean tabular output, perfect CLI consistency, eliminated core/CLI violations, up-to-date libraries properly displayed, unified warning system
+
+### CLI/Core Separation Analysis & Unified LockEntry Architecture Design - 2025-08-02
+- **Problem**: Inconsistent data contracts across CLI commands - list uses Dict[str, LockEntry], validate uses Tuple[List[str], List[str]], install mixes print statements
+- **Solution**: Proposed unified LockEntry architecture where all operations return Dict[str, LockEntry] with validation_status field, single-library validation methods, orchestration-level iteration
+- **Status**: Analysis Complete - Identified clean separation violations, designed unified approach with validate_library() taking single LockEntry parameter
+- **Benefits**: Perfect consistency across commands, rich error context, better composability, simpler CLI formatting, extensible validation framework
 
 ### Comprehensive Architectural Review & Security Analysis - 2025-08-02
 - **Problem**: Need thorough architectural assessment to identify design issues, security vulnerabilities, and production readiness gaps
@@ -188,13 +208,12 @@
 - **Timing**: Post-MVP rename after core functionality (checkin, filtering, license features) is complete and stable
 
 ## Active Issues & Next Steps
-- **Current Priority**: Address critical security vulnerabilities identified in architectural review
-- **Next Phase**: Fix license file feature bugs, then implement security hardening and architectural fixes
-- **Critical Security Issues**: Path traversal vulnerability, unsafe git operations, checksum calculation race condition
-- **Code Consistency**: AnalogHubConfig → ComposeConfig rename across 14 files scheduled for next session
-- **Critical Gaps**: ✅ Submodule support (RESOLVED), ✅ Architectural review (COMPLETE), nested ams-compose dependencies unresolved, path security validation URGENT
-- **Test Strategy**: Maintain high test coverage - currently 125 unit + 33 E2E tests (expanded for submodule support)
-- **System Status**: MVP with known security vulnerabilities requiring immediate attention before production deployment
+- **Current Priority**: Execute orchestrator architecture refactoring - Start with Phase 1 (installer.py validator extraction)
+- **Recent Achievement**: Comprehensive refactoring plans completed for both installer and extractor modules
+- **Architectural Status**: Ready to implement 4-module architecture: LibraryManager (orchestrator), Installer, Validator, Cleaner
+- **Planning Complete**: Detailed phase-by-phase implementation strategy defined
+- **Critical Issues Identified**: Nested function in extractor.py, monolithic installer.py responsibilities, coupling issues
+- **Next Session**: Begin Phase 1 - Extract LibraryValidator from installer.py
 
 ## Tool Integration Complexity Analysis - 2025-08-01
 - **Problem**: Beyond file copying, analog tools (xschem, Magic, ngspice) require path rewriting and library registration for proper integration

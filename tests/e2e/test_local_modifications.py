@@ -150,9 +150,12 @@ class TestLocalModificationDetection:
             print("      Testing explicit validation instead...")
             
             # Test explicit validation
-            valid_libs, invalid_libs = self.installer.validate_installation()
+            validation_results = self.installer.validate_installation()
+            valid_libs = [name for name, entry in validation_results.items() if entry.validation_status == "valid"]
+            invalid_libs = [f"{name}: {entry.validation_status}" for name, entry in validation_results.items() if entry.validation_status != "valid"]
+            
             assert len(invalid_libs) > 0, "Validation should detect modifications"
-            assert any('mod_test_lib' in invalid and 'checksum mismatch' in invalid 
+            assert any('mod_test_lib' in invalid and 'modified' in invalid 
                       for invalid in invalid_libs), f"Should detect checksum mismatch, got: {invalid_libs}"
             print(f"   ✅ Explicit validation detected modification: {invalid_libs[0]}")
         else:
@@ -177,9 +180,12 @@ class TestLocalModificationDetection:
             print("      Testing explicit validation instead...")
             
             # Test explicit validation  
-            valid_libs, invalid_libs = self.installer.validate_installation()
+            validation_results = self.installer.validate_installation()
+            valid_libs = [name for name, entry in validation_results.items() if entry.validation_status == "valid"]
+            invalid_libs = [f"{name}: {entry.validation_status}" for name, entry in validation_results.items() if entry.validation_status != "valid"]
+            
             assert len(invalid_libs) > 0, "Validation should detect deleted files"
-            assert any('mod_test_lib' in invalid and 'checksum mismatch' in invalid 
+            assert any('mod_test_lib' in invalid and 'modified' in invalid 
                       for invalid in invalid_libs), f"Should detect checksum mismatch, got: {invalid_libs}"
             print(f"   ✅ Explicit validation detected deleted file: {invalid_libs[0]}")
         else:
@@ -247,9 +253,12 @@ class TestLocalModificationDetection:
             print("      Testing explicit validation instead...")
             
             # Test explicit validation
-            valid_libs, invalid_libs = self.installer.validate_installation()
+            validation_results = self.installer.validate_installation()
+            valid_libs = [name for name, entry in validation_results.items() if entry.validation_status == "valid"]
+            invalid_libs = [f"{name}: {entry.validation_status}" for name, entry in validation_results.items() if entry.validation_status != "valid"]
+            
             assert len(invalid_libs) > 0, "Validation should detect unauthorized files"
-            assert any('clean_lib' in invalid and 'checksum mismatch' in invalid 
+            assert any('clean_lib' in invalid and 'modified' in invalid 
                       for invalid in invalid_libs), f"Should detect checksum mismatch, got: {invalid_libs}"
             print(f"   ✅ Explicit validation detected unauthorized files: {invalid_libs[0]}")
         else:
@@ -423,9 +432,12 @@ class TestLocalModificationDetection:
             print("      Testing explicit validation instead...")
             
             # Test explicit validation
-            valid_libs, invalid_libs = self.installer.validate_installation()
+            validation_results = self.installer.validate_installation()
+            valid_libs = [name for name, entry in validation_results.items() if entry.validation_status == "valid"]
+            invalid_libs = [f"{name}: {entry.validation_status}" for name, entry in validation_results.items() if entry.validation_status != "valid"]
+            
             assert len(invalid_libs) > 0, "Validation should detect multiple modifications"
-            assert any('complex_lib' in invalid and 'checksum mismatch' in invalid 
+            assert any('complex_lib' in invalid and 'modified' in invalid 
                       for invalid in invalid_libs), f"Should detect checksum mismatch, got: {invalid_libs}"
             print(f"   ✅ Explicit validation detected modifications: {invalid_libs[0]}")
         else:
