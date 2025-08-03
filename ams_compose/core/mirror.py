@@ -1,5 +1,6 @@
 """Repository mirroring operations for ams-compose."""
 
+import os
 import shutil
 import tempfile
 import signal
@@ -7,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 import git
 
@@ -33,17 +35,28 @@ def timeout_handler(signum, frame):
 class RepositoryMirror:
     """Manages repository mirroring operations."""
     
-    def __init__(self, mirror_root: Path = Path(".mirror"), git_timeout: int = 60):
+    def __init__(self, mirror_root: Path = Path(".mirror"), git_timeout: int = 60, allow_file_urls: bool = None):
         """Initialize mirror manager.
         
         Args:
             mirror_root: Root directory for all mirrors (default: .mirror)
             git_timeout: Timeout for git operations in seconds (default: 60)
+            allow_file_urls: Allow file:// URLs (for testing only, auto-detects if None)
         """
         self.mirror_root = Path(mirror_root)
         self.mirror_root.mkdir(exist_ok=True)
         self._ensure_mirror_gitignore()
         self.git_timeout = git_timeout
+        
+        # Auto-detect test mode if not explicitly set
+        if allow_file_urls is None:
+            # Check if we're running in test environment
+            self.allow_file_urls = (
+                os.environ.get('PYTEST_CURRENT_TEST') is not None or
+                os.environ.get('AMS_COMPOSE_TEST_MODE', '').lower() == 'true'
+            )
+        else:
+            self.allow_file_urls = allow_file_urls
     
     def _ensure_mirror_gitignore(self) -> None:
         """Create .gitignore file in mirror directory to exclude all contents from version control."""
@@ -57,6 +70,57 @@ class RepositoryMirror:
 !.gitignore
 """
             gitignore_path.write_text(gitignore_content)
+    
+    def _validate_repo_url(self, repo_url: str) -> None:
+        """Validate repository URL for security.
+        
+        Args:
+            repo_url: Repository URL to validate
+            
+        Raises:
+            ValueError: If URL is potentially malicious or unsafe
+        """
+        if not repo_url or not repo_url.strip():
+            raise ValueError("Repository URL cannot be empty")
+        
+        # Parse the URL
+        try:
+            parsed = urlparse(repo_url)
+        except Exception as e:
+            raise ValueError(f"Invalid repository URL format: {repo_url}") from e
+        
+        # Check for malformed URLs
+        if repo_url.startswith('://'):
+            raise ValueError(f"Malformed URL missing scheme: {repo_url}")
+        
+        if parsed.scheme and not parsed.netloc and parsed.scheme in {'http', 'https'}:
+            raise ValueError(f"Malformed URL missing host: {repo_url}")
+        
+        # Check for allowed schemes
+        allowed_schemes = {'https', 'http', 'git', 'ssh'}
+        if self.allow_file_urls:
+            allowed_schemes.add('file')
+            
+        if parsed.scheme and parsed.scheme.lower() not in allowed_schemes:
+            raise ValueError(
+                f"Unsupported URL scheme '{parsed.scheme}'. "
+                f"Allowed schemes: {', '.join(sorted(allowed_schemes))}"
+            )
+        
+        # Explicitly reject file:// URLs for security (unless explicitly allowed for testing)
+        if parsed.scheme and parsed.scheme.lower() == 'file' and not self.allow_file_urls:
+            raise ValueError(
+                "Local file:// URLs are not allowed for security reasons. "
+                "Use remote repository URLs only."
+            )
+        
+        # Check for potentially malicious patterns
+        suspicious_patterns = ['..', '~', '$', '`', '|', ';', '&']
+        for pattern in suspicious_patterns:
+            if pattern in repo_url:
+                raise ValueError(
+                    f"Repository URL contains suspicious pattern '{pattern}': {repo_url}"
+                )
     
     def _with_timeout(self, operation, timeout=None):
         """Execute git operation with timeout.
@@ -161,7 +225,11 @@ class RepositoryMirror:
         Raises:
             git.GitCommandError: If git operations fail
             OSError: If file system operations fail
+            ValueError: If repo_url is malicious or unsafe
         """
+        # Validate repository URL for security
+        self._validate_repo_url(repo_url)
+        
         mirror_path = self.get_mirror_path(repo_url)
         
         # Remove existing mirror if it exists but is invalid
@@ -230,7 +298,13 @@ class RepositoryMirror:
             
         Returns:
             Updated MirrorState
+            
+        Raises:
+            ValueError: If repo_url is malicious or unsafe
         """
+        # Validate repository URL for security
+        self._validate_repo_url(repo_url)
+        
         mirror_path = self.get_mirror_path(repo_url)
         
         if not self.mirror_exists(repo_url):

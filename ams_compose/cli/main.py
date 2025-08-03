@@ -331,7 +331,7 @@ imports:
 
 @main.command()
 def clean():
-    """Clean unused mirrors, orphaned libraries, and validate installations."""
+    """Clean unused mirrors and orphaned libraries."""
     try:
         installer = _get_installer()
         
@@ -377,7 +377,7 @@ def clean():
 
 @main.command()
 def schema():
-    """Show the complete ams-compose.yaml configuration schema with examples."""
+    """Show the complete ams-compose.yaml configuration schema."""
     try:
         # Load schema documentation from file
         schema_path = Path(__file__).parent.parent / "schema.md"

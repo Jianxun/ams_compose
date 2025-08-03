@@ -40,6 +40,36 @@ class LibraryInstaller:
         self.config_path = self.project_root / "ams-compose.yaml"
         self.lock_path = self.project_root / ".ams-compose.lock"
     
+    def _validate_library_path(self, local_path: str, library_name: str) -> Path:
+        """Validate that library path is safe and within project directory.
+        
+        Args:
+            local_path: Local path string from lock entry
+            library_name: Name of the library (for error messages)
+            
+        Returns:
+            Validated absolute path
+            
+        Raises:
+            ValueError: If path attempts to escape project directory
+        """
+        library_path = Path(local_path)
+        if not library_path.is_absolute():
+            library_path = self.project_root / local_path
+        
+        resolved_path = library_path.resolve()
+        
+        # Security check: Prevent path traversal attacks
+        try:
+            resolved_path.relative_to(self.project_root.resolve())
+        except ValueError:
+            raise ValueError(
+                f"Security error: library '{library_name}' path '{local_path}' "
+                f"attempts to escape project directory. Resolved path: {resolved_path}"
+            )
+        
+        return resolved_path
+    
     def load_config(self) -> ComposeConfig:
         """Load ams-compose.yaml configuration."""
         if not self.config_path.exists():
@@ -216,7 +246,7 @@ class LibraryInstaller:
                     libraries_needing_work[library_name] = import_spec
                 else:
                     # Check if library files still exist
-                    library_path = self.project_root / current_entry.local_path
+                    library_path = self._validate_library_path(current_entry.local_path, library_name)
                     
                     if not library_path.exists():
                         libraries_needing_work[library_name] = import_spec
@@ -392,7 +422,7 @@ class LibraryInstaller:
         """
         try:
             # Check if library exists
-            library_path = self.project_root / lock_entry.local_path
+            library_path = self._validate_library_path(lock_entry.local_path, "unknown")
             if not library_path.exists():
                 # Return a copy with updated validation_status
                 updated_entry = lock_entry.model_copy()
@@ -545,7 +575,7 @@ class LibraryInstaller:
             library_name: Name of the library
             lock_entry: Lock entry containing checkin setting and local_path
         """
-        library_path = self.project_root / lock_entry.local_path
+        library_path = self._validate_library_path(lock_entry.local_path, library_name)
         library_gitignore_path = library_path / ".gitignore"
         
         if not lock_entry.checkin:

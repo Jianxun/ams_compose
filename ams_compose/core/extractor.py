@@ -350,6 +350,9 @@ class PathExtractor:
             
         Returns:
             Resolved absolute path for library installation
+            
+        Raises:
+            ValueError: If local_path attempts to escape project directory
         """
         if import_spec.local_path:
             # Use explicit local_path override (absolute path)
@@ -360,7 +363,19 @@ class PathExtractor:
             # Use library_root + library_name
             local_path = self.project_root / library_root / library_name
         
-        return local_path.resolve()
+        resolved_path = local_path.resolve()
+        
+        # Security check: Prevent path traversal attacks
+        # Ensure resolved path is within project directory
+        try:
+            resolved_path.relative_to(self.project_root.resolve())
+        except ValueError:
+            raise ValueError(
+                f"Security error: local_path '{import_spec.local_path or library_name}' "
+                f"attempts to escape project directory. Resolved path: {resolved_path}"
+            )
+        
+        return resolved_path
     
     def extract_library(
         self, 
