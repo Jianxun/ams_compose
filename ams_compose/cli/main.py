@@ -375,5 +375,21 @@ def clean():
         _handle_installation_error(e)
 
 
+@main.command()
+def schema():
+    """Show the complete ams-compose.yaml configuration schema with examples."""
+    try:
+        # Load schema documentation from file
+        schema_path = Path(__file__).parent.parent / "schema.md"
+        schema_content = schema_path.read_text()
+        click.echo(schema_content)
+    except FileNotFoundError:
+        click.echo("Error: Schema documentation file not found.", err=True)
+        sys.exit(1)
+    except Exception as e:
+        click.echo(f"Error reading schema documentation: {e}", err=True)
+        sys.exit(1)
+
+
 if __name__ == "__main__":
     main()
