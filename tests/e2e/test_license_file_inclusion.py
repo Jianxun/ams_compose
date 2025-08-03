@@ -119,7 +119,7 @@ furnished to do so, subject to the following conditions:"""
             installed_libraries = installer.install_all()
         
         # Verify installation
-        assert 'analog_design_lib' in installed_libraries
+        assert 'analog_design_lib' in installed_libraries[0]
         
         # Check library was extracted to correct location
         lib_path = temp_project / "designs" / "libs" / "analog_design_lib"
@@ -195,7 +195,7 @@ furnished to do so, subject to the following conditions:"""
             installed_libraries = installer.install_all()
         
         # Verify installation
-        assert 'temp_lib' in installed_libraries
+        assert 'temp_lib' in installed_libraries[0]
         
         # Check library was extracted to correct location
         lib_path = temp_project / "designs" / "libs" / "temp_lib"
@@ -248,8 +248,8 @@ furnished to do so, subject to the following conditions:"""
             installed_libraries = installer.install_all()
         
         # Verify both libraries were installed
-        assert 'stable_lib' in installed_libraries
-        assert 'experimental_lib' in installed_libraries
+        assert 'stable_lib' in installed_libraries[0]
+        assert 'experimental_lib' in installed_libraries[0]
         
         # Check stable_lib (checkin=true)
         stable_path = temp_project / "designs" / "libs" / "stable_lib"
@@ -315,3 +315,53 @@ furnished to do so, subject to the following conditions:"""
         assert any('extracted from' in note.lower() for note in notes)
         assert any('license' in note.lower() for note in notes)
         assert any('ip compliance' in note.lower() for note in notes)
+    
+    def test_license_preserved_for_checkin_false_without_ignore(self, temp_project, mock_repo):
+        """Test that LICENSE files are preserved even for checkin=false libraries when not explicitly ignored."""
+        # Create configuration with checkin=false library but NO explicit LICENSE ignore
+        imports_config = {
+            'unchecked_lib': {
+                'repo': 'https://github.com/test/unchecked-lib.git',
+                'ref': 'main',
+                'source_path': 'analog_lib',
+                'checkin': False,  # Will not be checked in
+                'ignore_patterns': ['*.tmp', '*.bak']  # Ignore patterns but NOT LICENSE
+            }
+        }
+        self._create_test_config(temp_project, imports_config)
+        
+        # Create installer and mock mirror
+        installer = LibraryInstaller(temp_project)
+        self._create_mock_mirror(installer, imports_config['unchecked_lib']['repo'], mock_repo)
+        
+        # Mock the mirror manager's update_mirror method
+        from unittest.mock import patch, MagicMock
+        mock_metadata = MagicMock()
+        mock_metadata.resolved_commit = 'unchecked123commit'
+        
+        with patch.object(installer.mirror_manager, 'update_mirror', return_value=mock_metadata):
+            # Install the library
+            installed_libraries = installer.install_all()
+        
+        # Verify installation
+        assert 'unchecked_lib' in installed_libraries[0]
+        
+        # Check library was extracted to correct location
+        lib_path = temp_project / "designs" / "libs" / "unchecked_lib"
+        assert lib_path.exists()
+        
+        # Verify main library files were extracted
+        assert (lib_path / "main.sv").exists()
+        assert (lib_path / "config.yaml").exists()
+        assert (lib_path / "README.md").exists()
+        
+        # Verify LICENSE file was preserved despite checkin=false (legal compliance)
+        license_file = lib_path / "LICENSE"
+        assert license_file.exists(), "LICENSE should be preserved for legal compliance even when checkin=false"
+        license_content = license_file.read_text()
+        assert "MIT License" in license_content
+        assert "Analog IC Design Team" in license_content
+        
+        # Verify provenance metadata was NOT created (checkin=false)
+        provenance_file = lib_path / ".ams-compose-provenance.yaml"
+        assert not provenance_file.exists(), "Provenance should not be created for checkin=false libraries"

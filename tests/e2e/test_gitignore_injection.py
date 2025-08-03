@@ -123,7 +123,7 @@ class TestGitignoreInjection:
         installed_libs = self.installer.install_all()
         
         # Verify library was installed
-        assert "stable_library" in installed_libs
+        assert "stable_library" in installed_libs[0]
         
         # Check that library-specific .gitignore was created with enhanced content
         library_path = self.project_root / "libs" / "stable_library"
@@ -165,7 +165,7 @@ class TestGitignoreInjection:
         installed_libs = self.installer.install_all()
         
         # Verify library was installed
-        assert "critical_ip" in installed_libs
+        assert "critical_ip" in installed_libs[0]
         
         # Check that library-specific .gitignore was NOT created
         library_path = self.project_root / "libs" / "critical_ip"
@@ -203,7 +203,7 @@ class TestGitignoreInjection:
         installed_libs = self.installer.install_all()
         
         # Verify library was installed
-        assert "default_library" in installed_libs
+        assert "default_library" in installed_libs[0]
         
         # Check that .gitignore doesn't contain the library (default checkin=true)
         gitignore_content = self._read_gitignore()
@@ -240,8 +240,8 @@ class TestGitignoreInjection:
         installed_libs = self.installer.install_all()
         
         # Verify both libraries were installed
-        assert "stable_lib" in installed_libs
-        assert "custom_lib" in installed_libs
+        assert "stable_lib" in installed_libs[0]
+        assert "custom_lib" in installed_libs[0]
         
         # Check library-specific .gitignore files
         stable_lib_path = self.project_root / "libs" / "stable_lib"
@@ -289,7 +289,7 @@ build/
         
         # Install the library
         installed_libs = self.installer.install_all()
-        assert "test_library" in installed_libs
+        assert "test_library" in installed_libs[0]
         
         # Check that existing content is preserved (main .gitignore unchanged)
         final_content = self._read_gitignore()
@@ -322,7 +322,7 @@ build/
         })
         
         installed_libs = self.installer.install_all()
-        assert "changeable_lib" in installed_libs
+        assert "changeable_lib" in installed_libs[0]
         
         # Verify library-specific .gitignore was created with enhanced content
         library_path = self.project_root / "libs" / "changeable_lib"
@@ -344,7 +344,7 @@ build/
         
         # Reinstall with force to pick up config changes
         installed_libs = self.installer.install_all(force=True)
-        assert "changeable_lib" in installed_libs
+        assert "changeable_lib" in installed_libs[0]
         
         # Verify library-specific .gitignore was removed
         assert not library_gitignore_path.exists()
@@ -372,7 +372,7 @@ build/
         })
         
         installed_libs = self.installer.install_all()
-        assert "switchable_lib" in installed_libs
+        assert "switchable_lib" in installed_libs[0]
         
         # Verify library is NOT in .gitignore
         gitignore_content = self._read_gitignore()
@@ -390,7 +390,7 @@ build/
         
         # Reinstall with force to pick up config changes
         installed_libs = self.installer.install_all(force=True)
-        assert "switchable_lib" in installed_libs
+        assert "switchable_lib" in installed_libs[0]
         
         # Verify library-specific .gitignore was created (new per-library approach)
         library_gitignore = self.project_root / "libs" / "switchable_lib" / ".gitignore"
@@ -420,7 +420,7 @@ build/
         
         # Install the library
         installed_libs = self.installer.install_all()
-        assert "new_library" in installed_libs
+        assert "new_library" in installed_libs[0]
         
         # Verify library-specific .gitignore was created (NOT main project .gitignore)
         library_path = self.project_root / "libs" / "new_library"
@@ -476,7 +476,7 @@ build/
         })
         
         installed_libs = self.installer.install_all()
-        assert len(installed_libs) == 3
+        assert len(installed_libs[0]) == 3
         
         # Verify initial library-specific .gitignore state (NOT main .gitignore modification)
         main_gitignore_content = self._read_gitignore()
@@ -519,7 +519,7 @@ build/
         
         # Reinstall with changes
         installed_libs = self.installer.install_all(force=True)
-        assert len(installed_libs) == 3
+        assert len(installed_libs[0]) == 3
         
         # Verify final library-specific .gitignore state
         final_main_gitignore = self._read_gitignore()
@@ -580,7 +580,7 @@ build/
         
         # Install the library
         installed_libs = self.installer.install_all()
-        assert "ip_library" in installed_libs
+        assert "ip_library" in installed_libs[0]
         
         # Verify library files were extracted
         library_path = self.project_root / "libs" / "ip_library"

@@ -183,9 +183,24 @@ class PathExtractor:
                 additional_ignores = custom_ignore_hook(directory, filenames_set)
                 ignored.update(additional_ignores)
             
-            # Override: Never ignore LICENSE files when preservation is enabled
-            if preserve_license_files:
-                ignored -= license_files
+            # Override: Preserve LICENSE files when preservation is enabled, 
+            # but respect explicit user ignore patterns
+            if preserve_license_files and license_files:
+                # Check if LICENSE files were explicitly ignored by user patterns
+                user_ignored_licenses = set()
+                if library_ignore_patterns:
+                    try:
+                        user_pathspec = pathspec.PathSpec.from_lines('gitwildmatch', library_ignore_patterns)
+                        for license_file in license_files:
+                            if user_pathspec.match_file(license_file):
+                                user_ignored_licenses.add(license_file)
+                    except Exception:
+                        # If pathspec fails, skip user pattern checking
+                        pass
+                
+                # Only preserve LICENSE files that weren't explicitly ignored by user
+                licenses_to_preserve = license_files - user_ignored_licenses
+                ignored -= licenses_to_preserve
             
             return list(ignored)
         
@@ -347,10 +362,10 @@ class PathExtractor:
             # Copy source to destination
             if source_full_path.is_dir():
                 # Create ignore function with three-tier filtering
-                # Preserve LICENSE files for libraries that will be checked in
+                # Always preserve LICENSE files for legal compliance (unless explicitly ignored)
                 ignore_func = self._create_ignore_function(
                     library_ignore_patterns=import_spec.ignore_patterns,
-                    preserve_license_files=import_spec.checkin
+                    preserve_license_files=True
                 )
                 
                 shutil.copytree(

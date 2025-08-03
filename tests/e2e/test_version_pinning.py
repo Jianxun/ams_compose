@@ -138,7 +138,7 @@ class TestVersionPinning:
         installed_libraries = self.installer.install_all()
         
         # Verify initial installation
-        assert 'pinned_lib' in installed_libraries
+        assert 'pinned_lib' in installed_libraries[0]
         initial_entry = installed_libraries['pinned_lib']
         assert initial_entry.commit == pinned_commit
         assert initial_entry.ref == pinned_commit  # ref should be the commit SHA
@@ -237,7 +237,7 @@ class TestVersionPinning:
         installed_libraries = self.installer.install_all()
         
         # Verify installation with tag
-        assert 'tagged_lib' in installed_libraries
+        assert 'tagged_lib' in installed_libraries[0]
         initial_entry = installed_libraries['tagged_lib']
         assert initial_entry.commit == tag_commit
         assert initial_entry.ref == 'v1.0.0'
@@ -413,7 +413,7 @@ class TestVersionPinning:
         # Initial installation
         print("🔄 Installing library pinned to older commit...")
         installed_libraries = self.installer.install_all()
-        assert 'force_test_lib' in installed_libraries
+        assert 'force_test_lib' in installed_libraries[0]
         
         # Verify pinned content
         library_path = self.project_root / installed_libraries['force_test_lib'].local_path
