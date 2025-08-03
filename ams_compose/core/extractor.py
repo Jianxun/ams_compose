@@ -289,6 +289,56 @@ class PathExtractor:
             if library_gitignore_path.exists():
                 library_gitignore_path.unlink()
     
+    def _inject_license_file_if_available(self, mirror_path: Path, library_path: Path, ignore_patterns: Optional[List[str]] = None) -> None:
+        """Inject LICENSE file from repository root into library directory.
+        
+        Searches for common LICENSE file names in the repository root and copies
+        the first one found to the library directory. This ensures legal compliance
+        even when using subdirectory source_paths for partial IP reuse.
+        
+        Args:
+            mirror_path: Path to the mirrored repository root
+            library_path: Path to the extracted library directory
+            ignore_patterns: Optional list of user ignore patterns to respect
+        """
+        # Common LICENSE file names to search for
+        license_filenames = self.license_detector.LICENSE_FILENAMES
+        
+        # Search for LICENSE file in repository root
+        license_source = None
+        license_filename = None
+        for filename in license_filenames:
+            potential_license = mirror_path / filename
+            if potential_license.exists() and potential_license.is_file():
+                license_source = potential_license
+                license_filename = filename
+                break
+        
+        if license_source and license_filename:
+            # Check if user explicitly wants to ignore LICENSE files
+            user_wants_to_ignore_license = False
+            if ignore_patterns:
+                try:
+                    import pathspec
+                    user_pathspec = pathspec.PathSpec.from_lines('gitwildmatch', ignore_patterns)
+                    if user_pathspec.match_file(license_filename):
+                        user_wants_to_ignore_license = True
+                except Exception:
+                    # If pathspec fails, continue with injection
+                    pass
+            
+            # Only inject if user doesn't explicitly ignore LICENSE files
+            if not user_wants_to_ignore_license:
+                license_dest = library_path / license_source.name
+                
+                # Only copy if LICENSE doesn't already exist in library directory
+                # (respect existing LICENSE files in the extracted source_path)
+                if not license_dest.exists():
+                    try:
+                        shutil.copy2(license_source, license_dest)
+                    except Exception:
+                        # If copy fails, continue silently - LICENSE injection is best-effort
+                        pass
     
     def _resolve_local_path(self, library_name: str, import_spec: ImportSpec, library_root: str) -> Path:
         """Resolve the local installation path for a library.
@@ -391,7 +441,12 @@ class PathExtractor:
             if local_path.is_dir():
                 self._inject_gitignore_if_needed(library_name, import_spec.checkin, local_path)
             
-            # Calculate checksum of extracted content (after provenance and gitignore injection)
+            # Inject LICENSE file from repository root for legal compliance
+            # This ensures LICENSE files are available even with subdirectory source_paths
+            if local_path.is_dir():
+                self._inject_license_file_if_available(mirror_path, local_path, import_spec.ignore_patterns)
+            
+            # Calculate checksum of extracted content (after provenance, gitignore, and license injection)
             if local_path.is_dir():
                 checksum = ChecksumCalculator.calculate_directory_checksum(local_path)
             else:
