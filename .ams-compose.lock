@@ -9,33 +9,35 @@ libraries:
     local_path: designs/.designinit
     checksum: 6dd12e47ef481c9a73ae99c08cbdc50187732e9fd93dc99cc601d6f96574c16c
     installed_at: '2025-07-26T23:13:02.200380'
-    updated_at: '2025-08-02T01:40:56.259178'
+    updated_at: '2025-08-03T02:50:46.371098'
     validation_status: unknown
     checkin: true
     license: MIT
     detected_license: MIT
+    install_status: installed
   scripts:
     repo: https://github.com/Jianxun/iic-osic-tools-project-template
     ref: main
     commit: f9750b160fc0413076514db22a3133bec0bba039
     source_path: designs/scripts
     local_path: designs/scripts
-    checksum: 911f430e853c58ea5800f7d16bfc6fbe64717a01624b9c1b6e1dae0f59e3e7c6
+    checksum: d6087cece5394936f5e7cb8991c4bb93c70c304a9072bbb82da90290ed23c067
     installed_at: '2025-07-26T23:13:02.677481'
-    updated_at: '2025-08-02T01:40:56.477435'
+    updated_at: '2025-08-03T02:50:46.574031'
     validation_status: unknown
     checkin: true
     license: MIT
     detected_license: MIT
+    install_status: installed
   gf180mcu_fd_sc_mcu9t5v0_symbols:
     repo: https://github.com/peterkinget/gf180mcu_fd_sc_mcu9t5v0_symbols
     ref: main
     commit: f2f0712700c7cafae42022a3da764e179b33c94c
     source_path: .
     local_path: designs/libs/gf180mcu_fd_sc_mcu9t5v0_symbols
-    checksum: a6159d3f5938031d127116850a94f0e5ebf39b0002ff6a29b9e364ab416e0759
+    checksum: 1ce8afc66c1aa17169e7d161d57a9c01d3153c72b0284d837ff5c02d4968b613
     installed_at: '2025-07-27T09:04:59.581598'
-    updated_at: '2025-08-02T21:14:15.290423'
+    updated_at: '2025-08-03T02:50:46.933444'
     validation_status: unknown
     checkin: false
     install_status: installed
@@ -45,9 +47,9 @@ libraries:
     commit: 0a7e1150f8accd444ffb7e6ab7bebeff61687b01
     source_path: .
     local_path: designs/libs/switch_matrix_gf180mcu_9t5v0
-    checksum: 33f5fa060056fe983c4f51349596f87c018385a9f9cea9a73e0194ed9ddb3fc9
+    checksum: 36bfc1fed995aa802bceaaeb53cabf9635df29a92111aaf4c912a2c5e4f0d95d
     installed_at: '2025-07-27T09:05:32.135934'
-    updated_at: '2025-08-02T21:14:15.837882'
+    updated_at: '2025-08-03T02:50:47.706292'
     validation_status: unknown
     checkin: true
     license: N/A
@@ -58,9 +60,9 @@ libraries:
     commit: dae79e7cc7670674e248494ecebfbe575049f62d
     source_path: xschem
     local_path: designs/libs/tgate
-    checksum: 5caa706bf9016cafe555ece2197e968dd2cbf34fea3d6579e97e6596a980dfa4
-    installed_at: '2025-07-28T01:50:58.282773'
-    updated_at: '2025-08-02T22:02:33.546643'
+    checksum: 34556841a13eb7c34e023e7b35c0fb7f2ef70fffabba2086d28a6b205af36334
+    installed_at: '2025-08-03T02:33:33.476838'
+    updated_at: '2025-08-03T02:50:47.974679'
     validation_status: unknown
     checkin: true
     license: Apache-2.0

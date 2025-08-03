@@ -138,7 +138,7 @@ class TestVersionPinning:
         installed_libraries = self.installer.install_all()
         
         # Verify initial installation
-        assert 'pinned_lib' in installed_libraries[0]
+        assert 'pinned_lib' in installed_libraries
         initial_entry = installed_libraries['pinned_lib']
         assert initial_entry.commit == pinned_commit
         assert initial_entry.ref == pinned_commit  # ref should be the commit SHA
@@ -186,7 +186,8 @@ class TestVersionPinning:
         updated_libraries = self.installer.install_all()
         
         # Verify no update occurred
-        assert 'pinned_lib' not in updated_libraries, "Pinned library should not update when upstream changes"
+        assert 'pinned_lib' in updated_libraries, "Pinned library should be in results"
+        assert updated_libraries['pinned_lib'].install_status == "up_to_date", "Pinned library should not update when upstream changes"
         
         # Verify files still contain original content
         current_sch_content = (library_path / "dac.sch").read_text()
@@ -237,7 +238,7 @@ class TestVersionPinning:
         installed_libraries = self.installer.install_all()
         
         # Verify installation with tag
-        assert 'tagged_lib' in installed_libraries[0]
+        assert 'tagged_lib' in installed_libraries
         initial_entry = installed_libraries['tagged_lib']
         assert initial_entry.commit == tag_commit
         assert initial_entry.ref == 'v1.0.0'
@@ -274,7 +275,8 @@ class TestVersionPinning:
         updated_libraries = self.installer.install_all()
         
         # Verify no update occurred
-        assert 'tagged_lib' not in updated_libraries, "Tagged library should not update"
+        assert 'tagged_lib' in updated_libraries, "Tagged library should be in results"
+        assert updated_libraries['tagged_lib'].install_status == "up_to_date", "Tagged library should not update"
         
         # Verify content unchanged
         current_content = (library_path / "filter.sch").read_text()
@@ -413,7 +415,7 @@ class TestVersionPinning:
         # Initial installation
         print("🔄 Installing library pinned to older commit...")
         installed_libraries = self.installer.install_all()
-        assert 'force_test_lib' in installed_libraries[0]
+        assert 'force_test_lib' in installed_libraries
         
         # Verify pinned content
         library_path = self.project_root / installed_libraries['force_test_lib'].local_path
