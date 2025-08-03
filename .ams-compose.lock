@@ -33,20 +33,21 @@ libraries:
     commit: f2f0712700c7cafae42022a3da764e179b33c94c
     source_path: .
     local_path: designs/libs/gf180mcu_fd_sc_mcu9t5v0_symbols
-    checksum: db73a6c5bc55fbd48945abe2e3c1f8308e31ff84d25d65cc534e2bdd694d1fa2
+    checksum: a6159d3f5938031d127116850a94f0e5ebf39b0002ff6a29b9e364ab416e0759
     installed_at: '2025-07-27T09:04:59.581598'
-    updated_at: '2025-08-02T01:41:33.806807'
+    updated_at: '2025-08-02T21:14:15.290423'
     validation_status: unknown
     checkin: false
+    install_status: installed
   switch_matrix_gf180mcu_9t5v0:
     repo: https://github.com/mosbiuschip/switch_matrix_gf180mcu_9t5v0
     ref: main
     commit: 0a7e1150f8accd444ffb7e6ab7bebeff61687b01
     source_path: .
     local_path: designs/libs/switch_matrix_gf180mcu_9t5v0
-    checksum: 6948901b8b0d85d0ab978c7dbbc971caaa92bc4e701576f6a22d7e0065ec34f6
+    checksum: 33f5fa060056fe983c4f51349596f87c018385a9f9cea9a73e0194ed9ddb3fc9
     installed_at: '2025-07-27T09:05:32.135934'
-    updated_at: '2025-08-02T15:59:52.845035'
+    updated_at: '2025-08-02T21:14:15.837882'
     validation_status: unknown
     checkin: true
     license: N/A
@@ -57,10 +58,11 @@ libraries:
     commit: dae79e7cc7670674e248494ecebfbe575049f62d
     source_path: xschem
     local_path: designs/libs/tgate
-    checksum: 718d26d34ed0947389eec6ddee568969a323c39adbb5ab2020ecad8a04ff827c
+    checksum: 5caa706bf9016cafe555ece2197e968dd2cbf34fea3d6579e97e6596a980dfa4
     installed_at: '2025-07-28T01:50:58.282773'
-    updated_at: '2025-08-02T01:41:44.753300'
+    updated_at: '2025-08-02T22:02:33.546643'
     validation_status: unknown
     checkin: true
     license: Apache-2.0
     detected_license: Apache-2.0
+    install_status: installed

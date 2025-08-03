@@ -76,7 +76,7 @@ class TestLocalModificationDetection:
             imports_config: Dictionary of import specifications
         """
         config_data = {
-            'library-root': 'designs/libs',
+            'library_root': 'designs/libs',
             'imports': imports_config
         }
         

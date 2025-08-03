@@ -2,20 +2,17 @@
 
 ## Current Status
 - **Project**: ams-compose (renamed from analog-hub)
-- **Stage**: Orchestrator Architecture Refactoring Planning Phase
-- **Last Updated**: 2025-08-02
-
-## Critical Bugs Identified - License File Feature Branch
-- **Bug 1**: Checksum calculated before .gitignore injection causing validation failures
-- **Bug 2**: LICENSE files not preserved with real repositories  
-- **Bug 3**: E2E tests expect main .gitignore modification but implementation uses library-specific .gitignore files
-- need to grab the PyPI namespace ASAP [DONE]
-- tag the repo with proper versions.
-- Build documentation with sphinx
-- include examples 
-- disclaimer that `ams-compose` is a dependency management tool, the repo owner is solely responsible to be meet all license compliance with the IPs checked into their repos.
+- **Stage**: LICENSE File Enhancement & Orchestrator Architecture Planning Phase
+- **Last Updated**: 2025-08-03
 
 ## Recent Major Changes (Last 2-3 Sessions Only)
+
+### LICENSE File Enhancement Complete - 2025-08-03
+- **Problem**: LICENSE files not preserved for partial IP reuse (subdirectory source_paths) + legal compliance gaps
+- **Solution**: Dual enhancement - (1) always preserve LICENSE files during extraction + (2) inject LICENSE from repository root for partial IP reuse
+- **Status**: Complete - PR #9 created, commits: a3f44a9 (preservation) + 13a79c0 (injection)
+- **Benefits**: Enables partial IP reuse while maintaining legal compliance, user override via ignore_patterns preserved
+- **Real-world validation**: tgate library Apache 2.0 LICENSE successfully injected from repo root to xschem/ extraction
 
 ### Orchestrator Architecture Refactoring Planning - 2025-08-02
 - **Problem**: Both installer.py (565 lines) and extractor.py (483 lines) have grown too large with multiple responsibilities
@@ -208,12 +205,12 @@
 - **Timing**: Post-MVP rename after core functionality (checkin, filtering, license features) is complete and stable
 
 ## Active Issues & Next Steps
-- **Current Priority**: Execute orchestrator architecture refactoring - Start with Phase 1 (installer.py validator extraction)
-- **Recent Achievement**: Comprehensive refactoring plans completed for both installer and extractor modules
+- **Current Priority**: Review and merge LICENSE enhancement PR #9, then execute orchestrator architecture refactoring
+- **Recent Achievement**: LICENSE file enhancement completed with comprehensive legal compliance + partial IP reuse support
+- **LICENSE Status**: PR #9 ready for review - dual enhancement (preservation + injection) with full test coverage
+- **Next Priority**: Execute orchestrator architecture refactoring - Start with Phase 1 (installer.py validator extraction)
 - **Architectural Status**: Ready to implement 4-module architecture: LibraryManager (orchestrator), Installer, Validator, Cleaner
-- **Planning Complete**: Detailed phase-by-phase implementation strategy defined
-- **Critical Issues Identified**: Nested function in extractor.py, monolithic installer.py responsibilities, coupling issues
-- **Next Session**: Begin Phase 1 - Extract LibraryValidator from installer.py
+- **Next Session**: Review PR #9 merge, then begin Phase 1 - Extract LibraryValidator from installer.py
 
 ## Tool Integration Complexity Analysis - 2025-08-01
 - **Problem**: Beyond file copying, analog tools (xschem, Magic, ngspice) require path rewriting and library registration for proper integration

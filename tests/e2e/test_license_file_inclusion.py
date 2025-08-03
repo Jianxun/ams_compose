@@ -68,7 +68,7 @@ furnished to do so, subject to the following conditions:"""
     def _create_test_config(self, project_path: Path, imports_config: Dict[str, Any]) -> None:
         """Create test configuration file."""
         config_data = {
-            'library-root': 'designs/libs',
+            'library_root': 'designs/libs',
             'imports': imports_config
         }
         

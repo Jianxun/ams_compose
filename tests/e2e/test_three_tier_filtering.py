@@ -84,7 +84,7 @@ build/
         
         # Create configuration without library-specific patterns
         config = ComposeConfig(
-            **{"library-root": "libs"},
+            **{"library_root": "libs"},
             imports={
                 "test_lib": ImportSpec(
                     repo=str(self.mock_repo),
@@ -100,7 +100,7 @@ build/
             # Convert to dict and write YAML manually for simplicity
             import yaml
             config_dict = {
-                "library-root": config.library_root,
+                "library_root": config.library_root,
                 "imports": {
                     "test_lib": {
                         "repo": config.imports["test_lib"].repo,
@@ -150,7 +150,7 @@ build/
         """Test filtering with library-specific ignore patterns."""
         # Create configuration with library-specific patterns
         config = ComposeConfig(
-            **{"library-root": "libs"},
+            **{"library_root": "libs"},
             imports={
                 "test_lib": ImportSpec(
                     repo=str(self.mock_repo),
@@ -166,7 +166,7 @@ build/
         with open(config_path, 'w') as f:
             import yaml
             config_dict = {
-                "library-root": config.library_root,
+                "library_root": config.library_root,
                 "imports": {
                     "test_lib": {
                         "repo": config.imports["test_lib"].repo,
@@ -226,7 +226,7 @@ build/
         
         # Create configuration with library-specific patterns
         config = ComposeConfig(
-            **{"library-root": "libs"},
+            **{"library_root": "libs"},
             imports={
                 "test_lib": ImportSpec(
                     repo=str(self.mock_repo),
@@ -278,7 +278,7 @@ build/
         """Test graceful handling of empty or missing pattern configurations."""
         # No global ignore file, no library patterns
         config = ComposeConfig(
-            **{"library-root": "libs"},
+            **{"library_root": "libs"},
             imports={
                 "test_lib": ImportSpec(
                     repo=str(self.mock_repo),

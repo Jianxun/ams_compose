@@ -82,7 +82,7 @@ class TestGitignoreInjection:
             libraries: Dictionary of library configurations
         """
         config_data = {
-            "library-root": "libs",
+            "library_root": "libs",
             "imports": libraries
         }
         

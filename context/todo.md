@@ -48,12 +48,15 @@ Transform ams-compose from production-ready MVP to architecturally complete syst
 - [ ] **Add git URL validation** - Prevent file:// URLs and command injection in mirror operations (mirror.py lines 155-159)
 - [ ] **Fix checksum calculation race condition** - Move .gitignore injection before checksum calculation (installer.py:147 vs extractor.py:344-348)
 
-## Priority 1 (HIGH) - License File Feature Bug Fixes
+## Completed This Sprint ✅
 
-### Phase 1B: License File Feature Bugs  
-- [ ] **Fix LICENSE file preservation logic** - Investigate why LICENSE files not copied with real repos (preserve_license_files logic in extractor.py:321-324)
-- [ ] **Update failing E2E tests** - Modify test_gitignore_injection.py to expect library-specific .gitignore files instead of main .gitignore modification
-- [ ] **Test with real repositories** - Validate fixes work with actual GitHub repositories
+### ✅ COMPLETE: License File Enhancement (Legal Compliance + Partial IP Reuse)
+- [x] **Fix LICENSE file preservation logic** - Always preserve LICENSE files regardless of checkin status ✅
+- [x] **Implement LICENSE injection from repository root** - Enable partial IP reuse with legal compliance ✅
+- [x] **Fix E2E test assertions** - Corrected tuple unpacking across 14 test assertions ✅
+- [x] **Add comprehensive test coverage** - New test for checkin=false + no LICENSE ignore scenario ✅
+- [x] **Real-world validation** - Successfully tested with tgate library (Apache 2.0 LICENSE injection) ✅
+- [x] **Create pull request** - PR #9 created with comprehensive LICENSE handling enhancements ✅
 
 ## Priority 2 (HIGH) - Critical Dependency Resolution Completeness
 
@@ -96,7 +99,7 @@ Transform ams-compose from production-ready MVP to architecturally complete syst
 - [ ] **Add troubleshooting guides** - Common issues and solutions for analog IC workflows
 
 ### Phase 3C: Code Consistency & Naming
-- [ ] **Rename AnalogHubConfig to ComposeConfig** - Update legacy class name across 14 files (core/config.py, installer.py, CLI, and all tests) for consistency with ams-compose project name
+- [x] **Rename AnalogHubConfig to ComposeConfig** - Update legacy class name across 18 files (core/config.py, installer.py, CLI, and all tests) for consistency with ams-compose project name ✅
 
 ## Completed Previous Sprint ✅
 

@@ -15,7 +15,7 @@ class ImportSpec(BaseModel):
     source_path: str = Field(..., description="Path within repo to extract")
     local_path: Optional[str] = Field(
         None, 
-        description="Local path override (defaults to {library-root}/{import_key}). If specified, overrides library-root completely."
+        description="Local path override (defaults to {library_root}/{import_key}). If specified, overrides library_root completely."
     )
     checkin: bool = Field(
         default=True,
@@ -58,9 +58,8 @@ class ComposeConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
     
     library_root: str = Field(
-        default="libs", 
-        description="Default root directory for imported libraries (used when local_path not specified)",
-        alias="library-root"
+        default="designs/libs", 
+        description="Default root directory for imported libraries (used when local_path not specified)"
     )
     imports: Optional[Dict[str, ImportSpec]] = Field(
         default_factory=dict,
@@ -76,7 +75,7 @@ class ComposeConfig(BaseModel):
     
     def to_yaml(self, config_path: Path) -> None:
         """Save configuration to YAML file."""
-        data = self.model_dump(by_alias=True, exclude_none=True)
+        data = self.model_dump(exclude_none=True)
         with open(config_path, 'w') as f:
             yaml.dump(data, f, default_flow_style=False, sort_keys=False)
 

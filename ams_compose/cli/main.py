@@ -268,7 +268,7 @@ def validate():
 
 
 @main.command()
-@click.option('--library-root', default='designs/libs', 
+@click.option('--library_root', default='designs/libs', 
               help='Default directory for library installations (default: designs/libs)')
 @click.option('--force', is_flag=True, 
               help='Overwrite existing ams-compose.yaml file')
@@ -296,7 +296,7 @@ def init(library_root: str, force: bool):
 # For more information, see: https://github.com/Jianxun/ams-compose
 
 # Default directory where libraries will be installed
-library-root: {library_root}
+library_root: {library_root}
 
 # Library imports - add your dependencies here
 imports:
@@ -305,7 +305,7 @@ imports:
   #   repo: https://github.com/example/analog-library.git
   #   ref: main                    # branch, tag, or commit
   #   source_path: lib/analog      # path within the repository
-  #   # local_path: custom/path    # optional: override library-root location
+  #   # local_path: custom/path    # optional: override library_root location
   
 # To add a new library:
 # 1. Add an entry under 'imports' with a unique name

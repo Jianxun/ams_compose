@@ -40,14 +40,14 @@ class TestInitCommand:
             os.chdir(original_cwd)
     
     def test_init_with_custom_library_root(self, tmp_path):
-        """Test init with custom library-root directory."""
+        """Test init with custom library_root directory."""
         original_cwd = Path.cwd()
         try:
             import os
             os.chdir(tmp_path)
             
             runner = CliRunner()
-            result = runner.invoke(main, ['init', '--library-root', 'custom/libs'])
+            result = runner.invoke(main, ['init', '--library_root', 'custom/libs'])
             
             assert result.exit_code == 0
             
@@ -56,10 +56,10 @@ class TestInitCommand:
             assert custom_dir.exists()
             assert custom_dir.is_dir()
             
-            # Check config contains custom library-root
+            # Check config contains custom library_root
             config_file = tmp_path / "ams-compose.yaml"
             config_content = config_file.read_text()
-            assert "library-root: custom/libs" in config_content
+            assert "library_root: custom/libs" in config_content
             
         finally:
             os.chdir(original_cwd)
@@ -80,7 +80,7 @@ class TestInitCommand:
             content = config_file.read_text()
             
             # Check required sections are present
-            assert "library-root: designs/libs" in content
+            assert "library_root: designs/libs" in content
             assert "imports:" in content
             assert "# Example library import" in content
             assert "# my_analog_lib:" in content
@@ -137,7 +137,7 @@ class TestInitCommand:
             # Config should be overwritten
             content = config_file.read_text()
             assert "existing config" not in content
-            assert "library-root: designs/libs" in content
+            assert "library_root: designs/libs" in content
             
         finally:
             os.chdir(original_cwd)
@@ -150,7 +150,7 @@ class TestInitCommand:
             os.chdir(tmp_path)
             
             runner = CliRunner()
-            result = runner.invoke(main, ['init', '--library-root', 'deep/nested/libs'])
+            result = runner.invoke(main, ['init', '--library_root', 'deep/nested/libs'])
             
             assert result.exit_code == 0
             
