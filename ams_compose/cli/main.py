@@ -210,15 +210,14 @@ def install(libraries: tuple, force: bool):
 
 
 @main.command('list')
-@click.option('--detailed', is_flag=True, help='Show detailed library information')
-def list_libraries(detailed: bool):
+def list_libraries():
     """List installed libraries."""
     try:
         installer = _get_installer()
         installed = installer.list_installed_libraries()
         
         _format_libraries_summary(installed, "Installed libraries", "No libraries installed", 
-                                 detailed=detailed, show_status=False)
+                                 detailed=False, show_status=False)
                 
     except InstallationError as e:
         _handle_installation_error(e)
