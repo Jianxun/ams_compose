@@ -39,6 +39,17 @@
 - [ ] **Fix checksum calculation race condition** - Move .gitignore injection before checksum calculation (installer.py:147 vs extractor.py:344-348)
 
 ## Completed This Sprint ✅
+- **README.md Comprehensive Overhaul**: Updated entire README.md to reflect current ams-compose v0.0.0 state
+  - Fixed configuration examples (library-root → library_root, added checkin/ignore_patterns fields)
+  - Updated command documentation (added clean/schema commands, removed outdated options)
+  - Enhanced feature descriptions (license tracking, mirror system, security hardening)
+  - Improved installation instructions and Quick Start section
+  - Added Advanced Features, Troubleshooting, and comprehensive documentation sections
+- **Metadata File Rename and Traceability Enhancement**: Changed .ams-compose-provenance.yaml → .ams-compose-metadata.yaml
+  - Updated all source files, tests, and documentation references
+  - Fixed generation logic to create metadata for ALL libraries (checkin=true AND checkin=false)
+  - Updated gitignore logic to preserve metadata files for non-checkin libraries
+  - Enhanced traceability for complete dependency tracking
 - **API Simplification Complete**: Updated install_all() method, CLI install command, fixed 27 tests across E2E and unit test suites
   - test_branch_updates.py (4 tests) - Fixed tuple/dict inconsistencies and up_to_date assertions
   - test_gitignore_injection.py (10 tests) - Fixed install_libs[0] patterns to expect dictionary

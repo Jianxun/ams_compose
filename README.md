@@ -1,6 +1,6 @@
 # ams-compose
 
-Dependency management tool for analog IC design repositories that enables selective import of IP libraries without copying entire repository structures.
+Dependency management tool for analog/mixed-signal IC design repositories that enables selective import of IP libraries without copying entire repository structures.
 
 ## Overview
 
@@ -9,10 +9,13 @@ ams-compose solves the problem of fragmented analog IP libraries by allowing sel
 ### Key Features
 
 - **Selective Library Import**: Extract only the IP libraries you need from any path within a repository
-- **Version Control**: Pin to specific branches, tags, or commits
-- **Smart Install Logic**: Skip libraries that don't need updates
+- **Version Control Integration**: Pin to specific branches, tags, or commits with smart checkin controls
+- **Smart Install Logic**: Skip libraries that don't need updates with intelligent caching
+- **License Preservation**: Automatically track and preserve license files for legal compliance
+- **Smart Mirror System**: Efficient repository caching with SHA256-based deduplication
+- **Security Hardening**: Path validation and URL sanitization to prevent security vulnerabilities
 - **Clean Workspaces**: Automatically filter out VCS directories, development files, and OS artifacts
-- **License Tracking**: Monitor license compliance across imported libraries
+- **Gitignore Integration**: Automatic .gitignore management for libraries marked as non-checkin
 
 ### Target Environment
 
@@ -20,18 +23,30 @@ Designed for open source IC toolchains, specifically the IIC-OSIC-TOOLS Docker c
 
 ## Installation
 
-Install directly from GitHub:
+### Requirements
+
+- Python >=3.8
+- Git (for repository operations)
+
+### Install from GitHub
 
 ```bash
-pip install git+https://github.com/Jianxun/ams_compose.git
+pip install git+https://github.com/Jianxun/ams-compose.git
 ```
 
-Or install from source for development:
+### Install from Source (Development)
 
 ```bash
-git clone https://github.com/Jianxun/ams_compose.git
-cd ams_compose
+git clone https://github.com/Jianxun/ams-compose.git
+cd ams-compose
 pip install -e .
+```
+
+### Verify Installation
+
+```bash
+ams-compose --version
+ams-compose --help
 ```
 
 ## Quick Start
@@ -46,20 +61,27 @@ ams-compose init
 
 ```yaml
 # Default directory where libraries will be installed
-library-root: designs/libs
+library_root: designs/libs
 
 # Library imports - add your dependencies here
 imports:
+  # Production IP library (checked into version control)
   gf180mcu_fd_sc_mcu9t5v0_symbols:
     repo: https://github.com/peterkinget/gf180mcu_fd_sc_mcu9t5v0_symbols
     ref: main
     source_path: .
+    checkin: true
     
+  # Development template (excluded from version control)  
   designinit:
     repo: https://github.com/Jianxun/iic-osic-tools-project-template
     ref: main
     source_path: designs/.designinit
-    local_path: designs/.designinit  # optional: override library-root location
+    local_path: designs/.designinit  # optional: override library_root location
+    checkin: false
+    ignore_patterns:
+      - "*.log"
+      - "build/"
 ```
 
 3. Install libraries:
@@ -70,30 +92,150 @@ ams-compose install
 
 ## Commands
 
-- `ams-compose init` - Initialize a new ams-compose project
-- `ams-compose install [LIBRARIES...]` - Install libraries from ams-compose.yaml
-  - `--force` - Force reinstall all libraries (ignore up-to-date check)
-  - `--auto-gitignore` - Automatically add .mirror/ to .gitignore (default: enabled)
-- `ams-compose list` - List installed libraries
-  - `--detailed` - Show detailed library information
-- `ams-compose validate` - Validate ams-compose.yaml configuration and installation state
-- `ams-compose clean` - Clean unused mirrors, orphaned libraries, and validate installation
+### Core Operations
+
+- **`ams-compose init`** - Initialize a new ams-compose project
+  - Creates `ams-compose.yaml` configuration file
+  - Sets up basic project structure
+
+- **`ams-compose install [LIBRARIES...]`** - Install libraries from ams-compose.yaml
+  - `LIBRARIES`: Optional list of specific libraries to install
+  - `--force`: Force reinstall all libraries (ignore up-to-date check)
+  - Automatically manages .gitignore for non-checkin libraries
+
+- **`ams-compose list`** - List installed libraries
+  - Shows installation status and version information
+  - Displays library paths and metadata
+
+### Maintenance Operations
+
+- **`ams-compose validate`** - Validate ams-compose.yaml configuration and installation state
+  - Checks configuration file syntax
+  - Verifies installed library integrity
+  - Reports missing or corrupted libraries
+
+- **`ams-compose clean`** - Clean unused mirrors and orphaned libraries
+  - Removes unused repository mirrors from `.mirror/` directory
+  - Cleans up orphaned library installations
+  - Validates current installation state
+
+### Documentation
+
+- **`ams-compose schema`** - Show complete ams-compose.yaml configuration schema
+  - Displays all available configuration options
+  - Includes examples and field descriptions
+  - Useful for advanced configuration
 
 ## Configuration
 
 The `ams-compose.yaml` file supports the following structure:
 
 ```yaml
-library-root: designs/libs  # Default installation directory
+# Default installation directory for all libraries
+library_root: designs/libs
 
 imports:
   library_name:
-    repo: https://github.com/user/repo  # Git repository URL
-    ref: main                           # Branch, tag, or commit SHA
-    source_path: path/in/repo          # Path within the repository to extract
-    local_path: custom/path            # Optional: override library-root location
-    license: MIT                       # Optional: license information
+    # REQUIRED FIELDS
+    repo: https://github.com/user/repo    # Git repository URL
+    ref: main                             # Branch, tag, or commit SHA
+    source_path: path/in/repo             # Path within repo to extract
+    
+    # OPTIONAL FIELDS
+    local_path: custom/path               # Override default path construction
+    checkin: true                         # Include in version control (default: true)
+    license: MIT                          # License override (auto-detected if not specified)
+    ignore_patterns:                      # Additional files to ignore during extraction
+      - "*.log"
+      - "build/"
+      - "*.tmp"
 ```
+
+### Key Configuration Options
+
+- **`library_root`**: Default directory where libraries are installed when `local_path` is not specified
+- **`checkin`**: Controls whether the library is included in version control
+  - `true` (default): Library files are committed to your repository
+  - `false`: Library is excluded via .gitignore (useful for large or frequently changing dependencies)
+- **`ignore_patterns`**: Additional gitignore-style patterns applied during extraction
+- **`local_path`**: When specified, completely overrides the default `{library_root}/{library_name}` path
+
+## Advanced Features
+
+### License Compliance
+
+ams-compose automatically tracks and preserves license files to ensure legal compliance:
+
+- **Automatic License Detection**: Scans for LICENSE, COPYING, and similar files in repositories
+- **License Preservation**: Always copies license files during library extraction
+- **Partial IP License Injection**: For `source_path` extractions, injects the repository's root LICENSE file
+- **License Override**: Manual license specification in configuration when auto-detection is insufficient
+- **Legal Compliance**: Enables safe partial IP reuse while maintaining license obligations
+
+### Smart Mirror System
+
+Efficient repository management with intelligent caching:
+
+- **SHA256 Deduplication**: Repository mirrors stored in `.mirror/` with content-based naming
+- **Shallow Clones**: Optimized network usage for faster operations
+- **Shared Mirrors**: Multiple libraries from same repository share a single mirror
+- **Automatic Cleanup**: Unused mirrors removed during `ams-compose clean` operations
+- **Disk Space Optimization**: Significantly reduces storage requirements for projects with multiple dependencies
+
+### Security Features
+
+Built-in security hardening to protect against common vulnerabilities:
+
+- **Path Traversal Protection**: Validates all paths to prevent directory escape attacks
+- **Git URL Validation**: Sanitizes repository URLs to prevent command injection
+- **Scheme Restrictions**: Only allows safe URL schemes (https, ssh, file with validation)
+- **Checksum Integrity**: SHA256 verification of extracted libraries
+- **Safe File Operations**: Proper handling of symlinks and special files
+
+### Version Control Integration
+
+Smart gitignore management based on library configuration:
+
+- **Automatic .gitignore**: Libraries with `checkin: false` automatically added to .gitignore
+- **Mirror Exclusion**: `.mirror/` directory always excluded from version control
+- **Selective Checkin**: Fine-grained control over which dependencies are committed
+- **Clean Repository State**: Maintains clean git status while managing external dependencies
+
+## Troubleshooting
+
+### Common Issues
+
+**Library not updating despite changes**
+```bash
+# Force reinstall to bypass cache
+ams-compose install --force library_name
+```
+
+**Configuration validation errors**
+```bash
+# Check configuration syntax and structure
+ams-compose validate
+# Show complete configuration schema
+ams-compose schema
+```
+
+**Mirror storage cleanup**
+```bash
+# Remove unused mirrors and orphaned libraries
+ams-compose clean
+```
+
+**Path or permission issues**
+- Ensure write permissions to `library_root` directory
+- Verify git credentials for private repositories
+- Check that `local_path` destinations are writable
+
+### Getting Help
+
+- Run `ams-compose --help` for command overview
+- Use `ams-compose COMMAND --help` for specific command options
+- Check `ams-compose schema` for configuration reference
+- Report issues at [GitHub Issues](https://github.com/Jianxun/ams-compose/issues)
 
 ## License
 

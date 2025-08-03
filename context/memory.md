@@ -7,6 +7,12 @@
 
 ## Recent Major Changes (Last 2-3 Sessions Only)
 
+### Metadata File Rename and Traceability Enhancement - 2025-08-03
+- **Problem**: Metadata files named .ams-compose-provenance.yaml only generated for checkin=true libraries, limiting traceability
+- **Solution**: Renamed to .ams-compose-metadata.yaml and ensured generation for ALL libraries regardless of checkin setting
+- **Status**: Complete - Updated README.md, renamed files in all code/tests/docs, fixed generation logic
+- **Benefits**: Full traceability for all dependencies, clearer naming, better compliance tracking
+
 ### Install_all() API Simplification Complete - 2025-08-03
 - **Problem**: install_all() returned brittle Tuple[Dict[str, LockEntry], Dict[str, LockEntry]] causing 23 E2E test failures
 - **Solution**: Simplified to single Dict[str, LockEntry] using existing install_status field ("installed"/"updated"/"up_to_date")
@@ -40,8 +46,8 @@
 - **Two-tier dependency model**: checkin=true (commit to repo) vs checkin=false (environment only)
 
 ## Active Issues & Next Steps
-- **Current Priority**: API Simplification Complete - Ready for orchestrator architecture refactoring
-- **Implementation Status**: All install_all() API changes complete - 27 tests fixed across E2E and unit test suites
-- **Test Coverage**: 18 E2E tests passing (test_branch_updates.py, test_gitignore_injection.py, test_local_modifications.py), 9 unit tests passing
-- **Branch Status**: Renamed from feature/rename-analoghubconfig-to-composeconfig to feature/api-simplification-and-interface-cleanup to reflect comprehensive changes
+- **Current Priority**: Documentation and interface improvements complete - Ready for orchestrator architecture refactoring
+- **Implementation Status**: README.md updated, metadata file rename complete, all tests passing
+- **Test Coverage**: All E2E and unit tests passing after metadata filename changes
+- **Branch Status**: Main branch with completed README overhaul and metadata system improvements
 - **Next Session**: Begin Phase 1 of orchestrator architecture refactoring (extract LibraryValidator module)
