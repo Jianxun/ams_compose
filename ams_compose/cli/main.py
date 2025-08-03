@@ -269,7 +269,7 @@ def validate():
 
 @main.command()
 @click.option('--library-root', default='designs/libs', 
-              help='Default directory for library installations (default: libs)')
+              help='Default directory for library installations (default: designs/libs)')
 @click.option('--force', is_flag=True, 
               help='Overwrite existing ams-compose.yaml file')
 def init(library_root: str, force: bool):
