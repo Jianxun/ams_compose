@@ -128,7 +128,8 @@ class TestLocalModificationDetection:
         # Test 1: No modifications - should pass validation
         print("🔄 Testing validation with no modifications...")
         result = self.installer.install_all()
-        assert 'mod_test_lib' not in result, "Unmodified library should be skipped"
+        assert 'mod_test_lib' in result, "Library should be in result"
+        assert result['mod_test_lib'].install_status == "up_to_date", "Unmodified library should be marked as up_to_date"
         
         # Test 2: Modify a file slightly
         print("🔄 Testing detection of minor file modification...")
@@ -166,7 +167,8 @@ class TestLocalModificationDetection:
         amp_file.write_text(original_content)
         
         result = self.installer.install_all()
-        assert 'mod_test_lib' not in result, "Restored library should be skipped"
+        assert 'mod_test_lib' in result, "Library should be in result"
+        assert result['mod_test_lib'].install_status == "up_to_date", "Restored library should be marked as up_to_date"
         print("   ✅ Validation passes after restoration")
         
         # Test 4: Delete a file
@@ -337,7 +339,8 @@ class TestLocalModificationDetection:
         # Test 1: Validate with unchanged permissions
         print("🔄 Testing validation with unchanged permissions...")
         result = self.installer.install_all()
-        assert 'perm_test_lib' not in result, "Library with correct permissions should be skipped"
+        assert 'perm_test_lib' in result, "Library should be in result"
+        assert result['perm_test_lib'].install_status == "up_to_date", "Library with correct permissions should be marked as up_to_date"
         
         # Test 2: Change file permissions
         print("🔄 Testing detection of changed permissions...")

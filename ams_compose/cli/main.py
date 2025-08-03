@@ -185,7 +185,13 @@ def install(libraries: tuple, force: bool):
         else:
             click.echo("Installing all libraries from ams-compose.yaml")
         
-        installed, up_to_date = installer.install_all(library_list, force=force)
+        all_libraries = installer.install_all(library_list, force=force)
+        
+        # Filter libraries by install_status
+        up_to_date = {name: entry for name, entry in all_libraries.items() 
+                     if entry.install_status == "up_to_date"}
+        processed = {name: entry for name, entry in all_libraries.items() 
+                    if entry.install_status in ["installed", "updated"]}
         
         # Show up-to-date libraries first
         if up_to_date:
@@ -193,14 +199,14 @@ def install(libraries: tuple, force: bool):
                                      detailed=False, show_status=True, command_context="install")
         
         # Show installed/updated libraries
-        if installed:
+        if processed:
             if up_to_date:
                 click.echo()  # Add blank line between sections
-            _format_libraries_summary(installed, "Processed libraries", 
+            _format_libraries_summary(processed, "Processed libraries", 
                                      detailed=False, show_status=True, command_context="install")
         
         # Show summary message if nothing was processed
-        if not installed and not up_to_date:
+        if not all_libraries:
             click.echo("No libraries to install")
             
     except InstallationError as e:

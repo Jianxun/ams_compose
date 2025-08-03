@@ -83,7 +83,13 @@ class TestBatchInstaller:
         ]
         
         # Install all libraries
-        installed, up_to_date = installer.install_all()
+        all_libraries = installer.install_all()
+        
+        # Filter by install status
+        installed = {name: entry for name, entry in all_libraries.items() 
+                    if entry.install_status in ["installed", "updated"]}
+        up_to_date = {name: entry for name, entry in all_libraries.items() 
+                     if entry.install_status == "up_to_date"}
         
         # Verify all libraries were installed
         assert len(installed) == 2

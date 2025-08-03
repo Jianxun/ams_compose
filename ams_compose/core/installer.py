@@ -352,7 +352,7 @@ class LibraryInstaller:
         lock_file.libraries.update(installed_libraries)
         self.save_lock_file(lock_file)
 
-    def install_all(self, library_names: Optional[List[str]] = None, force: bool = False) -> Tuple[Dict[str, LockEntry], Dict[str, LockEntry]]:
+    def install_all(self, library_names: Optional[List[str]] = None, force: bool = False) -> Dict[str, LockEntry]:
         """Install all libraries or specific subset with smart skip logic.
         
         Args:
@@ -362,9 +362,11 @@ class LibraryInstaller:
                   If False, skip libraries that are already installed at correct version.
             
         Returns:
-            Tuple of (changed_libraries, up_to_date_libraries) where:
-            - changed_libraries: Libraries that were installed/updated
-            - up_to_date_libraries: Libraries that were already up-to-date
+            Dictionary of library_name -> LockEntry for all processed libraries.
+            Libraries have install_status set to:
+            - "installed": New installation 
+            - "updated": Library was updated
+            - "up_to_date": Library was already current and skipped
             
         Raises:
             InstallationError: If any installation fails
@@ -374,7 +376,7 @@ class LibraryInstaller:
         libraries_to_install = self._resolve_target_libraries(library_names, config)
         
         if not libraries_to_install:
-            return {}, {}
+            return {}
         
         # Load current lock file and determine what needs work
         lock_file = self.load_lock_file()
@@ -391,7 +393,7 @@ class LibraryInstaller:
                 up_to_date_libraries[library_name] = lock_entry
         
         if not libraries_needing_work:
-            return {}, up_to_date_libraries
+            return up_to_date_libraries
         
         # Install/update libraries that need work
         installed_libraries = self._install_libraries_batch(libraries_needing_work, config, lock_file)
@@ -399,7 +401,12 @@ class LibraryInstaller:
         # Update lock file with new installations
         self._update_lock_file(installed_libraries, config)
         
-        return installed_libraries, up_to_date_libraries
+        # Combine all processed libraries into single result
+        all_libraries = {}
+        all_libraries.update(installed_libraries)
+        all_libraries.update(up_to_date_libraries)
+        
+        return all_libraries
     
     def list_installed_libraries(self) -> Dict[str, LockEntry]:
         """List all currently installed libraries.
