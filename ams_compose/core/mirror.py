@@ -42,7 +42,21 @@ class RepositoryMirror:
         """
         self.mirror_root = Path(mirror_root)
         self.mirror_root.mkdir(exist_ok=True)
+        self._ensure_mirror_gitignore()
         self.git_timeout = git_timeout
+    
+    def _ensure_mirror_gitignore(self) -> None:
+        """Create .gitignore file in mirror directory to exclude all contents from version control."""
+        gitignore_path = self.mirror_root / ".gitignore"
+        
+        # Only create if it doesn't exist
+        if not gitignore_path.exists():
+            gitignore_content = """# Exclude all mirror contents from version control
+# Mirrors are local caches and should not be committed
+*
+!.gitignore
+"""
+            gitignore_path.write_text(gitignore_content)
     
     def _with_timeout(self, operation, timeout=None):
         """Execute git operation with timeout.

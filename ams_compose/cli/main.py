@@ -155,27 +155,6 @@ def _format_libraries_summary(libraries: Dict[str, LockEntry], title: str, empty
         _format_libraries_tabular(libraries, show_status, command_context)
 
 
-def _auto_generate_gitignore() -> None:
-    """Auto-generate .gitignore entries for .mirror/ directory."""
-    gitignore_path = Path.cwd() / ".gitignore"
-    mirror_entry = ".mirror/"
-    
-    # Check if .gitignore exists and already contains mirror entry
-    if gitignore_path.exists():
-        content = gitignore_path.read_text()
-        if mirror_entry in content:
-            return
-        
-        # Add mirror entry
-        if not content.endswith('\n'):
-            content += '\n'
-        content += f"\n# ams-compose mirrors\n{mirror_entry}\n"
-    else:
-        # Create new .gitignore
-        content = f"# ams-compose mirrors\n{mirror_entry}\n"
-    
-    gitignore_path.write_text(content)
-    click.echo(f"Added '{mirror_entry}' to .gitignore")
 
 
 @click.group()
@@ -187,11 +166,9 @@ def main():
 
 @main.command()
 @click.argument('libraries', nargs=-1)
-@click.option('--auto-gitignore', is_flag=True, default=True, 
-              help='Automatically add .mirror/ to .gitignore (default: enabled)')
 @click.option('--force', is_flag=True, default=False,
               help='Force reinstall all libraries (ignore up-to-date check)')
-def install(libraries: tuple, auto_gitignore: bool, force: bool):
+def install(libraries: tuple, force: bool):
     """Install libraries from ams-compose.yaml.
     
     LIBRARIES: Optional list of specific libraries to install.
@@ -199,10 +176,6 @@ def install(libraries: tuple, auto_gitignore: bool, force: bool):
     """
     try:
         installer = _get_installer()
-        
-        # Auto-generate .gitignore if requested
-        if auto_gitignore:
-            _auto_generate_gitignore()
         
         # Convert tuple to list for installer
         library_list = list(libraries) if libraries else None
@@ -352,9 +325,6 @@ imports:
     
     # Write configuration file
     config_path.write_text(template_config)
-    
-    # Auto-generate .gitignore
-    _auto_generate_gitignore()
     
     click.echo(f"Initialized ams-compose project in {Path.cwd()}")
     click.echo(f"Edit {config_path.name} to add library dependencies, then run 'ams-compose install'")
