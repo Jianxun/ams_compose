@@ -1,19 +1,9 @@
-# Current Sprint: Architectural Completeness & Production Robustness
+# Current Sprint
 
-## Sprint Goal
-Transform ams-compose from production-ready MVP to architecturally complete system with robust dependency resolution, security hardening, and enhanced user experience.
+## In Progress
+- [ ] **Begin Orchestrator Architecture Refactoring** - Extract LibraryValidator module from installer.py
 
-## Test Status Summary 📊  
-- **E2E Tests**: 33 passed, 0 failed (100% pass rate) ✅✅✅
-- **Core Unit Tests**: 125 passed, 0 failed (100% pass rate) ✅✅✅
-- **System Status**: Critical submodule gap resolved, ready for remaining architectural completeness items 🎯
-
-## In Progress  
-- [ ] **Orchestrator Architecture Refactoring** - Execute 4-module refactoring plan starting with Phase 1 (LibraryValidator extraction)
-
-## Priority 1 (CRITICAL) - Orchestrator Architecture Refactoring
-
-### Phase 1: Extract LibraryValidator Module
+## Priority 1 (HIGH) - Orchestrator Architecture Refactoring
 - [ ] **Create validator.py module** - Extract validation methods from installer.py to new LibraryValidator class
 - [ ] **Move validation methods** - Transfer validate_library(), validate_installation(), checksum operations
 - [ ] **Update imports and dependencies** - Fix all references to moved validation methods
@@ -48,20 +38,28 @@ Transform ams-compose from production-ready MVP to architecturally complete syst
 - [ ] **Add git URL validation** - Prevent file:// URLs and command injection in mirror operations (mirror.py lines 155-159)
 - [ ] **Fix checksum calculation race condition** - Move .gitignore injection before checksum calculation (installer.py:147 vs extractor.py:344-348)
 
-## Priority 1 (HIGH) - License File Feature Bug Fixes
-
-### Phase 1B: License File Feature Bugs  
-- [ ] **Fix LICENSE file preservation logic** - Investigate why LICENSE files not copied with real repos (preserve_license_files logic in extractor.py:321-324)
-- [ ] **Update failing E2E tests** - Modify test_gitignore_injection.py to expect library-specific .gitignore files instead of main .gitignore modification
-- [ ] **Test with real repositories** - Validate fixes work with actual GitHub repositories
+## Completed This Sprint ✅
+- **README.md Comprehensive Overhaul**: Updated entire README.md to reflect current ams-compose v0.0.0 state
+  - Fixed configuration examples (library-root → library_root, added checkin/ignore_patterns fields)
+  - Updated command documentation (added clean/schema commands, removed outdated options)
+  - Enhanced feature descriptions (license tracking, mirror system, security hardening)
+  - Improved installation instructions and Quick Start section
+  - Added Advanced Features, Troubleshooting, and comprehensive documentation sections
+- **Metadata File Rename and Traceability Enhancement**: Changed .ams-compose-provenance.yaml → .ams-compose-metadata.yaml
+  - Updated all source files, tests, and documentation references
+  - Fixed generation logic to create metadata for ALL libraries (checkin=true AND checkin=false)
+  - Updated gitignore logic to preserve metadata files for non-checkin libraries
+  - Enhanced traceability for complete dependency tracking
+- **API Simplification Complete**: Updated install_all() method, CLI install command, fixed 27 tests across E2E and unit test suites
+  - test_branch_updates.py (4 tests) - Fixed tuple/dict inconsistencies and up_to_date assertions
+  - test_gitignore_injection.py (10 tests) - Fixed install_libs[0] patterns to expect dictionary
+  - test_local_modifications.py (4 tests) - Fixed library presence and install_status checking
+  - test_submodule_support.py - No tuple API issues (separate git infrastructure issue exists)
+  - Unit tests - Fixed installer batch tests and CLI tests to expect dictionary returns
+- **Branch Management**: Renamed feature/rename-analoghubconfig-to-composeconfig → feature/api-simplification-and-interface-cleanup
+- **Context Documentation**: Updated memory.md and todo.md with completion status and next priorities
 
 ## Priority 2 (HIGH) - Critical Dependency Resolution Completeness
-
-### ✅ Phase 1A: Submodule Support Implementation (COMPLETED)
-- [x] **Modify create_mirror() for submodule support** - Add recurse_submodules=True to git.Repo.clone_from() ✅
-- [x] **Enhance update_mirror() for submodule updates** - Add git submodule update --init --recursive logic ✅  
-- [x] **Update PathExtractor for submodule content** - Ensure submodule files included in extraction operations ✅
-- [x] **Create submodule test scenarios** - Build test repos with submodules for comprehensive validation ✅
 
 ### Phase 1B: Nested ams-compose Dependency Detection  
 - [ ] **Implement nested dependency scanner** - Scan extracted libraries for ams-compose.yaml files
@@ -96,58 +94,4 @@ Transform ams-compose from production-ready MVP to architecturally complete syst
 - [ ] **Add troubleshooting guides** - Common issues and solutions for analog IC workflows
 
 ### Phase 3C: Code Consistency & Naming
-- [ ] **Rename AnalogHubConfig to ComposeConfig** - Update legacy class name across 14 files (core/config.py, installer.py, CLI, and all tests) for consistency with ams-compose project name
-
-## Completed Previous Sprint ✅
-
-### ✅ COMPLETE: Git Submodule Support Implementation
-- [x] **Complete TDD implementation** - Full test-driven development cycle with Red-Green-Refactor ✅
-- [x] **Mirror operations enhancement** - recurse_submodules=True and _update_submodules() method ✅
-- [x] **Comprehensive test coverage** - 5 unit tests + 4 E2E tests for submodule functionality ✅
-- [x] **End-to-end validation** - Submodule content extraction working in real scenarios ✅
-- [x] **Git security resolution** - File transport configuration for local test repositories ✅
-- [x] **Branch and commit** - Changes committed to feature/submodule-support branch ✅
-
-### ✅ COMPLETE: ChatGPT Design Review Analysis & Strategic Planning
-- [x] **Analyze external code review findings** - Comprehensive assessment of strengths and critical gaps ✅
-- [x] **Identify architectural dependency gaps** - Submodule support missing, nested ams-compose unresolved ✅
-- [x] **Define value proposition vs git submodules** - Clear differentiation for analog IC design workflows ✅
-- [x] **Establish strategic roadmap** - Prioritized implementation plan for production completeness ✅
-
-### ✅ COMPLETE: License File Inclusion & IP Compliance Features
-- [x] **Enhanced PathExtractor for LICENSE files** - Auto-include LICENSE files during extraction when checkin=true ✅
-- [x] **Implemented provenance metadata** - Generate .ams-compose-provenance.yaml with source traceability ✅
-- [x] **Comprehensive test coverage** - 8 unit tests + 4 E2E tests for license inclusion features ✅
-- [x] **IP compliance foundation** - Legal audit support and license preservation ✅
-
-### ✅ COMPLETE: Critical Bug Fixes & Validation Enhancements
-- [x] **Strict Pydantic validation** - extra="allow" → extra="forbid" catches YAML typos ✅
-- [x] **Enhanced .gitignore injection** - Per-library approach with directory visibility ✅
-- [x] **Package distribution setup** - GitHub installation working correctly ✅
-- [x] **Comprehensive test coverage** - All 120 unit + 29 E2E tests at 100% pass rate ✅
-
-## Next Session Goals 🎯
-- **URGENT**: Address all Priority 1 CRITICAL security vulnerabilities before any other work
-- **Phase 1**: Fix license file feature bugs after security issues resolved
-- **Phase 2**: Implement remaining architectural improvements and enhanced error handling
-- **Quality**: Maintain 100% test pass rate throughout security fixes and improvements
-- **Outcome**: Secure, production-ready system with resolved architectural debt
-
-## Sprint Success Criteria
-- ✅ Submodule dependencies properly extracted (no more empty directories)
-- ✅ Users warned about complex dependency scenarios with clear guidance
-- ✅ No security vulnerabilities from path escaping or malicious configurations
-- ✅ Robust handling of git operation failures with user-friendly error messages
-- ✅ Comprehensive documentation for tool integration challenges
-- ✅ All existing functionality maintained with 100% test coverage
-
-## Architectural Completeness Roadmap
-**Foundation**: Production-ready MVP with comprehensive supply chain management, license tracking, filtering system
-**Current Sprint**: Dependency resolution completeness, security hardening, operational robustness
-**Future**: Advanced features (dependency graph visualization, automated tool integration, foundry PDK optimization)
-
-## Implementation Strategy
-- **Incremental approach**: Maintain system stability while adding architectural completeness
-- **Test-driven development**: Comprehensive test coverage for all new functionality
-- **User-centric design**: Focus on analog IC designer workflows and real-world usage patterns
-- **Security-first**: All new features include security validation and safe defaults
+- [ ] **Rename AnalogHubConfig to ComposeConfig** - Update legacy class name across 18 files

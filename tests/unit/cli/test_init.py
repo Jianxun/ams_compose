@@ -33,23 +33,21 @@ class TestInitCommand:
             assert libs_dir.exists()
             assert libs_dir.is_dir()
             
-            # Check .gitignore was created/updated
-            gitignore = tmp_path / ".gitignore"
-            assert gitignore.exists()
-            assert ".mirror/" in gitignore.read_text()
+            # Note: .mirror/.gitignore is now created automatically when mirror is first used
+            # No .gitignore should be created by init command
             
         finally:
             os.chdir(original_cwd)
     
     def test_init_with_custom_library_root(self, tmp_path):
-        """Test init with custom library-root directory."""
+        """Test init with custom library_root directory."""
         original_cwd = Path.cwd()
         try:
             import os
             os.chdir(tmp_path)
             
             runner = CliRunner()
-            result = runner.invoke(main, ['init', '--library-root', 'custom/libs'])
+            result = runner.invoke(main, ['init', '--library_root', 'custom/libs'])
             
             assert result.exit_code == 0
             
@@ -58,10 +56,10 @@ class TestInitCommand:
             assert custom_dir.exists()
             assert custom_dir.is_dir()
             
-            # Check config contains custom library-root
+            # Check config contains custom library_root
             config_file = tmp_path / "ams-compose.yaml"
             config_content = config_file.read_text()
-            assert "library-root: custom/libs" in config_content
+            assert "library_root: custom/libs" in config_content
             
         finally:
             os.chdir(original_cwd)
@@ -82,7 +80,7 @@ class TestInitCommand:
             content = config_file.read_text()
             
             # Check required sections are present
-            assert "library-root: designs/libs" in content
+            assert "library_root: designs/libs" in content
             assert "imports:" in content
             assert "# Example library import" in content
             assert "# my_analog_lib:" in content
@@ -139,7 +137,7 @@ class TestInitCommand:
             # Config should be overwritten
             content = config_file.read_text()
             assert "existing config" not in content
-            assert "library-root: designs/libs" in content
+            assert "library_root: designs/libs" in content
             
         finally:
             os.chdir(original_cwd)
@@ -152,7 +150,7 @@ class TestInitCommand:
             os.chdir(tmp_path)
             
             runner = CliRunner()
-            result = runner.invoke(main, ['init', '--library-root', 'deep/nested/libs'])
+            result = runner.invoke(main, ['init', '--library_root', 'deep/nested/libs'])
             
             assert result.exit_code == 0
             
@@ -183,15 +181,15 @@ class TestInitCommand:
             output = result.output
             assert "Initialized ams-compose project" in output
             assert "Created directory: designs/libs/" in output
-            assert "Added '.mirror/' to .gitignore" in output
+            # Note: No longer expect .gitignore message since mirror .gitignore is created automatically
             assert "Edit ams-compose.yaml to add library dependencies" in output
             assert "run 'ams-compose install'" in output
             
         finally:
             os.chdir(original_cwd)
     
-    def test_init_updates_existing_gitignore(self, tmp_path):
-        """Test that init updates existing .gitignore file."""
+    def test_init_preserves_existing_gitignore(self, tmp_path):
+        """Test that init doesn't modify existing .gitignore file."""
         original_cwd = Path.cwd()
         try:
             import os
@@ -199,42 +197,17 @@ class TestInitCommand:
             
             # Create existing .gitignore
             gitignore = tmp_path / ".gitignore"
-            gitignore.write_text("*.pyc\n__pycache__/\n")
+            original_content = "*.pyc\n__pycache__/\n"
+            gitignore.write_text(original_content)
             
             runner = CliRunner()
             result = runner.invoke(main, ['init'])
             
             assert result.exit_code == 0
             
-            # Check .gitignore was updated
+            # Check .gitignore was NOT modified
             content = gitignore.read_text()
-            assert "*.pyc" in content  # Original content preserved
-            assert "__pycache__/" in content
-            assert ".mirror/" in content  # New content added
-            assert "# ams-compose mirrors" in content
-            
-        finally:
-            os.chdir(original_cwd)
-    
-    def test_init_skips_gitignore_if_already_present(self, tmp_path):
-        """Test that init doesn't duplicate .gitignore entries."""
-        original_cwd = Path.cwd()
-        try:
-            import os
-            os.chdir(tmp_path)
-            
-            # Create .gitignore with mirror entry already present
-            gitignore = tmp_path / ".gitignore"
-            gitignore.write_text("*.pyc\n.mirror/\n")
-            
-            runner = CliRunner()
-            result = runner.invoke(main, ['init'])
-            
-            assert result.exit_code == 0
-            
-            # Check .gitignore wasn't duplicated
-            content = gitignore.read_text()
-            assert content.count(".mirror/") == 1
+            assert content == original_content  # Unchanged
             
         finally:
             os.chdir(original_cwd)

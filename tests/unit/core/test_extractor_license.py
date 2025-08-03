@@ -89,9 +89,9 @@ class TestLicenseFileInclusion:
         assert not (local_path / ".git").exists()
         assert not (local_path / "__pycache__").exists()
         
-        # Check that provenance file was created
-        provenance_file = local_path / ".ams-compose-provenance.yaml"
-        assert provenance_file.exists()
+        # Check that metadata file was created
+        metadata_file = local_path / ".ams-compose-metadata.yaml"
+        assert metadata_file.exists()
     
     def test_license_file_ignored_when_checkin_false(self, extractor, temp_mirror, temp_project):
         """Test that LICENSE files follow normal ignore rules when checkin=False."""
@@ -120,9 +120,9 @@ class TestLicenseFileInclusion:
         license_file = local_path / "LICENSE"
         assert not license_file.exists()
         
-        # Check that provenance file was NOT created
-        provenance_file = local_path / ".ams-compose-provenance.yaml"
-        assert not provenance_file.exists()
+        # Check that metadata file was created (even for checkin=false)
+        metadata_file = local_path / ".ams-compose-metadata.yaml"
+        assert metadata_file.exists()
     
     def test_license_file_preserved_despite_ignore_patterns_when_checkin_true(self, extractor, temp_mirror, temp_project):
         """Test that LICENSE files are preserved even if listed in ignore patterns when checkin=True."""
@@ -254,10 +254,10 @@ class TestProvenanceMetadata:
                 resolved_commit="commit456"
             )
         
-        # Check that provenance file was created
+        # Check that metadata file was created
         local_path = temp_project / result.local_path
-        provenance_file = local_path / ".ams-compose-provenance.yaml"
-        assert provenance_file.exists()
+        metadata_file = local_path / ".ams-compose-metadata.yaml"
+        assert metadata_file.exists()
         
         # Parse and validate provenance content
         with open(provenance_file, 'r') as f:
@@ -301,10 +301,10 @@ class TestProvenanceMetadata:
             resolved_commit="commit456"
         )
         
-        # Check that provenance file was NOT created
+        # Check that metadata file was created (even for checkin=false)
         local_path = temp_project / result.local_path
-        provenance_file = local_path / ".ams-compose-provenance.yaml"
-        assert not provenance_file.exists()
+        metadata_file = local_path / ".ams-compose-metadata.yaml"
+        assert metadata_file.exists()
     
     def test_provenance_metadata_not_generated_for_single_file(self, extractor, temp_project):
         """Test that provenance metadata is not generated for single file extractions."""
@@ -335,9 +335,9 @@ class TestProvenanceMetadata:
             assert local_path.exists()
             assert local_path.is_file()
             
-            # But no provenance file should be created (only for directories)
-            provenance_file = local_path.parent / ".ams-compose-provenance.yaml"
-            assert not provenance_file.exists()
+            # But no metadata file should be created (only for directories)
+            metadata_file = local_path.parent / ".ams-compose-metadata.yaml"
+            assert not metadata_file.exists()
     
     def test_provenance_handles_license_detection_failure(self, extractor, temp_mirror, temp_project):
         """Test provenance generation when license detection fails."""
@@ -365,10 +365,10 @@ class TestProvenanceMetadata:
                 resolved_commit="commit456"
             )
         
-        # Check that provenance file was still created
+        # Check that metadata file was still created
         local_path = temp_project / result.local_path
-        provenance_file = local_path / ".ams-compose-provenance.yaml"
-        assert provenance_file.exists()
+        metadata_file = local_path / ".ams-compose-metadata.yaml"
+        assert metadata_file.exists()
         
         # Parse and validate that None values are handled properly
         with open(provenance_file, 'r') as f:

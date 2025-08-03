@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Dict, Any
 
 from ams_compose.core.installer import LibraryInstaller
-from ams_compose.core.config import AnalogHubConfig
+from ams_compose.core.config import ComposeConfig
 
 
 class TestLicenseFileInclusionE2E:
@@ -68,7 +68,7 @@ furnished to do so, subject to the following conditions:"""
     def _create_test_config(self, project_path: Path, imports_config: Dict[str, Any]) -> None:
         """Create test configuration file."""
         config_data = {
-            'library-root': 'designs/libs',
+            'library_root': 'designs/libs',
             'imports': imports_config
         }
         
@@ -119,7 +119,7 @@ furnished to do so, subject to the following conditions:"""
             installed_libraries = installer.install_all()
         
         # Verify installation
-        assert 'analog_design_lib' in installed_libraries[0]
+        assert 'analog_design_lib' in installed_libraries
         
         # Check library was extracted to correct location
         lib_path = temp_project / "designs" / "libs" / "analog_design_lib"
@@ -143,11 +143,11 @@ furnished to do so, subject to the following conditions:"""
         assert not (lib_path / "__pycache__").exists()
         assert not (lib_path / ".DS_Store").exists()
         
-        # Verify provenance metadata was created
-        provenance_file = lib_path / ".ams-compose-provenance.yaml"
-        assert provenance_file.exists()
+        # Verify metadata was created
+        metadata_file = lib_path / ".ams-compose-metadata.yaml"
+        assert metadata_file.exists()
         
-        with open(provenance_file, 'r') as f:
+        with open(metadata_file, 'r') as f:
             provenance = yaml.safe_load(f)
         
         # Validate provenance content
@@ -195,7 +195,7 @@ furnished to do so, subject to the following conditions:"""
             installed_libraries = installer.install_all()
         
         # Verify installation
-        assert 'temp_lib' in installed_libraries[0]
+        assert 'temp_lib' in installed_libraries
         
         # Check library was extracted to correct location
         lib_path = temp_project / "designs" / "libs" / "temp_lib"
@@ -209,9 +209,9 @@ furnished to do so, subject to the following conditions:"""
         assert not (lib_path / "LICENSE").exists()
         assert not (lib_path / "README.md").exists()
         
-        # Verify provenance metadata was NOT created
-        provenance_file = lib_path / ".ams-compose-provenance.yaml"
-        assert not provenance_file.exists()
+        # Verify metadata was created (even for checkin=false)
+        metadata_file = lib_path / ".ams-compose-metadata.yaml"
+        assert metadata_file.exists()
     
     def test_mixed_checkin_libraries(self, temp_project, mock_repo):
         """Test mixed scenario with both checkin=true and checkin=false libraries."""
@@ -248,20 +248,20 @@ furnished to do so, subject to the following conditions:"""
             installed_libraries = installer.install_all()
         
         # Verify both libraries were installed
-        assert 'stable_lib' in installed_libraries[0]
-        assert 'experimental_lib' in installed_libraries[0]
+        assert 'stable_lib' in installed_libraries
+        assert 'experimental_lib' in installed_libraries
         
         # Check stable_lib (checkin=true)
         stable_path = temp_project / "designs" / "libs" / "stable_lib"
         assert stable_path.exists()
         assert (stable_path / "LICENSE").exists()  # LICENSE preserved
-        assert (stable_path / ".ams-compose-provenance.yaml").exists()  # Provenance created
+        assert (stable_path / ".ams-compose-metadata.yaml").exists()  # Metadata created
         
         # Check experimental_lib (checkin=false)  
         experimental_path = temp_project / "designs" / "libs" / "experimental_lib"
         assert experimental_path.exists()
         assert not (experimental_path / "LICENSE").exists()  # LICENSE ignored
-        assert not (experimental_path / ".ams-compose-provenance.yaml").exists()  # No provenance
+        assert (experimental_path / ".ams-compose-metadata.yaml").exists()  # Metadata always created
     
     def test_provenance_metadata_content_validation(self, temp_project, mock_repo):
         """Test detailed validation of provenance metadata content."""
@@ -285,11 +285,11 @@ furnished to do so, subject to the following conditions:"""
         with patch.object(installer.mirror_manager, 'update_mirror', return_value=mock_metadata):
             installed_libraries = installer.install_all()
         
-        # Load and validate provenance metadata
+        # Load and validate metadata
         lib_path = temp_project / "designs" / "libs" / "validation_lib"
-        provenance_file = lib_path / ".ams-compose-provenance.yaml"
+        metadata_file = lib_path / ".ams-compose-metadata.yaml"
         
-        with open(provenance_file, 'r') as f:
+        with open(metadata_file, 'r') as f:
             provenance = yaml.safe_load(f)
         
         # Validate all required fields are present
@@ -344,7 +344,7 @@ furnished to do so, subject to the following conditions:"""
             installed_libraries = installer.install_all()
         
         # Verify installation
-        assert 'unchecked_lib' in installed_libraries[0]
+        assert 'unchecked_lib' in installed_libraries
         
         # Check library was extracted to correct location
         lib_path = temp_project / "designs" / "libs" / "unchecked_lib"
@@ -362,6 +362,6 @@ furnished to do so, subject to the following conditions:"""
         assert "MIT License" in license_content
         assert "Analog IC Design Team" in license_content
         
-        # Verify provenance metadata was NOT created (checkin=false)
-        provenance_file = lib_path / ".ams-compose-provenance.yaml"
-        assert not provenance_file.exists(), "Provenance should not be created for checkin=false libraries"
+        # Verify metadata was created (even for checkin=false)
+        metadata_file = lib_path / ".ams-compose-metadata.yaml"
+        assert metadata_file.exists(), "Metadata should always be created for traceability"

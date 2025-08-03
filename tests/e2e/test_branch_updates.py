@@ -14,7 +14,7 @@ import pytest
 import git
 
 from ams_compose.core.installer import LibraryInstaller
-from ams_compose.core.config import AnalogHubConfig
+from ams_compose.core.config import ComposeConfig
 
 
 class TestBranchUpdateDetection:
@@ -101,7 +101,7 @@ class TestBranchUpdateDetection:
             imports_config: Dictionary of import specifications
         """
         config_data = {
-            'library-root': 'designs/libs',
+            'library_root': 'designs/libs',
             'imports': imports_config
         }
         
@@ -233,8 +233,9 @@ class TestBranchUpdateDetection:
         print("🔄 Running install again with no upstream changes...")
         updated_libraries = self.installer.install_all()
         
-        # Verify no update occurred
-        assert 'stable_lib' not in updated_libraries, "Library should not be updated when branch is unchanged"
+        # Verify no update occurred - library should be marked as up_to_date
+        assert 'stable_lib' in updated_libraries, "Library should be in result"
+        assert updated_libraries['stable_lib'].install_status == "up_to_date", "Library should not be updated when branch is unchanged"
         
         # Verify lock file timestamp unchanged
         lock_file_after = self.installer.load_lock_file()
@@ -301,7 +302,9 @@ class TestBranchUpdateDetection:
         
         # Verify only updating_lib was reinstalled
         assert 'updating_lib' in updated_libraries, "Updated library should be reinstalled"
-        assert 'stable_lib' not in updated_libraries, "Unchanged library should be skipped"
+        assert updated_libraries['updating_lib'].install_status == "updated", "Updated library should have updated status"
+        assert 'stable_lib' in updated_libraries, "Stable library should be in result"
+        assert updated_libraries['stable_lib'].install_status == "up_to_date", "Unchanged library should be marked as up_to_date"
         
         # Verify commits
         updated_entry = updated_libraries['updating_lib']

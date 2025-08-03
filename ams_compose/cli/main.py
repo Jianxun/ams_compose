@@ -7,7 +7,7 @@ from typing import Optional, List, Dict
 import click
 from ams_compose import __version__
 from ams_compose.core.installer import LibraryInstaller, InstallationError
-from ams_compose.core.config import AnalogHubConfig, LockEntry
+from ams_compose.core.config import ComposeConfig, LockEntry
 
 
 def _get_installer() -> LibraryInstaller:
@@ -155,27 +155,6 @@ def _format_libraries_summary(libraries: Dict[str, LockEntry], title: str, empty
         _format_libraries_tabular(libraries, show_status, command_context)
 
 
-def _auto_generate_gitignore() -> None:
-    """Auto-generate .gitignore entries for .mirror/ directory."""
-    gitignore_path = Path.cwd() / ".gitignore"
-    mirror_entry = ".mirror/"
-    
-    # Check if .gitignore exists and already contains mirror entry
-    if gitignore_path.exists():
-        content = gitignore_path.read_text()
-        if mirror_entry in content:
-            return
-        
-        # Add mirror entry
-        if not content.endswith('\n'):
-            content += '\n'
-        content += f"\n# ams-compose mirrors\n{mirror_entry}\n"
-    else:
-        # Create new .gitignore
-        content = f"# ams-compose mirrors\n{mirror_entry}\n"
-    
-    gitignore_path.write_text(content)
-    click.echo(f"Added '{mirror_entry}' to .gitignore")
 
 
 @click.group()
@@ -187,11 +166,9 @@ def main():
 
 @main.command()
 @click.argument('libraries', nargs=-1)
-@click.option('--auto-gitignore', is_flag=True, default=True, 
-              help='Automatically add .mirror/ to .gitignore (default: enabled)')
 @click.option('--force', is_flag=True, default=False,
               help='Force reinstall all libraries (ignore up-to-date check)')
-def install(libraries: tuple, auto_gitignore: bool, force: bool):
+def install(libraries: tuple, force: bool):
     """Install libraries from ams-compose.yaml.
     
     LIBRARIES: Optional list of specific libraries to install.
@@ -199,10 +176,6 @@ def install(libraries: tuple, auto_gitignore: bool, force: bool):
     """
     try:
         installer = _get_installer()
-        
-        # Auto-generate .gitignore if requested
-        if auto_gitignore:
-            _auto_generate_gitignore()
         
         # Convert tuple to list for installer
         library_list = list(libraries) if libraries else None
@@ -212,7 +185,13 @@ def install(libraries: tuple, auto_gitignore: bool, force: bool):
         else:
             click.echo("Installing all libraries from ams-compose.yaml")
         
-        installed, up_to_date = installer.install_all(library_list, force=force)
+        all_libraries = installer.install_all(library_list, force=force)
+        
+        # Filter libraries by install_status
+        up_to_date = {name: entry for name, entry in all_libraries.items() 
+                     if entry.install_status == "up_to_date"}
+        processed = {name: entry for name, entry in all_libraries.items() 
+                    if entry.install_status in ["installed", "updated"]}
         
         # Show up-to-date libraries first
         if up_to_date:
@@ -220,14 +199,14 @@ def install(libraries: tuple, auto_gitignore: bool, force: bool):
                                      detailed=False, show_status=True, command_context="install")
         
         # Show installed/updated libraries
-        if installed:
+        if processed:
             if up_to_date:
                 click.echo()  # Add blank line between sections
-            _format_libraries_summary(installed, "Processed libraries", 
+            _format_libraries_summary(processed, "Processed libraries", 
                                      detailed=False, show_status=True, command_context="install")
         
         # Show summary message if nothing was processed
-        if not installed and not up_to_date:
+        if not all_libraries:
             click.echo("No libraries to install")
             
     except InstallationError as e:
@@ -237,15 +216,14 @@ def install(libraries: tuple, auto_gitignore: bool, force: bool):
 
 
 @main.command('list')
-@click.option('--detailed', is_flag=True, help='Show detailed library information')
-def list_libraries(detailed: bool):
+def list_libraries():
     """List installed libraries."""
     try:
         installer = _get_installer()
         installed = installer.list_installed_libraries()
         
         _format_libraries_summary(installed, "Installed libraries", "No libraries installed", 
-                                 detailed=detailed, show_status=False)
+                                 detailed=False, show_status=False)
                 
     except InstallationError as e:
         _handle_installation_error(e)
@@ -296,8 +274,8 @@ def validate():
 
 
 @main.command()
-@click.option('--library-root', default='designs/libs', 
-              help='Default directory for library installations (default: libs)')
+@click.option('--library_root', default='designs/libs', 
+              help='Default directory for library installations (default: designs/libs)')
 @click.option('--force', is_flag=True, 
               help='Overwrite existing ams-compose.yaml file')
 def init(library_root: str, force: bool):
@@ -324,7 +302,7 @@ def init(library_root: str, force: bool):
 # For more information, see: https://github.com/Jianxun/ams-compose
 
 # Default directory where libraries will be installed
-library-root: {library_root}
+library_root: {library_root}
 
 # Library imports - add your dependencies here
 imports:
@@ -333,7 +311,7 @@ imports:
   #   repo: https://github.com/example/analog-library.git
   #   ref: main                    # branch, tag, or commit
   #   source_path: lib/analog      # path within the repository
-  #   # local_path: custom/path    # optional: override library-root location
+  #   # local_path: custom/path    # optional: override library_root location
   
 # To add a new library:
 # 1. Add an entry under 'imports' with a unique name
@@ -353,16 +331,13 @@ imports:
     # Write configuration file
     config_path.write_text(template_config)
     
-    # Auto-generate .gitignore
-    _auto_generate_gitignore()
-    
     click.echo(f"Initialized ams-compose project in {Path.cwd()}")
     click.echo(f"Edit {config_path.name} to add library dependencies, then run 'ams-compose install'")
 
 
 @main.command()
 def clean():
-    """Clean unused mirrors, orphaned libraries, and validate installations."""
+    """Clean unused mirrors and orphaned libraries."""
     try:
         installer = _get_installer()
         
@@ -404,6 +379,22 @@ def clean():
             
     except InstallationError as e:
         _handle_installation_error(e)
+
+
+@main.command()
+def schema():
+    """Show the complete ams-compose.yaml configuration schema."""
+    try:
+        # Load schema documentation from file
+        schema_path = Path(__file__).parent.parent / "schema.md"
+        schema_content = schema_path.read_text()
+        click.echo(schema_content)
+    except FileNotFoundError:
+        click.echo("Error: Schema documentation file not found.", err=True)
+        sys.exit(1)
+    except Exception as e:
+        click.echo(f"Error reading schema documentation: {e}", err=True)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

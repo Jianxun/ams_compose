@@ -86,7 +86,7 @@ class TestSubmoduleSupport:
         parent_repo, submodule_repo = self._create_repo_with_submodule()
         
         config_content = {
-            'library-root': 'libs',
+            'library_root': 'libs',
             'imports': {
                 'parent_with_sub': {
                     'repo': str(parent_repo),
@@ -145,7 +145,7 @@ class TestSubmoduleSupport:
         parent_repo, submodule_repo = self._create_repo_with_submodule()
         
         config_content = {
-            'library-root': 'deps',
+            'library_root': 'deps',
             'imports': {
                 'analog_lib': {
                     'repo': str(parent_repo),
@@ -203,7 +203,7 @@ class TestSubmoduleSupport:
         parent_git_repo.index.commit("Add complex content")
         
         config_content = {
-            'library-root': 'external',
+            'library_root': 'external',
             'imports': {
                 'complex_lib': {
                     'repo': str(parent_repo),
@@ -248,7 +248,7 @@ class TestSubmoduleSupport:
         parent_repo, submodule_repo = self._create_repo_with_submodule()
         
         config_content = {
-            'library-root': 'libs',
+            'library_root': 'libs',
             'imports': {
                 'evolving_lib': {
                     'repo': str(parent_repo),

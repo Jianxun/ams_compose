@@ -94,7 +94,7 @@ class TestValidationBugs:
         
         # Create initial config with 3 libraries
         initial_config = {
-            'library-root': 'libs',
+            'library_root': 'libs',
             'imports': {
                 'lib_a': {
                     'repo': str(mock_repo),
@@ -131,7 +131,7 @@ class TestValidationBugs:
         
         # Remove lib_b from config (simulating user editing config)
         updated_config = {
-            'library-root': 'libs',
+            'library_root': 'libs',
             'imports': {
                 'lib_a': {
                     'repo': str(mock_repo),
@@ -184,7 +184,7 @@ class TestValidationBugs:
         
         # Create config with both file and directory library
         config = {
-            'library-root': 'libs',
+            'library_root': 'libs',
             'imports': {
                 'lib_directory': {
                     'repo': str(mock_repo),
@@ -256,7 +256,7 @@ class TestValidationBugs:
         
         # Create config using source_path: '.' to extract entire repository
         config = {
-            'library-root': 'libs',
+            'library_root': 'libs',
             'imports': {
                 'full_repo_library': {
                     'repo': str(mock_repo),

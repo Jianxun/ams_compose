@@ -2,7 +2,7 @@
 # For more information, see: https://github.com/Jianxun/ams-compose
 
 # Default directory where libraries will be installed
-library-root: designs/libs
+library_root: designs/libs
 
 # Library imports - add your dependencies here
 imports:
@@ -10,19 +10,19 @@ imports:
     repo: https://github.com/Jianxun/iic-osic-tools-project-template
     ref: main                      # branch, tag, or commit
     source_path: designs/.designinit   # path within the repository
-    local_path: designs/.designinit   # optional: override library-root location
+    local_path: designs/.designinit   # optional: override library_root location
 
   scripts:
     repo: https://github.com/Jianxun/iic-osic-tools-project-template
     ref: main                      # branch, tag, or commit
     source_path: designs/scripts   # path within the repository
-    local_path: designs/scripts    # optional: override library-root location
+    local_path: designs/scripts    # optional: override library_root location
 
   # start_chipathon_vnc:
   #   repo: https://github.com/Jianxun/iic-osic-tools-project-template
   #   ref: main                      # branch, tag, or commit
   #   source_path: start_chipathon_vnc.sh   # path within the repository
-  #   local_path: start_chipathon_vnc.sh   # optional: override library-root location
+  #   local_path: start_chipathon_vnc.sh   # optional: override library_root location
 
   gf180mcu_fd_sc_mcu9t5v0_symbols:
     repo: https://github.com/peterkinget/gf180mcu_fd_sc_mcu9t5v0_symbols

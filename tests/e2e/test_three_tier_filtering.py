@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from ams_compose.core.config import AnalogHubConfig, ImportSpec
+from ams_compose.core.config import ComposeConfig, ImportSpec
 from ams_compose.core.extractor import PathExtractor
 
 
@@ -83,8 +83,8 @@ build/
 """)
         
         # Create configuration without library-specific patterns
-        config = AnalogHubConfig(
-            **{"library-root": "libs"},
+        config = ComposeConfig(
+            **{"library_root": "libs"},
             imports={
                 "test_lib": ImportSpec(
                     repo=str(self.mock_repo),
@@ -100,7 +100,7 @@ build/
             # Convert to dict and write YAML manually for simplicity
             import yaml
             config_dict = {
-                "library-root": config.library_root,
+                "library_root": config.library_root,
                 "imports": {
                     "test_lib": {
                         "repo": config.imports["test_lib"].repo,
@@ -149,8 +149,8 @@ build/
     def test_filtering_with_library_ignore_patterns(self):
         """Test filtering with library-specific ignore patterns."""
         # Create configuration with library-specific patterns
-        config = AnalogHubConfig(
-            **{"library-root": "libs"},
+        config = ComposeConfig(
+            **{"library_root": "libs"},
             imports={
                 "test_lib": ImportSpec(
                     repo=str(self.mock_repo),
@@ -166,7 +166,7 @@ build/
         with open(config_path, 'w') as f:
             import yaml
             config_dict = {
-                "library-root": config.library_root,
+                "library_root": config.library_root,
                 "imports": {
                     "test_lib": {
                         "repo": config.imports["test_lib"].repo,
@@ -225,8 +225,8 @@ build/
 """)
         
         # Create configuration with library-specific patterns
-        config = AnalogHubConfig(
-            **{"library-root": "libs"},
+        config = ComposeConfig(
+            **{"library_root": "libs"},
             imports={
                 "test_lib": ImportSpec(
                     repo=str(self.mock_repo),
@@ -277,8 +277,8 @@ build/
     def test_empty_patterns_graceful_handling(self):
         """Test graceful handling of empty or missing pattern configurations."""
         # No global ignore file, no library patterns
-        config = AnalogHubConfig(
-            **{"library-root": "libs"},
+        config = ComposeConfig(
+            **{"library_root": "libs"},
             imports={
                 "test_lib": ImportSpec(
                     repo=str(self.mock_repo),

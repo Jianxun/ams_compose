@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 from ams_compose.core.installer import LibraryInstaller
-from ams_compose.core.config import AnalogHubConfig, LockFile, LockEntry
+from ams_compose.core.config import ComposeConfig, LockFile, LockEntry
 
 
 class TestInstallerManagement:
@@ -121,7 +121,7 @@ class TestInstallerManagement:
         
         # Create matching config file with the library
         config_path = temp_project / "ams-compose.yaml"
-        config_content = """library-root: designs/libs
+        config_content = """library_root: designs/libs
 imports:
   test_lib:
     repo: https://github.com/example/repo
@@ -172,7 +172,7 @@ imports:
         
         # Create matching config file with the library
         config_path = temp_project / "ams-compose.yaml"
-        config_content = """library-root: designs/libs
+        config_content = """library_root: designs/libs
 imports:
   missing_lib:
     repo: https://github.com/example/repo

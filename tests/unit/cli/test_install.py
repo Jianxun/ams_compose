@@ -19,8 +19,8 @@ class TestInstallCommand:
         mock_installer = Mock()
         mock_get_installer.return_value = mock_installer
         
-        # Mock install_all to return tuple of (installed, up_to_date)
-        mock_installer.install_all.return_value = ({
+        # Mock install_all to return dictionary of all processed libraries
+        mock_installer.install_all.return_value = {
             "library1": LockEntry(
                 repo="https://github.com/example/lib1",
                 ref="main",
@@ -47,7 +47,7 @@ class TestInstallCommand:
                 license="GPL-3.0",
                 license_change="license changed: MIT → GPL-3.0"
             )
-        }, {})
+        }
         
         # Change to temporary directory
         original_cwd = Path.cwd()
@@ -96,8 +96,8 @@ class TestInstallCommand:
         mock_installer = Mock()
         mock_get_installer.return_value = mock_installer
         
-        # Mock install_all to return empty tuple
-        mock_installer.install_all.return_value = ({}, {})
+        # Mock install_all to return empty dictionary
+        mock_installer.install_all.return_value = {}
         
         original_cwd = Path.cwd()
         try:
@@ -120,8 +120,8 @@ class TestInstallCommand:
         mock_installer = Mock()
         mock_get_installer.return_value = mock_installer
         
-        # Mock install_all to return tuple with one library
-        mock_installer.install_all.return_value = ({
+        # Mock install_all to return dictionary with one library
+        mock_installer.install_all.return_value = {
             "specific_lib": LockEntry(
                 repo="https://github.com/example/specific",
                 ref="main",
@@ -134,7 +134,7 @@ class TestInstallCommand:
                 install_status="installed",
                 license="BSD-3-Clause"
             )
-        }, {})
+        }
         
         original_cwd = Path.cwd()
         try:

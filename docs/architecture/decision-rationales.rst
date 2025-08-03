@@ -87,7 +87,7 @@ Pydantic Configuration Validation
 
 **Problem**: Configuration errors in analog design workflows can lead to incorrect IP integration and costly design errors.
 
-**Solution**: Define strict Pydantic models (``AnalogHubConfig``, ``LockEntry``, ``ImportSpec``) with type validation, field constraints, and descriptive error messages.
+**Solution**: Define strict Pydantic models (``ComposeConfig``, ``LockEntry``, ``ImportSpec``) with type validation, field constraints, and descriptive error messages.
 
 **Trade-offs**:
 

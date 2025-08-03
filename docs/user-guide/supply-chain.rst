@@ -19,7 +19,7 @@ License Tracking
 
 *[To be documented: License detection and compliance monitoring]*
 
-Provenance Metadata
--------------------
+Library Metadata
+----------------
 
-*[To be documented: .ams-compose-provenance.yaml files]*
+*[To be documented: .ams-compose-metadata.yaml files]*

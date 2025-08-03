@@ -214,7 +214,9 @@ class PathExtractor:
         resolved_commit: str,
         local_path: Path
     ) -> None:
-        """Generate provenance metadata file for checkin=true libraries.
+        """Generate metadata file for all libraries regardless of checkin setting.
+        
+        Metadata is critical for traceability and should always be generated.
         
         Args:
             library_name: Name of the library
@@ -223,9 +225,6 @@ class PathExtractor:
             resolved_commit: Resolved commit hash
             local_path: Local installation path
         """
-        # Only generate provenance for libraries that will be checked in
-        if not import_spec.checkin:
-            return
         
         # Detect license information from mirror
         license_info = self.license_detector.detect_license(mirror_path)
@@ -254,9 +253,9 @@ class PathExtractor:
             ]
         }
         
-        # Write provenance file
-        provenance_file = local_path / '.ams-compose-provenance.yaml'
-        with open(provenance_file, 'w') as f:
+        # Write metadata file
+        metadata_file = local_path / '.ams-compose-metadata.yaml'
+        with open(metadata_file, 'w') as f:
             yaml.dump(provenance, f, default_flow_style=False, sort_keys=False)
     
     def _inject_gitignore_if_needed(self, library_name: str, checkin: bool, library_path: Path) -> None:
@@ -282,6 +281,7 @@ class PathExtractor:
 # Run 'ams-compose install' to download this library
 *
 !.gitignore
+!.ams-compose-metadata.yaml
 """
             library_gitignore_path.write_text(gitignore_content)
         else:
@@ -350,6 +350,9 @@ class PathExtractor:
             
         Returns:
             Resolved absolute path for library installation
+            
+        Raises:
+            ValueError: If local_path attempts to escape project directory
         """
         if import_spec.local_path:
             # Use explicit local_path override (absolute path)
@@ -360,7 +363,19 @@ class PathExtractor:
             # Use library_root + library_name
             local_path = self.project_root / library_root / library_name
         
-        return local_path.resolve()
+        resolved_path = local_path.resolve()
+        
+        # Security check: Prevent path traversal attacks
+        # Ensure resolved path is within project directory
+        try:
+            resolved_path.relative_to(self.project_root.resolve())
+        except ValueError:
+            raise ValueError(
+                f"Security error: local_path '{import_spec.local_path or library_name}' "
+                f"attempts to escape project directory. Resolved path: {resolved_path}"
+            )
+        
+        return resolved_path
     
     def extract_library(
         self, 

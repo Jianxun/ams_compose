@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
-from .config import AnalogHubConfig, LockFile, LockEntry, ImportSpec
+from .config import ComposeConfig, LockFile, LockEntry, ImportSpec
 from .mirror import RepositoryMirror
 from .extractor import PathExtractor
 from ..utils.checksum import ChecksumCalculator
@@ -40,13 +40,43 @@ class LibraryInstaller:
         self.config_path = self.project_root / "ams-compose.yaml"
         self.lock_path = self.project_root / ".ams-compose.lock"
     
-    def load_config(self) -> AnalogHubConfig:
+    def _validate_library_path(self, local_path: str, library_name: str) -> Path:
+        """Validate that library path is safe and within project directory.
+        
+        Args:
+            local_path: Local path string from lock entry
+            library_name: Name of the library (for error messages)
+            
+        Returns:
+            Validated absolute path
+            
+        Raises:
+            ValueError: If path attempts to escape project directory
+        """
+        library_path = Path(local_path)
+        if not library_path.is_absolute():
+            library_path = self.project_root / local_path
+        
+        resolved_path = library_path.resolve()
+        
+        # Security check: Prevent path traversal attacks
+        try:
+            resolved_path.relative_to(self.project_root.resolve())
+        except ValueError:
+            raise ValueError(
+                f"Security error: library '{library_name}' path '{local_path}' "
+                f"attempts to escape project directory. Resolved path: {resolved_path}"
+            )
+        
+        return resolved_path
+    
+    def load_config(self) -> ComposeConfig:
         """Load ams-compose.yaml configuration."""
         if not self.config_path.exists():
             raise InstallationError(f"Configuration file not found: {self.config_path}")
         
         try:
-            return AnalogHubConfig.from_yaml(self.config_path)
+            return ComposeConfig.from_yaml(self.config_path)
         except Exception as e:
             raise InstallationError(f"Failed to load configuration: {e}")
     
@@ -151,7 +181,7 @@ class LibraryInstaller:
         except Exception as e:
             raise InstallationError(f"Failed to install library '{library_name}': {e}")
     
-    def _resolve_target_libraries(self, library_names: Optional[List[str]], config: AnalogHubConfig) -> Dict[str, ImportSpec]:
+    def _resolve_target_libraries(self, library_names: Optional[List[str]], config: ComposeConfig) -> Dict[str, ImportSpec]:
         """Resolve which libraries should be processed based on configuration and user input.
         
         Args:
@@ -216,7 +246,7 @@ class LibraryInstaller:
                     libraries_needing_work[library_name] = import_spec
                 else:
                     # Check if library files still exist
-                    library_path = self.project_root / current_entry.local_path
+                    library_path = self._validate_library_path(current_entry.local_path, library_name)
                     
                     if not library_path.exists():
                         libraries_needing_work[library_name] = import_spec
@@ -241,7 +271,7 @@ class LibraryInstaller:
         
         return libraries_needing_work, skipped_libraries
 
-    def _install_libraries_batch(self, libraries_needing_work: Dict[str, ImportSpec], config: AnalogHubConfig, lock_file: LockFile) -> Dict[str, LockEntry]:
+    def _install_libraries_batch(self, libraries_needing_work: Dict[str, ImportSpec], config: ComposeConfig, lock_file: LockFile) -> Dict[str, LockEntry]:
         """Install/update a batch of libraries and handle status reporting.
         
         Args:
@@ -310,7 +340,7 @@ class LibraryInstaller:
         
         return installed_libraries
 
-    def _update_lock_file(self, installed_libraries: Dict[str, LockEntry], config: AnalogHubConfig) -> None:
+    def _update_lock_file(self, installed_libraries: Dict[str, LockEntry], config: ComposeConfig) -> None:
         """Update and save the lock file with newly installed libraries.
         
         Args:
@@ -322,7 +352,7 @@ class LibraryInstaller:
         lock_file.libraries.update(installed_libraries)
         self.save_lock_file(lock_file)
 
-    def install_all(self, library_names: Optional[List[str]] = None, force: bool = False) -> Tuple[Dict[str, LockEntry], Dict[str, LockEntry]]:
+    def install_all(self, library_names: Optional[List[str]] = None, force: bool = False) -> Dict[str, LockEntry]:
         """Install all libraries or specific subset with smart skip logic.
         
         Args:
@@ -332,9 +362,11 @@ class LibraryInstaller:
                   If False, skip libraries that are already installed at correct version.
             
         Returns:
-            Tuple of (changed_libraries, up_to_date_libraries) where:
-            - changed_libraries: Libraries that were installed/updated
-            - up_to_date_libraries: Libraries that were already up-to-date
+            Dictionary of library_name -> LockEntry for all processed libraries.
+            Libraries have install_status set to:
+            - "installed": New installation 
+            - "updated": Library was updated
+            - "up_to_date": Library was already current and skipped
             
         Raises:
             InstallationError: If any installation fails
@@ -344,7 +376,7 @@ class LibraryInstaller:
         libraries_to_install = self._resolve_target_libraries(library_names, config)
         
         if not libraries_to_install:
-            return {}, {}
+            return {}
         
         # Load current lock file and determine what needs work
         lock_file = self.load_lock_file()
@@ -361,7 +393,7 @@ class LibraryInstaller:
                 up_to_date_libraries[library_name] = lock_entry
         
         if not libraries_needing_work:
-            return {}, up_to_date_libraries
+            return up_to_date_libraries
         
         # Install/update libraries that need work
         installed_libraries = self._install_libraries_batch(libraries_needing_work, config, lock_file)
@@ -369,7 +401,12 @@ class LibraryInstaller:
         # Update lock file with new installations
         self._update_lock_file(installed_libraries, config)
         
-        return installed_libraries, up_to_date_libraries
+        # Combine all processed libraries into single result
+        all_libraries = {}
+        all_libraries.update(installed_libraries)
+        all_libraries.update(up_to_date_libraries)
+        
+        return all_libraries
     
     def list_installed_libraries(self) -> Dict[str, LockEntry]:
         """List all currently installed libraries.
@@ -392,7 +429,7 @@ class LibraryInstaller:
         """
         try:
             # Check if library exists
-            library_path = self.project_root / lock_entry.local_path
+            library_path = self._validate_library_path(lock_entry.local_path, "unknown")
             if not library_path.exists():
                 # Return a copy with updated validation_status
                 updated_entry = lock_entry.model_copy()
@@ -545,7 +582,7 @@ class LibraryInstaller:
             library_name: Name of the library
             lock_entry: Lock entry containing checkin setting and local_path
         """
-        library_path = self.project_root / lock_entry.local_path
+        library_path = self._validate_library_path(lock_entry.local_path, library_name)
         library_gitignore_path = library_path / ".gitignore"
         
         if not lock_entry.checkin:

@@ -69,5 +69,6 @@ Thumbs.db
 .analog-hub.lock
 designs/
 #context/
+context/log/
 .mirror/
 temp_test_clone/

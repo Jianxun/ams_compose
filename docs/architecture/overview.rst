@@ -23,7 +23,7 @@ Data Flow
 ---------
 
 The primary data flow follows a linear pipeline during installation operations. Configuration starts from 
-`ams-compose.yaml` parsed into `AnalogHubConfig` models, which drive mirror updates through `RepositoryMirror` to 
+`ams-compose.yaml` parsed into `ComposeConfig` models, which drive mirror updates through `RepositoryMirror` to 
 ensure local caches reflect remote repository state. Path extraction then copies selective content via `PathExtractor` 
 while applying three-tier filtering rules, followed by lock file updates to persist the new dependency state.
 

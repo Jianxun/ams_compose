@@ -101,7 +101,7 @@ class TestChecksumRaceCondition:
         
         # Create configuration with checkin=false library (triggers .gitignore injection)
         config = {
-            'library-root': 'libs',
+            'library_root': 'libs',
             'imports': {
                 'analog_lib': {
                     'repo': f"file://{mock_repo}",
@@ -185,7 +185,7 @@ class TestChecksumRaceCondition:
         
         # Create configuration with checkin=true library (no .gitignore injection)
         config = {
-            'library-root': 'libs',
+            'library_root': 'libs',
             'imports': {
                 'control_lib': {
                     'repo': f"file://{mock_repo}",
