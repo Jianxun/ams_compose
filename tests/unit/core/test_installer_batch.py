@@ -9,7 +9,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 from ams_compose.core.installer import LibraryInstaller, InstallationError
-from ams_compose.core.config import AnalogHubConfig, ImportSpec, LockEntry, LockFile
+from ams_compose.core.config import ComposeConfig, ImportSpec, LockEntry, LockFile
 
 
 class TestBatchInstaller:
@@ -33,7 +33,7 @@ class TestBatchInstaller:
     @pytest.fixture
     def sample_config(self, temp_project):
         """Create sample ams-compose.yaml configuration."""
-        config = AnalogHubConfig()
+        config = ComposeConfig()
         config.library_root = "designs/libs"
         config.imports = {
             "test_library": ImportSpec(

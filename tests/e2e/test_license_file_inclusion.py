@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Dict, Any
 
 from ams_compose.core.installer import LibraryInstaller
-from ams_compose.core.config import AnalogHubConfig
+from ams_compose.core.config import ComposeConfig
 
 
 class TestLicenseFileInclusionE2E:

@@ -151,7 +151,7 @@ Configuration flows through strict validation layers:
 
 .. code-block:: text
 
-   YAML → Dict → AnalogHubConfig → ImportSpec → Component APIs
+   YAML → Dict → ComposeConfig → ImportSpec → Component APIs
 
 **Validation Boundaries**:
 - **Parse-time**: YAML syntax and basic structure validation

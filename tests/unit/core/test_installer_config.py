@@ -6,7 +6,7 @@ import shutil
 from pathlib import Path
 
 from ams_compose.core.installer import LibraryInstaller, InstallationError
-from ams_compose.core.config import AnalogHubConfig, ImportSpec, LockFile, LockEntry
+from ams_compose.core.config import ComposeConfig, ImportSpec, LockFile, LockEntry
 
 
 class TestInstallerConfig:
@@ -30,7 +30,7 @@ class TestInstallerConfig:
     @pytest.fixture
     def sample_config(self, temp_project):
         """Create sample ams-compose.yaml configuration."""
-        config = AnalogHubConfig()
+        config = ComposeConfig()
         config.library_root = "designs/libs"
         config.imports = {
             "test_library": ImportSpec(
@@ -103,7 +103,7 @@ class TestInstallerConfig:
         lock_data.to_yaml(lock_path)
         
         # Create minimal config
-        config = AnalogHubConfig()
+        config = ComposeConfig()
         config.library_root = "designs/libs"
         
         # Load lockfile
@@ -180,7 +180,7 @@ class TestInstallerConfig:
     
     def test_config_yaml_serialization_with_checkin(self, temp_project):
         """Test config serialization preserves checkin field."""
-        config = AnalogHubConfig()
+        config = ComposeConfig()
         config.library_root = "designs/libs"
         config.imports = {
             "stable_lib": ImportSpec(
@@ -201,7 +201,7 @@ class TestInstallerConfig:
         config_path = temp_project / "ams-compose.yaml"
         config.to_yaml(config_path)
         
-        loaded_config = AnalogHubConfig.from_yaml(config_path)
+        loaded_config = ComposeConfig.from_yaml(config_path)
         
         assert loaded_config.imports["stable_lib"].checkin is False
         assert loaded_config.imports["critical_lib"].checkin is True
@@ -210,7 +210,7 @@ class TestInstallerConfig:
         """Test that installer propagates checkin field from ImportSpec to LockEntry."""
         # This test will fail until we implement the functionality
         # Create a minimal config with checkin=False
-        config = AnalogHubConfig()
+        config = ComposeConfig()
         config.library_root = "designs/libs"
         config.imports = {
             "test_lib": ImportSpec(

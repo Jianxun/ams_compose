@@ -7,7 +7,7 @@ from typing import Optional, List, Dict
 import click
 from ams_compose import __version__
 from ams_compose.core.installer import LibraryInstaller, InstallationError
-from ams_compose.core.config import AnalogHubConfig, LockEntry
+from ams_compose.core.config import ComposeConfig, LockEntry
 
 
 def _get_installer() -> LibraryInstaller:

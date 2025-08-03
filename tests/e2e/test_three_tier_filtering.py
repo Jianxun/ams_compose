@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from ams_compose.core.config import AnalogHubConfig, ImportSpec
+from ams_compose.core.config import ComposeConfig, ImportSpec
 from ams_compose.core.extractor import PathExtractor
 
 
@@ -83,7 +83,7 @@ build/
 """)
         
         # Create configuration without library-specific patterns
-        config = AnalogHubConfig(
+        config = ComposeConfig(
             **{"library-root": "libs"},
             imports={
                 "test_lib": ImportSpec(
@@ -149,7 +149,7 @@ build/
     def test_filtering_with_library_ignore_patterns(self):
         """Test filtering with library-specific ignore patterns."""
         # Create configuration with library-specific patterns
-        config = AnalogHubConfig(
+        config = ComposeConfig(
             **{"library-root": "libs"},
             imports={
                 "test_lib": ImportSpec(
@@ -225,7 +225,7 @@ build/
 """)
         
         # Create configuration with library-specific patterns
-        config = AnalogHubConfig(
+        config = ComposeConfig(
             **{"library-root": "libs"},
             imports={
                 "test_lib": ImportSpec(
@@ -277,7 +277,7 @@ build/
     def test_empty_patterns_graceful_handling(self):
         """Test graceful handling of empty or missing pattern configurations."""
         # No global ignore file, no library patterns
-        config = AnalogHubConfig(
+        config = ComposeConfig(
             **{"library-root": "libs"},
             imports={
                 "test_lib": ImportSpec(

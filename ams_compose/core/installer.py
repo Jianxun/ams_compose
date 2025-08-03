@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
-from .config import AnalogHubConfig, LockFile, LockEntry, ImportSpec
+from .config import ComposeConfig, LockFile, LockEntry, ImportSpec
 from .mirror import RepositoryMirror
 from .extractor import PathExtractor
 from ..utils.checksum import ChecksumCalculator
@@ -40,13 +40,13 @@ class LibraryInstaller:
         self.config_path = self.project_root / "ams-compose.yaml"
         self.lock_path = self.project_root / ".ams-compose.lock"
     
-    def load_config(self) -> AnalogHubConfig:
+    def load_config(self) -> ComposeConfig:
         """Load ams-compose.yaml configuration."""
         if not self.config_path.exists():
             raise InstallationError(f"Configuration file not found: {self.config_path}")
         
         try:
-            return AnalogHubConfig.from_yaml(self.config_path)
+            return ComposeConfig.from_yaml(self.config_path)
         except Exception as e:
             raise InstallationError(f"Failed to load configuration: {e}")
     
@@ -151,7 +151,7 @@ class LibraryInstaller:
         except Exception as e:
             raise InstallationError(f"Failed to install library '{library_name}': {e}")
     
-    def _resolve_target_libraries(self, library_names: Optional[List[str]], config: AnalogHubConfig) -> Dict[str, ImportSpec]:
+    def _resolve_target_libraries(self, library_names: Optional[List[str]], config: ComposeConfig) -> Dict[str, ImportSpec]:
         """Resolve which libraries should be processed based on configuration and user input.
         
         Args:
@@ -241,7 +241,7 @@ class LibraryInstaller:
         
         return libraries_needing_work, skipped_libraries
 
-    def _install_libraries_batch(self, libraries_needing_work: Dict[str, ImportSpec], config: AnalogHubConfig, lock_file: LockFile) -> Dict[str, LockEntry]:
+    def _install_libraries_batch(self, libraries_needing_work: Dict[str, ImportSpec], config: ComposeConfig, lock_file: LockFile) -> Dict[str, LockEntry]:
         """Install/update a batch of libraries and handle status reporting.
         
         Args:
@@ -310,7 +310,7 @@ class LibraryInstaller:
         
         return installed_libraries
 
-    def _update_lock_file(self, installed_libraries: Dict[str, LockEntry], config: AnalogHubConfig) -> None:
+    def _update_lock_file(self, installed_libraries: Dict[str, LockEntry], config: ComposeConfig) -> None:
         """Update and save the lock file with newly installed libraries.
         
         Args:

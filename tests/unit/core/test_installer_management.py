@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 from ams_compose.core.installer import LibraryInstaller
-from ams_compose.core.config import AnalogHubConfig, LockFile, LockEntry
+from ams_compose.core.config import ComposeConfig, LockFile, LockEntry
 
 
 class TestInstallerManagement:

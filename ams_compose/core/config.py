@@ -53,7 +53,7 @@ class LockEntry(BaseModel):
     license_warning: Optional[str] = Field(default=None, description="License compatibility warning")
 
 
-class AnalogHubConfig(BaseModel):
+class ComposeConfig(BaseModel):
     """Main configuration model for ams-compose.yaml."""
     model_config = ConfigDict(extra="forbid")
     
@@ -68,7 +68,7 @@ class AnalogHubConfig(BaseModel):
     )
     
     @classmethod
-    def from_yaml(cls, config_path: Path) -> "AnalogHubConfig":
+    def from_yaml(cls, config_path: Path) -> "ComposeConfig":
         """Load configuration from YAML file."""
         with open(config_path, 'r') as f:
             data = yaml.safe_load(f)
