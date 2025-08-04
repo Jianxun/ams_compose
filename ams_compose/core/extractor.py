@@ -103,7 +103,8 @@ class PathExtractor:
         self, 
         custom_ignore_hook: Optional[Callable[[str, Set[str]], Set[str]]] = None,
         library_ignore_patterns: Optional[List[str]] = None,
-        preserve_license_files: bool = False
+        preserve_license_files: bool = False,
+        force_preserve_license: bool = False
     ) -> Callable[[str, list], list]:
         """Create ignore function for shutil.copytree with three-tier filtering.
         
@@ -117,7 +118,8 @@ class PathExtractor:
         Args:
             library_ignore_patterns: Library-specific ignore patterns
             custom_ignore_hook: Optional function for additional custom ignores
-            preserve_license_files: If True, always preserve LICENSE files regardless of patterns
+            preserve_license_files: If True, preserve LICENSE files unless explicitly ignored by user
+            force_preserve_license: If True, always preserve LICENSE files regardless of any patterns
         
         Returns:
             Function compatible with shutil.copytree ignore parameter
@@ -183,23 +185,27 @@ class PathExtractor:
                 additional_ignores = custom_ignore_hook(directory, filenames_set)
                 ignored.update(additional_ignores)
             
-            # Override: Preserve LICENSE files when preservation is enabled, 
-            # but respect explicit user ignore patterns
-            if preserve_license_files and license_files:
-                # Check if LICENSE files were explicitly ignored by user patterns
-                user_ignored_licenses = set()
-                if library_ignore_patterns:
-                    try:
-                        user_pathspec = pathspec.PathSpec.from_lines('gitwildmatch', library_ignore_patterns)
-                        for license_file in license_files:
-                            if user_pathspec.match_file(license_file):
-                                user_ignored_licenses.add(license_file)
-                    except Exception:
-                        # If pathspec fails, skip user pattern checking
-                        pass
+            # Override: Preserve LICENSE files when preservation is enabled
+            if (preserve_license_files or force_preserve_license) and license_files:
+                if force_preserve_license:
+                    # Force preservation: ignore all patterns for LICENSE files
+                    licenses_to_preserve = license_files
+                else:
+                    # Normal preservation: respect explicit user ignore patterns
+                    user_ignored_licenses = set()
+                    if library_ignore_patterns:
+                        try:
+                            user_pathspec = pathspec.PathSpec.from_lines('gitwildmatch', library_ignore_patterns)
+                            for license_file in license_files:
+                                if user_pathspec.match_file(license_file):
+                                    user_ignored_licenses.add(license_file)
+                        except Exception:
+                            # If pathspec fails, skip user pattern checking
+                            pass
+                    
+                    # Only preserve LICENSE files that weren't explicitly ignored by user
+                    licenses_to_preserve = license_files - user_ignored_licenses
                 
-                # Only preserve LICENSE files that weren't explicitly ignored by user
-                licenses_to_preserve = license_files - user_ignored_licenses
                 ignored -= licenses_to_preserve
             
             return list(ignored)
@@ -427,10 +433,12 @@ class PathExtractor:
             # Copy source to destination
             if source_full_path.is_dir():
                 # Create ignore function with three-tier filtering
-                # Always preserve LICENSE files for legal compliance (unless explicitly ignored)
+                # Preserve LICENSE files for legal compliance
+                # Force preservation when checkin=True, respect user patterns when checkin=False
                 ignore_func = self._create_ignore_function(
                     library_ignore_patterns=import_spec.ignore_patterns,
-                    preserve_license_files=True
+                    preserve_license_files=True,
+                    force_preserve_license=import_spec.checkin
                 )
                 
                 shutil.copytree(

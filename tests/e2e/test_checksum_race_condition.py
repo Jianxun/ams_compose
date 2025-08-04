@@ -155,7 +155,7 @@ class TestChecksumRaceCondition:
         # recalculates checksum with .gitignore present, causing mismatch
         try:
             assert 'analog_lib' in valid_libraries, "Library should validate successfully"
-            assert len(actual_invalid) == 0, f"Should have no validation failures, but got: {actual_invalid}"
+            assert len(invalid_libraries) == 0, f"Should have no validation failures, but got: {invalid_libraries}"
             print("✅ BUG IS FIXED: Checksum race condition resolved!")
         except AssertionError as e:
             print(f"🐛 BUG REPRODUCED: {e}")

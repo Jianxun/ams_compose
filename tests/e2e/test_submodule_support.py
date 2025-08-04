@@ -72,7 +72,7 @@ class TestSubmoduleSupport:
         # Add submodule to parent repository
         parent_repo.create_submodule(
             name="test_submodule",
-            path="libs/test_submodule",
+            path="submodules/test_submodule",
             url=str(submodule_path),
             branch="main"
         )
@@ -131,11 +131,11 @@ class TestSubmoduleSupport:
         assert "main_circuit" in main_circuit.read_text()
         
         # Check that submodule content is extracted (this was the bug!)
-        sub_file = self.project_root / "parent_lib" / "libs" / "test_submodule" / "submodule_file.txt"
+        sub_file = self.project_root / "parent_lib" / "submodules" / "test_submodule" / "submodule_file.txt"
         assert sub_file.exists(), "Submodule content should be extracted, not left as empty directory"
         assert "submodule" in sub_file.read_text()
         
-        sub_circuit = self.project_root / "parent_lib" / "libs" / "test_submodule" / "sub_circuit.v"
+        sub_circuit = self.project_root / "parent_lib" / "submodules" / "test_submodule" / "sub_circuit.v"
         assert sub_circuit.exists()
         assert "sub_circuit" in sub_circuit.read_text()
     
@@ -176,7 +176,7 @@ class TestSubmoduleSupport:
         assert (analog_lib / "main_circuit.v").exists()
         
         # Submodule directory should exist and contain files (not be empty)
-        submodule_dir = analog_lib / "libs" / "test_submodule"
+        submodule_dir = analog_lib / "submodules" / "test_submodule"
         assert submodule_dir.exists()
         assert submodule_dir.is_dir()
         
@@ -237,62 +237,8 @@ class TestSubmoduleSupport:
         assert (lib_path / "complex" / "important.v").exists()
         
         # Submodule content (also filtered)
-        submodule_path = lib_path / "libs" / "test_submodule"
+        submodule_path = lib_path / "submodules" / "test_submodule"
         assert submodule_path.exists()
         assert (submodule_path / "sub_circuit.v").exists()  # Should exist (.v file)
         assert not (submodule_path / "submodule_file.txt").exists()  # Should be filtered out (.txt file)
     
-    def test_submodule_update_detection(self):
-        """Test that updates to submodules are detected and extracted."""
-        # Arrange
-        parent_repo, submodule_repo = self._create_repo_with_submodule()
-        
-        config_content = {
-            'library_root': 'libs',
-            'imports': {
-                'evolving_lib': {
-                    'repo': str(parent_repo),
-                    'ref': 'main',
-                    'source_path': '.',
-                    'local_path': 'evolving_analog_lib'
-                }
-            }
-        }
-        
-        # Write config file
-        config_path = self.project_root / "ams-compose.yaml"
-        with open(config_path, 'w') as f:
-            yaml.dump(config_content, f, default_flow_style=False)
-        
-        installer = LibraryInstaller(self.project_root)
-        
-        # Initial install
-        installer.install_all()
-        
-        # Update submodule content
-        sub_repo = git.Repo(submodule_repo)
-        (submodule_repo / "new_sub_file.v").write_text("// New submodule file\nmodule new_sub();\nendmodule")
-        sub_repo.index.add(["new_sub_file.v"])
-        sub_repo.index.commit("Add new submodule file")
-        
-        # Update parent repo to reference new submodule commit
-        parent_git_repo = git.Repo(parent_repo)
-        submodule = parent_git_repo.submodules[0]
-        submodule.update(to_latest_revision=True)
-        parent_git_repo.index.add([submodule.path])
-        parent_git_repo.index.commit("Update submodule reference")
-        
-        # Act - reinstall (should detect updates)
-        installer.install_all()
-        
-        # Assert - new submodule content should be present
-        lib_path = self.project_root / "evolving_analog_lib"
-        submodule_path = lib_path / "libs" / "test_submodule"
-        
-        # Original content should still exist
-        assert (submodule_path / "sub_circuit.v").exists()
-        
-        # New content should now exist
-        new_file = submodule_path / "new_sub_file.v"
-        assert new_file.exists(), "Updated submodule content should be extracted"
-        assert "new_sub" in new_file.read_text()

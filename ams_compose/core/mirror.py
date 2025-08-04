@@ -378,8 +378,11 @@ class RepositoryMirror:
             # Return mirror state
             return MirrorState(resolved_commit=resolved_commit)
             
+        except GitOperationTimeout:
+            # Re-raise timeout errors to allow caller to handle appropriately
+            raise
         except Exception as e:
-            # If update fails, try fresh clone
+            # If update fails due to non-timeout issues, try fresh clone
             return self.create_mirror(repo_url, ref)
     
     def remove_mirror(self, repo_url: str) -> bool:
