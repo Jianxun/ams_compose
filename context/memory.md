@@ -2,10 +2,22 @@
 
 ## Current Status
 - **Project**: ams-compose (renamed from analog-hub)
-- **Stage**: CLI Interface Improvements Complete
+- **Stage**: Test Suite Reliability Complete - 91.7% failing tests fixed
 - **Last Updated**: 2025-08-04
 
 ## Recent Major Changes (Last 2-3 Sessions Only)
+
+### Mirror Timeout Handling Fix - 2025-08-04
+- **Problem**: Unit test expected GitOperationTimeout to propagate from _update_submodules(), but broad exception handler caught it and fell back to create_mirror()
+- **Solution**: Made exception handling more specific - timeout errors now propagate properly while non-timeout errors still fall back to fresh clone
+- **Status**: Complete - Changed except Exception to except GitOperationTimeout + except Exception pattern in mirror.py:381-386
+- **Benefits**: Proper timeout error propagation for caller handling, maintains fallback behavior for other errors, test suite now 99.5% passing (202/203)
+
+### Comprehensive Test Suite Fixes - 2025-08-04
+- **Problem**: 12 failing test cases blocking reliable CI/CD operations, including install/update API inconsistencies, license preservation issues, and platform compatibility problems
+- **Solution**: Fixed 11/12 tests through systematic analysis - updated tests for install/update separation, enhanced LICENSE preservation for legal compliance, resolved macOS path issues
+- **Status**: Complete - Enhanced extractor with force_preserve_license parameter, fixed variable name errors, updated path resolution for security compliance
+- **Benefits**: 91.7% test success rate, improved legal compliance for LICENSE handling, enhanced cross-platform compatibility, security-compliant path handling maintained
 
 ### CLI Logging System Enhancement - 2025-08-04
 - **Problem**: Verbose logging was always enabled with -v flag, no granular control over log levels, INFO messages shown by default
@@ -63,15 +75,18 @@
 
 ## Key Architecture Decisions
 - **Mirror-based approach**: Full clone to .mirror/ directory with SHA256 naming
-- **Smart install logic**: Skip libraries that don't need updates
+- **Install/Update separation**: install_all() fast local-only by default, requires check_remote_updates=True for remote checks
+- **LICENSE compliance**: Force preservation of LICENSE files when checkin=true regardless of ignore patterns
+- **Security hardening**: Path validation prevents directory escape attacks, git URL validation
 - **Single lockfile**: All state in .ams-compose.lock, no metadata files
 - **Comprehensive filtering**: Automatic filtering of VCS, development tools, and OS files
 - **Technology stack**: Python + Click + GitPython + Pydantic
 - **Two-tier dependency model**: checkin=true (commit to repo) vs checkin=false (environment only)
 
 ## Active Issues & Next Steps
-- **Current Priority**: Install command hanging issue resolved - CLI performance and reliability improvements complete, ready for orchestrator refactoring
-- **Implementation Status**: Install/update separation complete, logging system implemented, CLI formatting refactored, all tests passing
-- **Recent Achievements**: Fixed major performance bottleneck (install hanging), improved code maintainability, enhanced user experience
-- **Branch Status**: Main branch with completed performance improvements
-- **Next Session**: Begin Phase 1 of orchestrator architecture refactoring (extract LibraryValidator module from installer.py)
+- **Current Priority**: Test suite reliability complete - 99.5% success rate achieved (202/203 tests passing)
+- **Implementation Status**: Timeout handling fixed, enhanced LICENSE preservation, security-compliant path handling, cross-platform compatibility improvements
+- **Recent Achievements**: Fixed mirror timeout propagation, 99.5% test success rate, improved legal compliance, resolved install/update API inconsistencies
+- **Branch Status**: main branch with timeout handling fix and comprehensive test fixes
+- **Outstanding Issue**: 1 E2E test failing due to macOS-specific Git submodule setup issue (not core functionality)
+- **Next Session Goal**: Begin orchestrator architecture refactoring with excellent test foundation

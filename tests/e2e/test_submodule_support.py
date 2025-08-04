@@ -72,7 +72,7 @@ class TestSubmoduleSupport:
         # Add submodule to parent repository
         parent_repo.create_submodule(
             name="test_submodule",
-            path="libs/test_submodule",
+            path="submodules/test_submodule",
             url=str(submodule_path),
             branch="main"
         )
@@ -131,11 +131,11 @@ class TestSubmoduleSupport:
         assert "main_circuit" in main_circuit.read_text()
         
         # Check that submodule content is extracted (this was the bug!)
-        sub_file = self.project_root / "parent_lib" / "libs" / "test_submodule" / "submodule_file.txt"
+        sub_file = self.project_root / "parent_lib" / "submodules" / "test_submodule" / "submodule_file.txt"
         assert sub_file.exists(), "Submodule content should be extracted, not left as empty directory"
         assert "submodule" in sub_file.read_text()
         
-        sub_circuit = self.project_root / "parent_lib" / "libs" / "test_submodule" / "sub_circuit.v"
+        sub_circuit = self.project_root / "parent_lib" / "submodules" / "test_submodule" / "sub_circuit.v"
         assert sub_circuit.exists()
         assert "sub_circuit" in sub_circuit.read_text()
     
@@ -176,7 +176,7 @@ class TestSubmoduleSupport:
         assert (analog_lib / "main_circuit.v").exists()
         
         # Submodule directory should exist and contain files (not be empty)
-        submodule_dir = analog_lib / "libs" / "test_submodule"
+        submodule_dir = analog_lib / "submodules" / "test_submodule"
         assert submodule_dir.exists()
         assert submodule_dir.is_dir()
         
@@ -237,7 +237,7 @@ class TestSubmoduleSupport:
         assert (lib_path / "complex" / "important.v").exists()
         
         # Submodule content (also filtered)
-        submodule_path = lib_path / "libs" / "test_submodule"
+        submodule_path = lib_path / "submodules" / "test_submodule"
         assert submodule_path.exists()
         assert (submodule_path / "sub_circuit.v").exists()  # Should exist (.v file)
         assert not (submodule_path / "submodule_file.txt").exists()  # Should be filtered out (.txt file)
@@ -277,9 +277,17 @@ class TestSubmoduleSupport:
         
         # Update parent repo to reference new submodule commit
         parent_git_repo = git.Repo(parent_repo)
-        submodule = parent_git_repo.submodules[0]
-        submodule.update(to_latest_revision=True)
-        parent_git_repo.index.add([submodule.path])
+        
+        # Get the latest commit from submodule
+        latest_commit = sub_repo.head.commit.hexsha
+        
+        # Change directory to submodule and update it manually
+        submodule_full_path = parent_repo / "submodules" / "test_submodule"
+        submodule_working_repo = git.Repo(submodule_full_path)
+        submodule_working_repo.remotes.origin.pull()
+        
+        # Add the updated submodule to parent repo
+        parent_git_repo.index.add(["submodules/test_submodule"])
         parent_git_repo.index.commit("Update submodule reference")
         
         # Act - reinstall (should detect updates)
@@ -287,7 +295,7 @@ class TestSubmoduleSupport:
         
         # Assert - new submodule content should be present
         lib_path = self.project_root / "evolving_analog_lib"
-        submodule_path = lib_path / "libs" / "test_submodule"
+        submodule_path = lib_path / "submodules" / "test_submodule"
         
         # Original content should still exist
         assert (submodule_path / "sub_circuit.v").exists()
