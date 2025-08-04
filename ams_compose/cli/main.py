@@ -297,36 +297,16 @@ def init(library_root: str, force: bool):
         libs_path.mkdir(parents=True, exist_ok=True)
         click.echo(f"Created directory: {library_root}/")
     
-    # Generate template configuration
-    template_config = f"""# ams-compose configuration file
-# For more information, see: https://github.com/Jianxun/ams-compose
-
-# Default directory where libraries will be installed
-library_root: {library_root}
-
-# Library imports - add your dependencies here
-imports:
-  # Example library import (remove or modify as needed):
-  # my_analog_lib:
-  #   repo: https://github.com/example/analog-library.git
-  #   ref: main                    # branch, tag, or commit
-  #   source_path: lib/analog      # path within the repository
-  #   # local_path: custom/path    # optional: override library_root location
-  
-# To add a new library:
-# 1. Add an entry under 'imports' with a unique name
-# 2. Specify the git repository URL
-# 3. Set the reference (branch/tag/commit)  
-# 4. Define the source path within the repository
-# 5. Run 'ams-compose install' to fetch the library
-#
-# Example commands:
-#   ams-compose install           # Install missing libraries, update outdated ones
-#   ams-compose install my_lib    # Install/update specific library  
-#   ams-compose install --force   # Force reinstall all libraries
-#   ams-compose list             # List installed libraries
-#   ams-compose validate         # Validate configuration
-"""
+    # Load template configuration from file
+    try:
+        template_path = Path(__file__).parent.parent / "config_template.yaml"
+        template_config = template_path.read_text().format(library_root=library_root)
+    except FileNotFoundError:
+        click.echo("Error: Template configuration file not found.", err=True)
+        sys.exit(1)
+    except Exception as e:
+        click.echo(f"Error reading template configuration: {e}", err=True)
+        sys.exit(1)
     
     # Write configuration file
     config_path.write_text(template_config)
@@ -386,7 +366,7 @@ def schema():
     """Show the complete ams-compose.yaml configuration schema."""
     try:
         # Load schema documentation from file
-        schema_path = Path(__file__).parent.parent / "schema.md"
+        schema_path = Path(__file__).parent.parent / "schema.txt"
         schema_content = schema_path.read_text()
         click.echo(schema_content)
     except FileNotFoundError:
