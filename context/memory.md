@@ -7,6 +7,12 @@
 
 ## Recent Major Changes (Last 2-3 Sessions Only)
 
+### CLI Logging System Enhancement - 2025-08-04
+- **Problem**: Verbose logging was always enabled with -v flag, no granular control over log levels, INFO messages shown by default
+- **Solution**: Implemented three-tier logging system - default WARNING (quiet), --verbose for INFO, --debug for DEBUG levels
+- **Status**: Complete - Updated _setup_logging() function, added --debug option, modified CLI help text
+- **Benefits**: Cleaner default output, granular logging control for troubleshooting, follows standard CLI patterns
+
 ### Install Command Hanging Issue Resolution - 2025-08-04
 - **Problem**: `ams-compose install` was hanging because it checked remote repositories for updates on every run via network-dependent git fetch operations
 - **Solution**: Separated concerns by implementing install vs update command pattern - install only handles missing libraries (fast, no network), added dedicated `update` command for remote checks

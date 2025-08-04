@@ -14,9 +14,15 @@ from ams_compose.core.config import ComposeConfig, LockEntry
 logger = logging.getLogger(__name__)
 
 
-def _setup_logging(verbose: bool = False) -> None:
+def _setup_logging(verbose: bool = False, debug: bool = False) -> None:
     """Configure logging for the CLI."""
-    level = logging.DEBUG if verbose else logging.INFO
+    if debug:
+        level = logging.DEBUG
+    elif verbose:
+        level = logging.INFO
+    else:
+        level = logging.WARNING
+        
     logging.basicConfig(
         level=level,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -140,16 +146,18 @@ def _format_libraries_summary(libraries: Dict[str, LockEntry], title: str, empty
 
 @click.group()
 @click.version_option(version=__version__)
-@click.option('--verbose', '-v', is_flag=True, help='Enable verbose logging')
+@click.option('--verbose', '-v', is_flag=True, help='Enable verbose logging (INFO level)')
+@click.option('--debug', is_flag=True, help='Enable debug logging (DEBUG level)')
 @click.pass_context
-def main(ctx, verbose):
+def main(ctx, verbose, debug):
     """ams-compose: Dependency management for analog/mixed-signal IC design repositories."""
     # Ensure context object exists
     ctx.ensure_object(dict)
     ctx.obj['verbose'] = verbose
+    ctx.obj['debug'] = debug
     
     # Set up logging
-    _setup_logging(verbose)
+    _setup_logging(verbose, debug)
 
 
 @main.command()
