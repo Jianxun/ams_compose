@@ -283,7 +283,7 @@ class TestSubmoduleSupport:
         parent_git_repo.index.commit("Update submodule reference")
         
         # Act - reinstall (should detect updates)
-        installer.install_all()
+        installer.install_all(check_remote_updates=True)
         
         # Assert - new submodule content should be present
         lib_path = self.project_root / "evolving_analog_lib"

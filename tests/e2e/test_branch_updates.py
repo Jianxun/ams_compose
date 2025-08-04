@@ -166,7 +166,7 @@ class TestBranchUpdateDetection:
         
         # Run install again - should detect branch update
         print("🔄 Running install after upstream update...")
-        updated_libraries = self.installer.install_all()
+        updated_libraries = self.installer.install_all(check_remote_updates=True)
         
         # Verify update was detected and library was reinstalled
         assert 'analog_lib' in updated_libraries, "Library should be updated when branch has new commits"
@@ -298,7 +298,7 @@ class TestBranchUpdateDetection:
         
         # Run install again
         print("🔄 Running install after partial upstream update...")
-        updated_libraries = self.installer.install_all()
+        updated_libraries = self.installer.install_all(check_remote_updates=True)
         
         # Verify only updating_lib was reinstalled
         assert 'updating_lib' in updated_libraries, "Updated library should be reinstalled"
