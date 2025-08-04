@@ -82,11 +82,11 @@ class TestInitCommand:
             # Check required sections are present
             assert "library_root: designs/libs" in content
             assert "imports:" in content
-            assert "# Example library import" in content
-            assert "# my_analog_lib:" in content
-            assert "#   repo: https://github.com/example/analog-library.git" in content
-            assert "#   ref: main" in content
-            assert "#   source_path: lib/analog" in content
+            assert "# Example library configurations" in content
+            assert "analog_lib:" in content
+            assert "repo: https://github.com/company/analog-ip.git" in content
+            assert "ref: v1.2.0" in content
+            assert "source_path: lib/analog" in content
             
         finally:
             os.chdir(original_cwd)

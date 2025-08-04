@@ -1,0 +1,55 @@
+========================================
+ams-compose.yaml Configuration Schema
+========================================
+
+CONFIGURATION STRUCTURE:
+
+library_root: designs/libs        # Default installation directory
+imports:                          # Dictionary of library definitions
+  library_name:                   # Unique identifier for each library
+    repo: <git_url>               # REQUIRED: Git repository URL
+    ref: <branch|tag|commit>      # REQUIRED: Git reference
+    source_path: <path>           # REQUIRED: Path within repo to extract
+    local_path: <path>            # OPTIONAL: Override installation path
+    checkin: true|false           # OPTIONAL: Include in version control (default: true)
+    ignore_patterns: [patterns]   # OPTIONAL: Additional files to ignore
+    license: <license>            # OPTIONAL: Override license detection
+
+FIELD DETAILS:
+
+Root Fields:
+  library_root    Default directory for all libraries (used when local_path not specified)
+
+Required Import Fields:
+  repo           Git repository URL (supports https, ssh protocols)
+  ref            Branch name, tag, or commit SHA
+  source_path    Path within repository to extract (use "." for entire repo)
+
+Optional Import Fields:
+  local_path     Custom installation path (overrides library_root/{library_name})
+  checkin        Whether to commit library to version control (default: true)
+  ignore_patterns Additional gitignore-style patterns to exclude during extraction
+  license        Manual license override (auto-detected if not specified)
+
+EXAMPLE CONFIGURATION:
+
+library_root: designs/libs
+
+imports:
+  analog_lib:
+    repo: https://github.com/company/analog-ip.git
+    ref: v1.2.0
+    source_path: lib/analog
+    checkin: true
+    license: MIT
+    
+  design_tools:
+    repo: https://github.com/tools/design-suite.git
+    ref: main
+    source_path: tools
+    local_path: tools/design-suite
+    checkin: false
+    ignore_patterns:
+      - "*.log"
+      - "build/"
+      - "*.tmp"

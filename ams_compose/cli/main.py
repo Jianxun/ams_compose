@@ -1,6 +1,7 @@
 """Main CLI entry point for ams-compose."""
 
 import sys
+import logging
 from pathlib import Path
 from typing import Optional, List, Dict
 
@@ -8,6 +9,28 @@ import click
 from ams_compose import __version__
 from ams_compose.core.installer import LibraryInstaller, InstallationError
 from ams_compose.core.config import ComposeConfig, LockEntry
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
+
+def _setup_logging(verbose: bool = False, debug: bool = False) -> None:
+    """Configure logging for the CLI."""
+    if debug:
+        level = logging.DEBUG
+    elif verbose:
+        level = logging.INFO
+    else:
+        level = logging.WARNING
+        
+    logging.basicConfig(
+        level=level,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[logging.StreamHandler()]
+    )
+    
+    # Set specific loggers to appropriate levels
+    logging.getLogger('ams_compose').setLevel(level)
 
 
 def _get_installer() -> LibraryInstaller:
@@ -21,15 +44,34 @@ def _handle_installation_error(e: InstallationError) -> None:
     sys.exit(1)
 
 
+def _get_entry_status(entry: LockEntry, command_context: str) -> str:
+    """Get appropriate status string for entry based on command context."""
+    if command_context == "validate":
+        return entry.validation_status or "unknown"
+    elif command_context == "install":
+        return entry.install_status or entry.validation_status or "unknown"
+    else:  # list or default
+        return entry.install_status or entry.validation_status or "unknown"
+
+
+def _show_license_warnings(lock_entry: LockEntry) -> None:
+    """Display license warnings for a library entry."""
+    if lock_entry.license_change:
+        click.echo(f"  ↳ {lock_entry.license_change}")
+    
+    if lock_entry.license_warning:
+        click.echo(f"  ⚠️  WARNING: {lock_entry.license_warning}")
+    elif lock_entry.license:
+        from ams_compose.utils.license import LicenseDetector
+        license_detector = LicenseDetector()
+        warning = license_detector.get_license_compatibility_warning(lock_entry.license)
+        if warning:
+            click.echo(f"  ⚠️  WARNING: {warning}")
+
+
 def _format_libraries_tabular(libraries: Dict[str, LockEntry], show_status: bool = False, 
                              command_context: str = "list") -> None:
-    """Format libraries in clean tabular format with proper column alignment.
-    
-    Args:
-        libraries: Dictionary of library name to LockEntry
-        show_status: Whether to include status column
-        command_context: Command context for status priority ("list", "validate", "install")
-    """
+    """Format libraries in clean tabular format with proper column alignment."""
     if not libraries:
         return
         
@@ -38,59 +80,20 @@ def _format_libraries_tabular(libraries: Dict[str, LockEntry], show_status: bool
     max_ref_width = max(len(entry.ref) for entry in libraries.values())
     max_license_width = max(len(entry.license or "None") for entry in libraries.values())
     
-    if show_status:
-        # Calculate status width based on command context
-        status_values = []
-        for entry in libraries.values():
-            if command_context == "validate":
-                status = entry.validation_status or "unknown"
-            elif command_context == "install":
-                status = entry.install_status or entry.validation_status or "unknown"
-            else:  # list or default
-                status = entry.install_status or entry.validation_status or "unknown"
-            status_values.append(status)
-        max_status_width = max(len(status) for status in status_values)
-    
     for library_name, lock_entry in libraries.items():
         commit_hash = lock_entry.commit[:8]
         license_display = lock_entry.license or "None"
         
         if show_status:
-            # Select status based on command context
-            if command_context == "validate":
-                status = lock_entry.validation_status or "unknown"
-            elif command_context == "install":
-                status = lock_entry.install_status or lock_entry.validation_status or "unknown"
-            else:  # list or default
-                status = lock_entry.install_status or lock_entry.validation_status or "unknown"
+            status = _get_entry_status(lock_entry, command_context)
             click.echo(f"{library_name:<{max_name_width}} | commit:{commit_hash} | ref:{lock_entry.ref:<{max_ref_width}} | license:{license_display:<{max_license_width}} | status:{status}")
+            _show_license_warnings(lock_entry)
         else:
             click.echo(f"{library_name:<{max_name_width}} | commit:{commit_hash} | ref:{lock_entry.ref:<{max_ref_width}} | license:{license_display}")
-        
-        # Show additional info for status commands (install/validate)
-        if show_status:
-            # Show license change if it occurred
-            if lock_entry.license_change:
-                click.echo(f"  ↳ {lock_entry.license_change}")
-            
-            # Show license compatibility warning
-            if lock_entry.license_warning:
-                click.echo(f"  ⚠️  WARNING: {lock_entry.license_warning}")
-            elif lock_entry.license:
-                from ams_compose.utils.license import LicenseDetector
-                license_detector = LicenseDetector()
-                warning = license_detector.get_license_compatibility_warning(lock_entry.license)
-                if warning:
-                    click.echo(f"  ⚠️  WARNING: {warning}")
 
 
 def _format_libraries_detailed(libraries: Dict[str, LockEntry], show_status: bool = False) -> None:
-    """Format libraries in detailed multi-line format.
-    
-    Args:
-        libraries: Dictionary of library name to LockEntry
-        show_status: Whether to show status information
-    """
+    """Format libraries in detailed multi-line format."""
     if not libraries:
         return
         
@@ -112,33 +115,21 @@ def _format_libraries_detailed(libraries: Dict[str, LockEntry], show_status: boo
             if status:
                 click.echo(f"  Status:     {status}")
                 
-            # Show license change if it occurred
             if lock_entry.license_change:
                 click.echo(f"  Changes:    {lock_entry.license_change}")
         
-        # Show license compatibility warning
-        if lock_entry.license_warning:
-            click.echo(f"  ⚠️  WARNING: {lock_entry.license_warning}")
-        elif lock_entry.license:
-            from ams_compose.utils.license import LicenseDetector
-            license_detector = LicenseDetector()
-            warning = license_detector.get_license_compatibility_warning(lock_entry.license)
-            if warning:
-                click.echo(f"  ⚠️  WARNING: {warning}")
-        
+        _show_license_warnings(lock_entry)        
         click.echo()
 
 
 def _format_libraries_summary(libraries: Dict[str, LockEntry], title: str, empty_message: str = None, 
-                             detailed: bool = False, show_status: bool = False, 
-                             command_context: str = "list") -> None:
+                             show_status: bool = False, command_context: str = "list") -> None:
     """Unified formatter for library summaries across all commands.
     
     Args:
         libraries: Dictionary of library name to LockEntry
         title: Title to display
         empty_message: Custom message when no libraries found
-        detailed: Whether to use detailed multi-line format
         show_status: Whether to show status information
         command_context: Command context for status priority ("list", "validate", "install")
     """
@@ -148,20 +139,25 @@ def _format_libraries_summary(libraries: Dict[str, LockEntry], title: str, empty
         return
         
     click.echo(f"{title} ({len(libraries)}):")
-    
-    if detailed:
-        _format_libraries_detailed(libraries, show_status)
-    else:
-        _format_libraries_tabular(libraries, show_status, command_context)
+    _format_libraries_tabular(libraries, show_status, command_context)
 
 
 
 
 @click.group()
 @click.version_option(version=__version__)
-def main():
+@click.option('--verbose', '-v', is_flag=True, help='Enable verbose logging (INFO level)')
+@click.option('--debug', is_flag=True, help='Enable debug logging (DEBUG level)')
+@click.pass_context
+def main(ctx, verbose, debug):
     """ams-compose: Dependency management for analog/mixed-signal IC design repositories."""
-    pass
+    # Ensure context object exists
+    ctx.ensure_object(dict)
+    ctx.obj['verbose'] = verbose
+    ctx.obj['debug'] = debug
+    
+    # Set up logging
+    _setup_logging(verbose, debug)
 
 
 @main.command()
@@ -169,23 +165,33 @@ def main():
 @click.option('--force', is_flag=True, default=False,
               help='Force reinstall all libraries (ignore up-to-date check)')
 def install(libraries: tuple, force: bool):
-    """Install libraries from ams-compose.yaml.
+    """Install missing libraries from ams-compose.yaml.
+    
+    Only installs libraries that are missing or have configuration changes.
+    Does not check remote repositories for updates (use 'update' command for that).
     
     LIBRARIES: Optional list of specific libraries to install.
                If not provided, installs all libraries from configuration.
     """
     try:
+        logger.info("Starting install command")
         installer = _get_installer()
+        logger.debug("Created installer instance")
         
         # Convert tuple to list for installer
         library_list = list(libraries) if libraries else None
+        logger.debug(f"Library list: {library_list}")
         
         if library_list:
             click.echo(f"Installing libraries: {', '.join(library_list)}")
         else:
             click.echo("Installing all libraries from ams-compose.yaml")
         
-        all_libraries = installer.install_all(library_list, force=force)
+        logger.debug("About to call installer.install_all()")
+        all_libraries = installer.install_all(library_list, force=force, check_remote_updates=False)
+        logger.debug("install_all() completed")
+        
+        logger.debug(f"Got {len(all_libraries)} libraries from install_all")
         
         # Filter libraries by install_status
         up_to_date = {name: entry for name, entry in all_libraries.items() 
@@ -193,26 +199,93 @@ def install(libraries: tuple, force: bool):
         processed = {name: entry for name, entry in all_libraries.items() 
                     if entry.install_status in ["installed", "updated"]}
         
+        logger.debug(f"{len(up_to_date)} up-to-date, {len(processed)} processed")
+        
         # Show up-to-date libraries first
         if up_to_date:
             _format_libraries_summary(up_to_date, "Up-to-date libraries", 
-                                     detailed=False, show_status=True, command_context="install")
+                                     show_status=True, command_context="install")
         
         # Show installed/updated libraries
         if processed:
             if up_to_date:
                 click.echo()  # Add blank line between sections
             _format_libraries_summary(processed, "Processed libraries", 
-                                     detailed=False, show_status=True, command_context="install")
+                                     show_status=True, command_context="install")
         
         # Show summary message if nothing was processed
         if not all_libraries:
             click.echo("No libraries to install")
             
+        logger.info("Install command completed successfully")
+            
     except InstallationError as e:
         _handle_installation_error(e)
 
 
+@main.command()
+@click.argument('libraries', nargs=-1)
+@click.option('--force', is_flag=True, default=False,
+              help='Force reinstall all libraries (ignore up-to-date check)')
+def update(libraries: tuple, force: bool):
+    """Update libraries by checking remote repositories for newer versions.
+    
+    This command specifically checks remote repositories for updates and installs
+    any libraries that have newer versions available. Use this when you want to
+    ensure you have the latest versions of your dependencies.
+    
+    LIBRARIES: Optional list of specific libraries to update.
+               If not provided, checks all libraries from configuration.
+    """
+    try:
+        logger.info("Starting update command")
+        installer = _get_installer()
+        logger.debug("Created installer instance")
+        
+        # Convert tuple to list for installer
+        library_list = list(libraries) if libraries else None
+        logger.debug(f"Library list: {library_list}")
+        
+        if library_list:
+            click.echo(f"Checking for updates: {', '.join(library_list)}")
+        else:
+            click.echo("Checking all libraries for updates from remote repositories")
+        
+        logger.debug("About to call installer.install_all() with remote update check")
+        all_libraries = installer.install_all(library_list, force=force, check_remote_updates=True)
+        logger.debug("install_all() completed")
+        
+        logger.debug(f"Got {len(all_libraries)} libraries from install_all")
+        
+        # Filter libraries by install_status
+        up_to_date = {name: entry for name, entry in all_libraries.items() 
+                     if entry.install_status == "up_to_date"}
+        processed = {name: entry for name, entry in all_libraries.items() 
+                    if entry.install_status in ["installed", "updated"]}
+        
+        logger.debug(f"{len(up_to_date)} up-to-date, {len(processed)} processed")
+        
+        # Show results
+        if processed:
+            _format_libraries_summary(processed, "Updated libraries", 
+                                     show_status=True, command_context="install")
+            if up_to_date:
+                click.echo()  # Add blank line between sections
+        
+        if up_to_date:
+            _format_libraries_summary(up_to_date, "Up-to-date libraries", 
+                                     show_status=True, command_context="install")
+        
+        # Show summary message if nothing was processed
+        if not all_libraries:
+            click.echo("No libraries to update")
+        elif not processed:
+            click.echo("All libraries are up-to-date")
+            
+        logger.info("Update command completed successfully")
+            
+    except InstallationError as e:
+        _handle_installation_error(e)
 
 
 @main.command('list')
@@ -223,7 +296,7 @@ def list_libraries():
         installed = installer.list_installed_libraries()
         
         _format_libraries_summary(installed, "Installed libraries", "No libraries installed", 
-                                 detailed=False, show_status=False)
+                                 show_status=False)
                 
     except InstallationError as e:
         _handle_installation_error(e)
@@ -259,15 +332,15 @@ def validate():
         # Show validation results using unified formatting
         if invalid_libraries:
             _format_libraries_summary(invalid_libraries, "Invalid libraries", 
-                                     detailed=False, show_status=True, command_context="validate")
+                                     show_status=True, command_context="validate")
             click.echo()
             if valid_libraries:
                 _format_libraries_summary(valid_libraries, "Valid libraries", 
-                                         detailed=False, show_status=True, command_context="validate")
+                                         show_status=True, command_context="validate")
             sys.exit(1)
         else:
             _format_libraries_summary(valid_libraries, "Valid libraries", "All libraries are valid", 
-                                     detailed=False, show_status=True, command_context="validate")
+                                     show_status=True, command_context="validate")
             
     except InstallationError as e:
         _handle_installation_error(e)
@@ -297,36 +370,16 @@ def init(library_root: str, force: bool):
         libs_path.mkdir(parents=True, exist_ok=True)
         click.echo(f"Created directory: {library_root}/")
     
-    # Generate template configuration
-    template_config = f"""# ams-compose configuration file
-# For more information, see: https://github.com/Jianxun/ams-compose
-
-# Default directory where libraries will be installed
-library_root: {library_root}
-
-# Library imports - add your dependencies here
-imports:
-  # Example library import (remove or modify as needed):
-  # my_analog_lib:
-  #   repo: https://github.com/example/analog-library.git
-  #   ref: main                    # branch, tag, or commit
-  #   source_path: lib/analog      # path within the repository
-  #   # local_path: custom/path    # optional: override library_root location
-  
-# To add a new library:
-# 1. Add an entry under 'imports' with a unique name
-# 2. Specify the git repository URL
-# 3. Set the reference (branch/tag/commit)  
-# 4. Define the source path within the repository
-# 5. Run 'ams-compose install' to fetch the library
-#
-# Example commands:
-#   ams-compose install           # Install missing libraries, update outdated ones
-#   ams-compose install my_lib    # Install/update specific library  
-#   ams-compose install --force   # Force reinstall all libraries
-#   ams-compose list             # List installed libraries
-#   ams-compose validate         # Validate configuration
-"""
+    # Load template configuration from file
+    try:
+        template_path = Path(__file__).parent.parent / "config_template.yaml"
+        template_config = template_path.read_text().format(library_root=library_root)
+    except FileNotFoundError:
+        click.echo("Error: Template configuration file not found.", err=True)
+        sys.exit(1)
+    except Exception as e:
+        click.echo(f"Error reading template configuration: {e}", err=True)
+        sys.exit(1)
     
     # Write configuration file
     config_path.write_text(template_config)
@@ -386,7 +439,7 @@ def schema():
     """Show the complete ams-compose.yaml configuration schema."""
     try:
         # Load schema documentation from file
-        schema_path = Path(__file__).parent.parent / "schema.md"
+        schema_path = Path(__file__).parent.parent / "schema.txt"
         schema_content = schema_path.read_text()
         click.echo(schema_content)
     except FileNotFoundError:

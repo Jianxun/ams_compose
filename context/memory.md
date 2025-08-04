@@ -2,10 +2,34 @@
 
 ## Current Status
 - **Project**: ams-compose (renamed from analog-hub)
-- **Stage**: API Simplification Complete
-- **Last Updated**: 2025-08-03
+- **Stage**: CLI Interface Improvements Complete
+- **Last Updated**: 2025-08-04
 
 ## Recent Major Changes (Last 2-3 Sessions Only)
+
+### CLI Logging System Enhancement - 2025-08-04
+- **Problem**: Verbose logging was always enabled with -v flag, no granular control over log levels, INFO messages shown by default
+- **Solution**: Implemented three-tier logging system - default WARNING (quiet), --verbose for INFO, --debug for DEBUG levels
+- **Status**: Complete - Updated _setup_logging() function, added --debug option, modified CLI help text
+- **Benefits**: Cleaner default output, granular logging control for troubleshooting, follows standard CLI patterns
+
+### Install Command Hanging Issue Resolution - 2025-08-04
+- **Problem**: `ams-compose install` was hanging because it checked remote repositories for updates on every run via network-dependent git fetch operations
+- **Solution**: Separated concerns by implementing install vs update command pattern - install only handles missing libraries (fast, no network), added dedicated `update` command for remote checks
+- **Status**: Complete - Install command now completes in ~5ms, added comprehensive logging system, all CLI tests passing
+- **Benefits**: Fixed hanging issue, dramatically improved performance, cleaner UX following industry standards (npm/pip pattern), better network resilience
+
+### CLI Formatting Refactoring - 2025-08-04  
+- **Problem**: CLI formatting functions were long (133 lines), had duplicated status logic appearing 3 times, unused detailed parameter
+- **Solution**: Extracted helper functions (_get_entry_status, _show_license_warnings), simplified main functions, removed unused parameters
+- **Status**: Complete - Reduced main function from 133 to 42 lines, eliminated code duplication, all tests passing
+- **Benefits**: Much more maintainable code, easier to understand and modify, no functional changes to user experience
+
+### CLI Schema and Template Improvements - 2025-08-04
+- **Problem**: schema.md was verbose markdown format unsuitable for CLI display, template.yaml caused AWS SAM lint conflicts
+- **Solution**: Converted schema.md to plain-text schema.txt, renamed template.yaml to config_template.yaml, extracted template from inline string
+- **Status**: Complete - All CLI commands updated, consistent examples between schema and template, lint conflicts resolved
+- **Benefits**: Clean CLI-friendly schema output, resolved IDE lint errors, better maintainability with external template file
 
 ### Metadata File Rename and Traceability Enhancement - 2025-08-03
 - **Problem**: Metadata files named .ams-compose-provenance.yaml only generated for checkin=true libraries, limiting traceability
@@ -46,8 +70,8 @@
 - **Two-tier dependency model**: checkin=true (commit to repo) vs checkin=false (environment only)
 
 ## Active Issues & Next Steps
-- **Current Priority**: Documentation and interface improvements complete - Ready for orchestrator architecture refactoring
-- **Implementation Status**: README.md updated, metadata file rename complete, all tests passing
-- **Test Coverage**: All E2E and unit tests passing after metadata filename changes
-- **Branch Status**: Main branch with completed README overhaul and metadata system improvements
-- **Next Session**: Begin Phase 1 of orchestrator architecture refactoring (extract LibraryValidator module)
+- **Current Priority**: Install command hanging issue resolved - CLI performance and reliability improvements complete, ready for orchestrator refactoring
+- **Implementation Status**: Install/update separation complete, logging system implemented, CLI formatting refactored, all tests passing
+- **Recent Achievements**: Fixed major performance bottleneck (install hanging), improved code maintainability, enhanced user experience
+- **Branch Status**: Main branch with completed performance improvements
+- **Next Session**: Begin Phase 1 of orchestrator architecture refactoring (extract LibraryValidator module from installer.py)

@@ -1,5 +1,6 @@
 """Installation orchestration for ams-compose."""
 
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
@@ -9,6 +10,8 @@ from .mirror import RepositoryMirror
 from .extractor import PathExtractor
 from ..utils.checksum import ChecksumCalculator
 from ..utils.license import LicenseDetector
+
+logger = logging.getLogger(__name__)
 
 
 class InstallationError(Exception):
@@ -214,13 +217,14 @@ class LibraryInstaller:
         
         return libraries_to_install
 
-    def _determine_libraries_needing_work(self, libraries_to_install: Dict[str, ImportSpec], lock_file: LockFile, force: bool) -> Tuple[Dict[str, ImportSpec], List[str]]:
+    def _determine_libraries_needing_work(self, libraries_to_install: Dict[str, ImportSpec], lock_file: LockFile, force: bool, check_remote_updates: bool = False) -> Tuple[Dict[str, ImportSpec], List[str]]:
         """Determine which libraries need installation/update using smart skip logic.
         
         Args:
             libraries_to_install: Libraries that could potentially be installed
             lock_file: Current lock file state
             force: If True, force reinstall even if libraries are up-to-date
+            check_remote_updates: If True, check remote repositories for updates
             
         Returns:
             Tuple of (libraries_needing_work, skipped_libraries)
@@ -229,45 +233,62 @@ class LibraryInstaller:
         skipped_libraries = []
         
         for library_name, import_spec in libraries_to_install.items():
+            logger.debug(f"Checking library: {library_name}")
+            
             if force:
                 # Force mode: always install
+                logger.debug(f"{library_name}: force=True, adding to work queue")
                 libraries_needing_work[library_name] = import_spec
             elif library_name not in lock_file.libraries:
                 # Library not installed: needs installation
+                logger.debug(f"{library_name}: not in lock file, needs installation")
                 libraries_needing_work[library_name] = import_spec
             else:
                 # Library installed: check if update needed
                 current_entry = lock_file.libraries[library_name]
+                logger.debug(f"{library_name}: exists in lock file, checking for updates")
                 
                 # Check if configuration changed (repo, ref, or source_path)
                 if (current_entry.repo != import_spec.repo or 
                     current_entry.ref != import_spec.ref or
                     current_entry.source_path != import_spec.source_path):
+                    logger.debug(f"{library_name}: configuration changed, needs update")
                     libraries_needing_work[library_name] = import_spec
                 else:
                     # Check if library files still exist
                     library_path = self._validate_library_path(current_entry.local_path, library_name)
                     
                     if not library_path.exists():
+                        logger.debug(f"{library_name}: files missing, needs reinstall")
                         libraries_needing_work[library_name] = import_spec
                     else:
-                        # Check if remote has updates by updating mirror and comparing commits
-                        try:
-                            mirror_state = self.mirror_manager.update_mirror(
-                                import_spec.repo, 
-                                import_spec.ref
-                            )
-                            
-                            
-                            # If the resolved commit is different, we need to update
-                            if current_entry.commit != mirror_state.resolved_commit:
+                        if check_remote_updates:
+                            # Check if remote has updates by updating mirror and comparing commits
+                            logger.debug(f"{library_name}: checking remote for updates via mirror")
+                            try:
+                                logger.debug(f"{library_name}: calling update_mirror({import_spec.repo}, {import_spec.ref})")
+                                mirror_state = self.mirror_manager.update_mirror(
+                                    import_spec.repo, 
+                                    import_spec.ref
+                                )
+                                logger.debug(f"{library_name}: mirror updated, resolved commit: {mirror_state.resolved_commit}")
+                                
+                                # If the resolved commit is different, we need to update
+                                if current_entry.commit != mirror_state.resolved_commit:
+                                    logger.debug(f"{library_name}: commit changed {current_entry.commit} → {mirror_state.resolved_commit}, needs update")
+                                    libraries_needing_work[library_name] = import_spec
+                                else:
+                                    # Library is truly up-to-date
+                                    logger.debug(f"{library_name}: up-to-date, skipping")
+                                    skipped_libraries.append(library_name)
+                            except Exception as e:
+                                # If we can't check for updates, assume library needs work
+                                logger.warning(f"{library_name}: failed to check for updates: {e}")
                                 libraries_needing_work[library_name] = import_spec
-                            else:
-                                # Library is truly up-to-date
-                                skipped_libraries.append(library_name)
-                        except Exception as e:
-                            # If we can't check for updates, assume library needs work
-                            libraries_needing_work[library_name] = import_spec
+                        else:
+                            # Skip remote update check - library is considered up-to-date
+                            logger.debug(f"{library_name}: skipping remote update check, considered up-to-date")
+                            skipped_libraries.append(library_name)
         
         return libraries_needing_work, skipped_libraries
 
@@ -352,7 +373,7 @@ class LibraryInstaller:
         lock_file.libraries.update(installed_libraries)
         self.save_lock_file(lock_file)
 
-    def install_all(self, library_names: Optional[List[str]] = None, force: bool = False) -> Dict[str, LockEntry]:
+    def install_all(self, library_names: Optional[List[str]] = None, force: bool = False, check_remote_updates: bool = False) -> Dict[str, LockEntry]:
         """Install all libraries or specific subset with smart skip logic.
         
         Args:
@@ -360,6 +381,8 @@ class LibraryInstaller:
                           If None, installs all libraries from configuration.
             force: If True, force reinstall even if libraries are up-to-date.
                   If False, skip libraries that are already installed at correct version.
+            check_remote_updates: If True, check remote repositories for updates.
+                                If False, only install missing libraries (no remote checks).
             
         Returns:
             Dictionary of library_name -> LockEntry for all processed libraries.
@@ -371,20 +394,33 @@ class LibraryInstaller:
         Raises:
             InstallationError: If any installation fails
         """
+        logger.debug(f"install_all called with library_names={library_names}, force={force}")
+        
         # Load configuration and resolve target libraries
+        logger.debug("Loading configuration")
         config = self.load_config()
+        logger.debug(f"Configuration loaded with {len(config.imports)} libraries")
+        
         libraries_to_install = self._resolve_target_libraries(library_names, config)
+        logger.debug(f"Resolved {len(libraries_to_install)} libraries to install")
         
         if not libraries_to_install:
+            logger.debug("No libraries to install, returning empty dict")
             return {}
         
         # Load current lock file and determine what needs work
+        logger.debug("Loading lock file")
         lock_file = self.load_lock_file()
+        logger.debug(f"Lock file loaded with {len(lock_file.libraries)} existing libraries")
+        
+        logger.debug("Determining libraries needing work")
         libraries_needing_work, skipped_libraries = self._determine_libraries_needing_work(
-            libraries_to_install, lock_file, force
+            libraries_to_install, lock_file, force, check_remote_updates
         )
+        logger.debug(f"Libraries needing work: {len(libraries_needing_work)}, skipped: {len(skipped_libraries)}")
         
         # Get up-to-date libraries info
+        logger.debug("Processing up-to-date libraries")
         up_to_date_libraries = {}
         for library_name in skipped_libraries:
             if library_name in lock_file.libraries:
@@ -393,19 +429,25 @@ class LibraryInstaller:
                 up_to_date_libraries[library_name] = lock_entry
         
         if not libraries_needing_work:
+            logger.debug("No libraries need work, returning up-to-date libraries")
             return up_to_date_libraries
         
         # Install/update libraries that need work
+        logger.debug(f"Installing batch of {len(libraries_needing_work)} libraries")
         installed_libraries = self._install_libraries_batch(libraries_needing_work, config, lock_file)
+        logger.debug(f"Batch installation completed, got {len(installed_libraries)} results")
         
         # Update lock file with new installations
+        logger.debug("Updating lock file")
         self._update_lock_file(installed_libraries, config)
+        logger.debug("Lock file updated")
         
         # Combine all processed libraries into single result
         all_libraries = {}
         all_libraries.update(installed_libraries)
         all_libraries.update(up_to_date_libraries)
         
+        logger.debug(f"install_all returning {len(all_libraries)} total libraries")
         return all_libraries
     
     def list_installed_libraries(self) -> Dict[str, LockEntry]:

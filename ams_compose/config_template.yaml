@@ -1,0 +1,27 @@
+# ams-compose configuration file template
+# For more information, see: https://github.com/Jianxun/ams-compose
+
+# Default directory where libraries will be installed
+library_root: {library_root}
+
+# Library imports - add your dependencies here
+imports:
+  # Example library configurations (remove or modify as needed):
+  
+  analog_lib:
+    repo: https://github.com/company/analog-ip.git
+    ref: v1.2.0
+    source_path: lib/analog
+    checkin: true
+    license: MIT
+    
+  design_tools:
+    repo: https://github.com/tools/design-suite.git
+    ref: main
+    source_path: tools
+    local_path: tools/design-suite
+    checkin: false
+    ignore_patterns:
+      - "*.log"
+      - "build/"
+      - "*.tmp"
