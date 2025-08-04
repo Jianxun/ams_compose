@@ -150,7 +150,7 @@ class TestInstallCommand:
             assert "Installing libraries: specific_lib" in result.output
             
             # Verify install_all was called with the specific library
-            mock_installer.install_all.assert_called_once_with(['specific_lib'], force=False)
+            mock_installer.install_all.assert_called_once_with(['specific_lib'], force=False, check_remote_updates=False)
             
         finally:
             os.chdir(original_cwd)
