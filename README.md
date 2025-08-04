@@ -49,6 +49,21 @@ ams-compose --version
 ams-compose --help
 ```
 
+## CLI Options
+
+All commands support global logging options:
+
+- **`--verbose, -v`** - Enable verbose logging (INFO level) for detailed operation information
+- **`--debug`** - Enable debug logging (DEBUG level) for troubleshooting and development
+- **`--version`** - Show version information and exit
+- **`--help`** - Show help message and exit
+
+Example with verbose logging:
+```bash
+ams-compose --verbose install
+ams-compose --debug validate
+```
+
 ## Quick Start
 
 1. Initialize a new project:
@@ -65,23 +80,25 @@ library_root: designs/libs
 
 # Library imports - add your dependencies here
 imports:
-  # Production IP library (checked into version control)
-  gf180mcu_fd_sc_mcu9t5v0_symbols:
-    repo: https://github.com/peterkinget/gf180mcu_fd_sc_mcu9t5v0_symbols
-    ref: main
-    source_path: .
+  # Example library configurations (remove or modify as needed):
+  
+  analog_lib:
+    repo: https://github.com/company/analog-ip.git
+    ref: v1.2.0
+    source_path: lib/analog
     checkin: true
+    license: MIT
     
-  # Development template (excluded from version control)  
-  designinit:
-    repo: https://github.com/Jianxun/iic-osic-tools-project-template
+  design_tools:
+    repo: https://github.com/tools/design-suite.git
     ref: main
-    source_path: designs/.designinit
-    local_path: designs/.designinit  # optional: override library_root location
+    source_path: tools
+    local_path: tools/design-suite
     checkin: false
     ignore_patterns:
       - "*.log"
       - "build/"
+      - "*.tmp"
 ```
 
 3. Install libraries:
@@ -98,10 +115,18 @@ ams-compose install
   - Creates `ams-compose.yaml` configuration file
   - Sets up basic project structure
 
-- **`ams-compose install [LIBRARIES...]`** - Install libraries from ams-compose.yaml
+- **`ams-compose install [LIBRARIES...]`** - Install missing libraries from ams-compose.yaml
   - `LIBRARIES`: Optional list of specific libraries to install
   - `--force`: Force reinstall all libraries (ignore up-to-date check)
+  - Only installs missing libraries or those with configuration changes
+  - Does not check remote repositories for updates (fast, local-only operation)
   - Automatically manages .gitignore for non-checkin libraries
+
+- **`ams-compose update [LIBRARIES...]`** - Update libraries by checking remote repositories for newer versions
+  - `LIBRARIES`: Optional list of specific libraries to update
+  - `--force`: Force reinstall all libraries (ignore up-to-date check)
+  - Checks remote repositories for updates and installs newer versions
+  - Use when you want to ensure you have the latest versions of dependencies
 
 - **`ams-compose list`** - List installed libraries
   - Shows installation status and version information
@@ -235,7 +260,7 @@ ams-compose clean
 - Run `ams-compose --help` for command overview
 - Use `ams-compose COMMAND --help` for specific command options
 - Check `ams-compose schema` for configuration reference
-- Report issues at [GitHub Issues](https://github.com/Jianxun/ams-compose/issues)
+- Report issues at [GitHub Issues](https://github.com/Jianxun/ams_compose/issues)
 
 ## License
 
