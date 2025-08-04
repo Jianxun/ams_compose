@@ -260,7 +260,7 @@ class TestProvenanceMetadata:
         assert metadata_file.exists()
         
         # Parse and validate provenance content
-        with open(provenance_file, 'r') as f:
+        with open(metadata_file, 'r') as f:
             provenance = yaml.safe_load(f)
         
         # Validate structure and content
@@ -371,7 +371,7 @@ class TestProvenanceMetadata:
         assert metadata_file.exists()
         
         # Parse and validate that None values are handled properly
-        with open(provenance_file, 'r') as f:
+        with open(metadata_file, 'r') as f:
             provenance = yaml.safe_load(f)
         
         assert provenance['license']['type'] is None

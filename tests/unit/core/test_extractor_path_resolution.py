@@ -51,8 +51,9 @@ class TestPathResolution:
         assert local_path == expected.resolve()
     
     def test_resolve_local_path_absolute_override(self):
-        """Test path resolution with absolute local_path override."""
-        absolute_path = Path(self.temp_dir) / "absolute" / "lib"
+        """Test path resolution with absolute local_path override within project."""
+        # Use absolute path within project directory for security compliance
+        absolute_path = self.project_root / "absolute" / "lib"
         import_spec = ImportSpec(
             repo="https://example.com/repo",
             ref="main",

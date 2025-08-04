@@ -146,7 +146,10 @@ imports:
         assert test_lib_entry.repo == "https://github.com/example/repo"
         assert test_lib_entry.checksum == "expected_checksum"
         
-        mock_checksum_class.calculate_directory_checksum.assert_called_once_with(lib_path)
+        # Check that checksum calculation was called with the resolved library path
+        # Use resolve() to handle macOS symlink issues (/var -> /private/var)
+        expected_path = lib_path.resolve()
+        mock_checksum_class.calculate_directory_checksum.assert_called_once_with(expected_path)
     
     def test_validate_installation_missing_directory(self, installer, temp_project):
         """Test validation when library directory is missing with new Dict[str, LockEntry] return type."""
@@ -267,7 +270,10 @@ imports:
         assert result.validation_status == "valid"
         assert result.repo == lock_entry.repo
         assert result.checksum == lock_entry.checksum
-        mock_checksum_class.calculate_directory_checksum.assert_called_once_with(lib_path)
+        
+        # Check that checksum calculation was called with the resolved library path
+        expected_path = lib_path.resolve()
+        mock_checksum_class.calculate_directory_checksum.assert_called_once_with(expected_path)
     
     @patch('ams_compose.core.installer.ChecksumCalculator')
     def test_validate_library_modified(self, mock_checksum_class, installer, temp_project):
@@ -301,7 +307,10 @@ imports:
         assert result.validation_status == "modified"
         assert result.repo == lock_entry.repo
         assert result.checksum == lock_entry.checksum  # Original checksum preserved
-        mock_checksum_class.calculate_directory_checksum.assert_called_once_with(lib_path)
+        
+        # Check that checksum calculation was called with the resolved library path
+        expected_path = lib_path.resolve()
+        mock_checksum_class.calculate_directory_checksum.assert_called_once_with(expected_path)
     
     def test_validate_library_missing(self, installer, temp_project):
         """Test validate_library method with missing library."""
