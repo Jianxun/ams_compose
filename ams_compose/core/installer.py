@@ -614,11 +614,10 @@ class LibraryInstaller:
         return list(orphaned_libraries)
     
     def _update_gitignore_for_library(self, library_name: str, lock_entry: LockEntry) -> None:
-        """Update library-specific .gitignore file based on library's checkin setting.
-        
-        Creates individual .gitignore files inside each library directory that has checkin=false,
-        containing '*' to ignore all files in that directory. This keeps the main project
-        .gitignore clean and avoids conflicts with user modifications.
+        """Update library-specific .gitignore file based on checkin policy.
+
+        - For checkin=false: ignores all files except `.gitignore`
+        - For checkin=true: removes stale library-local `.gitignore` if present
         
         Args:
             library_name: Name of the library
@@ -639,7 +638,5 @@ class LibraryInstaller:
 !.gitignore
 """
                 library_gitignore_path.write_text(gitignore_content)
-        else:
-            # Library should be checked in - remove library-specific .gitignore if it exists
-            if library_gitignore_path.exists():
-                library_gitignore_path.unlink()
+        elif library_gitignore_path.exists():
+            library_gitignore_path.unlink()

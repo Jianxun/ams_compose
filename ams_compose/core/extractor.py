@@ -220,9 +220,10 @@ class PathExtractor:
         resolved_commit: str,
         local_path: Path
     ) -> None:
-        """Generate metadata file for all libraries regardless of checkin setting.
-        
-        Metadata is critical for traceability and should always be generated.
+        """Generate metadata file for non-checkin libraries.
+
+        This metadata is useful for local traceability while the directory is
+        ignored by the injected library-local `.gitignore`.
         
         Args:
             library_name: Name of the library
@@ -264,12 +265,14 @@ class PathExtractor:
         with open(metadata_file, 'w') as f:
             yaml.dump(provenance, f, default_flow_style=False, sort_keys=False)
     
-    def _inject_gitignore_if_needed(self, library_name: str, checkin: bool, library_path: Path) -> None:
-        """Inject .gitignore file for checkin=false libraries.
-        
-        Creates individual .gitignore files inside each library directory that has checkin=false,
-        containing '*' to ignore all files in that directory. This keeps the main project
-        .gitignore clean and avoids conflicts with user modifications.
+    def _inject_gitignore_if_needed(
+        self, library_name: str, checkin: bool, library_path: Path
+    ) -> None:
+        """Inject or clean library-local .gitignore based on checkin policy.
+
+        For checkin=false, create a library-local `.gitignore` that ignores all
+        files except itself. For checkin=true, remove any stale library-local
+        `.gitignore` so checked-in libraries are not modified by ams-compose.
         
         Args:
             library_name: Name of the library
@@ -287,13 +290,10 @@ class PathExtractor:
 # Run 'ams-compose install' to download this library
 *
 !.gitignore
-!.ams-compose-metadata.yaml
 """
             library_gitignore_path.write_text(gitignore_content)
-        else:
-            # Library should be checked in - remove library-specific .gitignore if it exists
-            if library_gitignore_path.exists():
-                library_gitignore_path.unlink()
+        elif library_gitignore_path.exists():
+            library_gitignore_path.unlink()
     
     def _inject_license_file_if_available(self, mirror_path: Path, library_path: Path, ignore_patterns: Optional[List[str]] = None) -> None:
         """Inject LICENSE file from repository root into library directory.
@@ -453,8 +453,8 @@ class PathExtractor:
                 # Single file - copy to parent directory with same name
                 shutil.copy2(source_full_path, local_path)
             
-            # Generate provenance metadata for checkin=true libraries  
-            if local_path.is_dir():
+            # Generate provenance metadata only for checkin=false libraries.
+            if local_path.is_dir() and not import_spec.checkin:
                 self._generate_provenance_metadata(
                     library_name, import_spec, mirror_path, resolved_commit, local_path
                 )
