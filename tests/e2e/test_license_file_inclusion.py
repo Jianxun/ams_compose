@@ -143,9 +143,29 @@ furnished to do so, subject to the following conditions:"""
         assert not (lib_path / "__pycache__").exists()
         assert not (lib_path / ".DS_Store").exists()
         
-        # checkin=true should not generate metadata
+        # Verify metadata was created
         metadata_file = lib_path / ".ams-compose-metadata.yaml"
-        assert not metadata_file.exists()
+        assert metadata_file.exists()
+        
+        with open(metadata_file, 'r') as f:
+            provenance = yaml.safe_load(f)
+        
+        # Validate provenance content
+        assert provenance['library_name'] == 'analog_design_lib'
+        assert provenance['source']['repository'] == 'https://github.com/test/analog-lib.git'
+        assert provenance['source']['reference'] == 'main'
+        assert provenance['source']['commit'] == 'abc123commit'
+        assert provenance['source']['source_path'] == 'analog_lib'
+        
+        # Validate license detection
+        assert provenance['license']['type'] == 'MIT'
+        assert provenance['license']['file'] == 'LICENSE'
+        assert 'MIT License' in provenance['license']['snippet']
+        
+        # Validate compliance notes
+        assert isinstance(provenance['compliance_notes'], list)
+        assert len(provenance['compliance_notes']) > 0
+        assert any('LICENSE file' in note for note in provenance['compliance_notes'])
     
     def test_license_not_preserved_for_checkin_false_library(self, temp_project, mock_repo):
         """Test that LICENSE files follow normal ignore rules for checkin=false libraries."""
@@ -235,22 +255,22 @@ furnished to do so, subject to the following conditions:"""
         stable_path = temp_project / "designs" / "libs" / "stable_lib"
         assert stable_path.exists()
         assert (stable_path / "LICENSE").exists()  # LICENSE preserved
-        assert not (stable_path / ".ams-compose-metadata.yaml").exists()
+        assert (stable_path / ".ams-compose-metadata.yaml").exists()  # Metadata created
         
         # Check experimental_lib (checkin=false)  
         experimental_path = temp_project / "designs" / "libs" / "experimental_lib"
         assert experimental_path.exists()
         assert not (experimental_path / "LICENSE").exists()  # LICENSE ignored
-        assert (experimental_path / ".ams-compose-metadata.yaml").exists()
+        assert (experimental_path / ".ams-compose-metadata.yaml").exists()  # Metadata always created
     
-    def test_provenance_metadata_content_validation_for_checkin_false(self, temp_project, mock_repo):
-        """Test detailed validation of provenance metadata for checkin=false libraries."""
+    def test_provenance_metadata_content_validation(self, temp_project, mock_repo):
+        """Test detailed validation of provenance metadata content."""
         imports_config = {
             'validation_lib': {
                 'repo': 'https://github.com/example/validation-lib.git',
                 'ref': 'v2.1.0',
                 'source_path': 'analog_lib',
-                'checkin': False
+                'checkin': True
             }
         }
         self._create_test_config(temp_project, imports_config)
@@ -268,20 +288,12 @@ furnished to do so, subject to the following conditions:"""
         # Load and validate metadata
         lib_path = temp_project / "designs" / "libs" / "validation_lib"
         metadata_file = lib_path / ".ams-compose-metadata.yaml"
-        assert metadata_file.exists()
         
         with open(metadata_file, 'r') as f:
             provenance = yaml.safe_load(f)
         
         # Validate all required fields are present
-        required_fields = [
-            'ams_compose_version',
-            'extraction_timestamp',
-            'library_name',
-            'source',
-            'license',
-            'compliance_notes',
-        ]
+        required_fields = ['ams_compose_version', 'extraction_timestamp', 'library_name', 'source', 'license', 'compliance_notes']
         for field in required_fields:
             assert field in provenance, f"Missing required field: {field}"
         

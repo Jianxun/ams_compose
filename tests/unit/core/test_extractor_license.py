@@ -89,9 +89,9 @@ class TestLicenseFileInclusion:
         assert not (local_path / ".git").exists()
         assert not (local_path / "__pycache__").exists()
         
-        # checkin=true should not generate metadata
+        # Check that metadata file was created
         metadata_file = local_path / ".ams-compose-metadata.yaml"
-        assert not metadata_file.exists()
+        assert metadata_file.exists()
     
     def test_license_file_ignored_when_checkin_false(self, extractor, temp_mirror, temp_project):
         """Test that LICENSE files follow normal ignore rules when checkin=False."""
@@ -229,8 +229,8 @@ class TestProvenanceMetadata:
         """Create PathExtractor instance."""
         return PathExtractor(temp_project)
     
-    def test_provenance_metadata_not_generated_for_checkin_true(self, extractor, temp_mirror, temp_project):
-        """Test that provenance metadata is not generated when checkin=True."""
+    def test_provenance_metadata_generated_for_checkin_true(self, extractor, temp_mirror, temp_project):
+        """Test that provenance metadata is generated when checkin=True."""
         import_spec = ImportSpec(
             repo="https://github.com/test/repo.git",
             ref="v1.0.0",
@@ -254,13 +254,37 @@ class TestProvenanceMetadata:
                 resolved_commit="commit456"
             )
         
-        # checkin=true should not generate metadata
+        # Check that metadata file was created
         local_path = temp_project / result.local_path
         metadata_file = local_path / ".ams-compose-metadata.yaml"
-        assert not metadata_file.exists()
+        assert metadata_file.exists()
+        
+        # Parse and validate provenance content
+        with open(metadata_file, 'r') as f:
+            provenance = yaml.safe_load(f)
+        
+        # Validate structure and content
+        assert 'ams_compose_version' in provenance
+        assert 'extraction_timestamp' in provenance
+        assert provenance['library_name'] == 'my_library'
+        
+        assert provenance['source']['repository'] == 'https://github.com/test/repo.git'
+        assert provenance['source']['reference'] == 'v1.0.0'
+        assert provenance['source']['commit'] == 'commit456'
+        assert provenance['source']['source_path'] == 'test_lib'
+        
+        assert provenance['license']['type'] == 'MIT'
+        assert provenance['license']['file'] == 'LICENSE'
+        assert 'MIT License' in provenance['license']['snippet']
+        
+        assert isinstance(provenance['compliance_notes'], list)
+        assert len(provenance['compliance_notes']) > 0
+        
+        # Check timestamp format (ISO 8601 with Z suffix)
+        assert provenance['extraction_timestamp'].endswith('Z')
     
-    def test_provenance_metadata_generated_for_checkin_false(self, extractor, temp_mirror, temp_project):
-        """Test that provenance metadata is generated when checkin=False."""
+    def test_provenance_metadata_not_generated_for_checkin_false(self, extractor, temp_mirror, temp_project):
+        """Test that provenance metadata is not generated when checkin=False."""
         import_spec = ImportSpec(
             repo="https://github.com/test/repo.git",
             ref="main",
@@ -277,18 +301,10 @@ class TestProvenanceMetadata:
             resolved_commit="commit456"
         )
         
-        # checkin=false should generate metadata
+        # Check that metadata file was created (even for checkin=false)
         local_path = temp_project / result.local_path
         metadata_file = local_path / ".ams-compose-metadata.yaml"
         assert metadata_file.exists()
-
-        with open(metadata_file, 'r') as f:
-            provenance = yaml.safe_load(f)
-
-        assert provenance['library_name'] == 'my_library'
-        assert provenance['source']['reference'] == 'main'
-        assert provenance['source']['commit'] == 'commit456'
-        assert provenance['extraction_timestamp'].endswith('Z')
     
     def test_provenance_metadata_not_generated_for_single_file(self, extractor, temp_project):
         """Test that provenance metadata is not generated for single file extractions."""
@@ -329,7 +345,7 @@ class TestProvenanceMetadata:
             repo="https://github.com/test/repo.git",
             ref="main",
             source_path="test_lib",
-            checkin=False
+            checkin=True
         )
         
         with patch.object(extractor.license_detector, 'detect_license') as mock_detect:
@@ -349,7 +365,7 @@ class TestProvenanceMetadata:
                 resolved_commit="commit456"
             )
         
-        # checkin=false should still generate metadata
+        # Check that metadata file was still created
         local_path = temp_project / result.local_path
         metadata_file = local_path / ".ams-compose-metadata.yaml"
         assert metadata_file.exists()

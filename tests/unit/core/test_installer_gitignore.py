@@ -69,7 +69,7 @@ class TestInstallerGitignore:
         assert "*.log" in main_gitignore_content  # Existing content preserved
     
     def test_update_gitignore_for_checkin_true_library(self, installer, temp_project):
-        """Test that checkin=true libraries do not keep a library .gitignore."""
+        """Test that checkin=true libraries do NOT get their own .gitignore file."""
         # Create library directory
         library_path = temp_project / "designs/libs/test_lib"
         library_path.mkdir(parents=True)
@@ -91,10 +91,10 @@ class TestInstallerGitignore:
             checkin=True
         )
         
-        # Call method that should keep checked-in library clean
+        # Call method that should NOT create library-specific .gitignore
         installer._update_gitignore_for_library("test_lib", lock_entry)
         
-        # Assert library-specific .gitignore is not created for checkin=true
+        # Assert library-specific .gitignore is NOT created
         library_gitignore_path = library_path / ".gitignore"
         assert not library_gitignore_path.exists()
         
@@ -140,7 +140,7 @@ class TestInstallerGitignore:
         assert not main_gitignore_path.exists()
     
     def test_remove_library_gitignore_when_checkin_changes_to_true(self, installer, temp_project):
-        """Test library .gitignore removal when checkin changes false -> true."""
+        """Test removing library-specific .gitignore when checkin changes from false to true."""
         # Create library directory with existing .gitignore
         library_path = temp_project / "designs/libs/test_lib"
         library_path.mkdir(parents=True)
@@ -164,7 +164,7 @@ class TestInstallerGitignore:
             checkin=True
         )
         
-        # Call method that should remove the stale library-specific .gitignore
+        # Call method that should remove library-specific .gitignore
         installer._update_gitignore_for_library("test_lib", lock_entry)
         
         # Assert library-specific .gitignore is removed

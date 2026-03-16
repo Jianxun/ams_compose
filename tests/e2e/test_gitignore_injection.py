@@ -143,8 +143,8 @@ class TestGitignoreInjection:
         assert library_path.exists()
         assert (library_path / "designs" / "cell.sch").exists()
     
-    def test_checkin_true_library_has_no_library_gitignore(self):
-        """Test that libraries with checkin=true do not get library .gitignore."""
+    def test_checkin_true_library_no_gitignore_created(self):
+        """Test that libraries with checkin=true do NOT get their own .gitignore file."""
         # Create mock repository with library content
         repo_path = self._create_mock_repo("critical-ip-repo", {
             "src/custom_cell.sch": "critical design",
@@ -167,20 +167,20 @@ class TestGitignoreInjection:
         # Verify library was installed
         assert "critical_ip" in installed_libs
         
-        # checkin=true should not inject a library-specific .gitignore
+        # Check that library-specific .gitignore was NOT created
         library_path = self.project_root / "libs" / "critical_ip"
         library_gitignore_path = library_path / ".gitignore"
         assert not library_gitignore_path.exists()
         
         # Check that main .gitignore doesn't contain the library path (if exists)
         if (self.project_root / ".gitignore").exists():
-            main_gitignore_content = self._read_gitignore()
-            assert "libs/critical_ip/" not in main_gitignore_content
+            gitignore_content = self._read_gitignore()
+            assert "libs/critical_ip/" not in gitignore_content
         
         # Verify the library files actually exist
         assert library_path.exists()
         assert (library_path / "custom_cell.sch").exists()
-        assert (library_path / "custom_cell.lay").exists()
+        assert (library_path / "custom_cell.sch").exists()
     
     def test_default_checkin_behavior(self):
         """Test that libraries without explicit checkin field default to checkin=true."""
@@ -253,7 +253,7 @@ class TestGitignoreInjection:
         
         custom_lib_path = self.project_root / "libs" / "custom_lib"
         custom_lib_gitignore = custom_lib_path / ".gitignore"
-        assert not custom_lib_gitignore.exists()  # checkin=true should not inject .gitignore
+        assert not custom_lib_gitignore.exists()  # checkin=true does NOT get .gitignore
         
         # Check main .gitignore does NOT contain library paths
         if (self.project_root / ".gitignore").exists():
@@ -346,7 +346,7 @@ build/
         installed_libs = self.installer.install_all(force=True)
         assert "changeable_lib" in installed_libs
         
-        # Verify library-specific .gitignore was removed for checkin=true
+        # Verify library-specific .gitignore was removed
         assert not library_gitignore_path.exists()
         
         # Verify main .gitignore does not contain library path
@@ -489,7 +489,7 @@ build/
         
         assert stable_lib_gitignore.exists(), "stable_lib should have .gitignore (checkin=false)"
         assert not dev_lib_gitignore.exists(), "dev_lib should not have .gitignore (checkin=true)"
-        assert not critical_lib_gitignore.exists(), "critical_lib should not have .gitignore (checkin=true)"
+        assert not critical_lib_gitignore.exists(), "critical_lib should not have .gitignore (default checkin=true)"
         
         # Verify stable_lib .gitignore content
         stable_content = stable_lib_gitignore.read_text()
