@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-03-16
+
+### Added
+- **Automated CI workflow** - GitHub Actions test matrix on pull requests and pushes to `main`
+- **Automated release workflow** - Tag-triggered build, distribution checks, and GitHub Release publishing
+- **Optional PyPI publishing path** - Trusted Publishing-compatible release job gated by repo variable
+
+### Changed
+- **Provenance metadata determinism** - Removed volatile extraction timestamps from `.ams-compose-metadata.yaml`
+- **Metadata write behavior** - Skip metadata rewrite when content is unchanged to avoid no-op file churn
+- **Documentation refresh** - Updated architecture and supply-chain docs to reflect lockfile/sidecar roles and deterministic metadata
+
+### Fixed
+- **Cross-runner CI stability** - Force git default branch to `main` in workflows so branch-based e2e tests pass on GitHub runners
+
 ## [0.1.0] - 2025-08-04
 
 ### Added
@@ -60,4 +75,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PyYAML >=6.0.0 - YAML configuration parsing
 - pathspec >=0.11.0 - Gitignore pattern matching
 
+[0.1.1]: https://github.com/Jianxun/ams-compose/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Jianxun/ams-compose/releases/tag/v0.1.0
