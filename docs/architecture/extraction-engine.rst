@@ -116,7 +116,7 @@ When license files are found, the detector attempts basic license type identific
 **Integration Points**:
 
 1. **Extraction**: Automatic license preservation for ``checkin=true`` libraries
-2. **Provenance**: License information embedded in ``.ams-compose-meta.yaml`` files
+2. **Provenance**: License information embedded in ``.ams-compose-metadata.yaml`` files
 3. **Lock file**: License metadata stored for compliance tracking
 
 **Fallback Behavior**:
@@ -125,14 +125,18 @@ When automatic detection fails, the system falls back to user-specified ``licens
 Provenance Metadata Generation
 -------------------------------
 
-**Purpose**: Generate ``.ams-compose-meta.yaml`` files for ``checkin=true`` libraries to maintain full supply chain provenance.
+**Purpose**: Generate ``.ams-compose-metadata.yaml`` files for extracted library
+directories to maintain supply chain provenance.
+
+**Determinism**: Metadata is intentionally stable across repeated installs of the
+same source content. Volatile wall-clock fields are excluded to avoid
+timestamp-only diffs in version control.
 
 **Metadata Structure**:
 
 .. code-block:: yaml
 
    ams_compose_version: "1.0.0"
-   extraction_timestamp: "2024-01-15T10:30:00Z"
    library_name: "example_lib"
    source:
      repository: "https://github.com/example/repo"
@@ -140,9 +144,14 @@ Provenance Metadata Generation
      commit: "abc123def456..."
      source_path: "libs/example"
    license:
-     detected: "MIT"
-     user_specified: null
-     files: ["LICENSE", "COPYING"]
+      type: "MIT"
+      file: "LICENSE"
+      snippet: "MIT License..."
+   compliance_notes:
+     - "This library was extracted from the source repository listed above."
+     - "License information is auto-detected and may require manual verification."
+     - "Original LICENSE file (if found) has been preserved in this directory."
+     - "For IP compliance questions, refer to the original repository."
 
 **Integration with Version Control**:
 Provenance files are automatically included when ``checkin=true``, providing audit trail for imported IP without requiring external tools or databases.
