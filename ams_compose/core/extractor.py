@@ -4,7 +4,6 @@ import shutil
 from pathlib import Path
 from typing import Optional, Dict, Callable, Set, List
 from dataclasses import dataclass
-from datetime import datetime, timezone
 
 import pathspec
 import yaml
@@ -235,10 +234,9 @@ class PathExtractor:
         # Detect license information from mirror
         license_info = self.license_detector.detect_license(mirror_path)
         
-        # Create provenance metadata
+        # Create deterministic provenance metadata
         provenance = {
             'ams_compose_version': __version__,
-            'extraction_timestamp': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
             'library_name': library_name,
             'source': {
                 'repository': import_spec.repo,
@@ -259,10 +257,14 @@ class PathExtractor:
             ]
         }
         
-        # Write metadata file
+        # Write metadata file only when content changes.
+        # This preserves stable outputs and avoids unnecessary file churn.
         metadata_file = local_path / '.ams-compose-metadata.yaml'
+        serialized = yaml.dump(provenance, default_flow_style=False, sort_keys=False)
+        if metadata_file.exists() and metadata_file.read_text() == serialized:
+            return
         with open(metadata_file, 'w') as f:
-            yaml.dump(provenance, f, default_flow_style=False, sort_keys=False)
+            f.write(serialized)
     
     def _inject_gitignore_if_needed(self, library_name: str, checkin: bool, library_path: Path) -> None:
         """Inject .gitignore file for checkin=false libraries.

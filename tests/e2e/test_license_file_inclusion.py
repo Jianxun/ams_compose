@@ -293,14 +293,10 @@ furnished to do so, subject to the following conditions:"""
             provenance = yaml.safe_load(f)
         
         # Validate all required fields are present
-        required_fields = ['ams_compose_version', 'extraction_timestamp', 'library_name', 'source', 'license', 'compliance_notes']
+        required_fields = ['ams_compose_version', 'library_name', 'source', 'license', 'compliance_notes']
         for field in required_fields:
             assert field in provenance, f"Missing required field: {field}"
-        
-        # Validate timestamps (ISO format with Z suffix)
-        timestamp = provenance['extraction_timestamp']
-        assert timestamp.endswith('Z')
-        assert 'T' in timestamp  # ISO format includes T separator
+        assert 'extraction_timestamp' not in provenance
         
         # Validate source information completeness
         source = provenance['source']
