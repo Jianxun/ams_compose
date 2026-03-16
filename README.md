@@ -262,6 +262,39 @@ ams-compose clean
 - Check `ams-compose schema` for configuration reference
 - Report issues at [GitHub Issues](https://github.com/Jianxun/ams_compose/issues)
 
+## Release Pipeline
+
+GitHub Actions drives CI and releases:
+
+- **CI workflow**: `.github/workflows/ci.yml`
+  - Runs on pull requests and pushes to `main`
+  - Tests on Python 3.10 and 3.12
+- **Release workflow**: `.github/workflows/release.yml`
+  - Runs on pushed tags matching `v*` (for example `v0.1.1`)
+  - Re-runs tests, builds source/wheel artifacts, validates with `twine check`
+  - Publishes a GitHub Release with generated notes and attached artifacts
+  - Optionally publishes to PyPI when repository variable `PUBLISH_TO_PYPI=true`
+
+### Releasing a New Version
+
+1. Bump version in `pyproject.toml` and `ams_compose/__init__.py`
+2. Update `CHANGELOG.md`
+3. Merge release prep to `main`
+4. Create and push a tag:
+
+```bash
+git tag v0.1.1
+git push origin v0.1.1
+```
+
+### PyPI Publishing Setup (Optional)
+
+- Preferred: configure [PyPI Trusted Publishing] for this repository
+- Enable repo variable `PUBLISH_TO_PYPI=true` to activate the publish job
+- If `PUBLISH_TO_PYPI` is not set to `true`, release artifacts are still published on GitHub
+
+[PyPI Trusted Publishing]: https://docs.pypi.org/trusted-publishers/
+
 ## License
 
 MIT License
