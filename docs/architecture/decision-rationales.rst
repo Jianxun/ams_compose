@@ -27,19 +27,27 @@ Mirror-Based Repository Strategy
 Single Lock File Consolidation
 -------------------------------
 
-**Decision**: Consolidate all dependency state into a single ``.ams-compose.lock`` file instead of per-library metadata files.
+**Decision**: Use ``.ams-compose.lock`` as the authoritative dependency state while
+keeping per-library provenance sidecar files (``.ams-compose-metadata.yaml``).
 
-**Problem**: Multiple metadata files scattered across library directories create consistency issues and complicate state management.
+**Problem**: State spread across many locations can create consistency issues and
+make updates difficult to reason about.
 
-**Solution**: Centralize all library state (commit hashes, checksums, timestamps, validation status) in one lock file with Pydantic validation.
+**Solution**: Centralize install/update state (commit hashes, checksums,
+validation status, checkin policy) in one lock file with Pydantic validation,
+and keep per-library metadata focused on origin provenance.
 
 **Trade-offs**:
 
 - **Cost**: Single point of failure for dependency state
-- **Benefit**: Atomic state updates, simplified validation, clear dependency provenance
+- **Benefit**: Atomic state updates and simplified validation through one
+  authoritative state file
+- **Benefit**: Provenance remains visible next to each extracted library
 - **Benefit**: Enables reproducible builds through centralized version control
 
-**Rationale**: Single source of truth principle eliminates state inconsistencies that plagued earlier dual-metadata approaches. Critical for analog design where IP provenance and reproducibility are essential for design verification and manufacturing.
+**Rationale**: A lockfile-first model prevents state drift during install and
+validation workflows, while deterministic sidecar provenance files support
+audits and code review without introducing timestamp churn.
 
 Three-Tier Filtering Architecture
 ----------------------------------

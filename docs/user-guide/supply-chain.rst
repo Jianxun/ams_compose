@@ -22,4 +22,9 @@ License Tracking
 Library Metadata
 ----------------
 
-*[To be documented: .ams-compose-metadata.yaml files]*
+Each extracted library directory includes a provenance sidecar file named
+``.ams-compose-metadata.yaml``. This file captures stable origin details
+(``repository``, ``reference``, ``commit``, ``source_path``) and license context.
+
+To reduce version-control churn, metadata is deterministic and excludes volatile
+timestamp fields.

@@ -265,7 +265,7 @@ class TestProvenanceMetadata:
         
         # Validate structure and content
         assert 'ams_compose_version' in provenance
-        assert 'extraction_timestamp' in provenance
+        assert 'extraction_timestamp' not in provenance
         assert provenance['library_name'] == 'my_library'
         
         assert provenance['source']['repository'] == 'https://github.com/test/repo.git'
@@ -280,8 +280,7 @@ class TestProvenanceMetadata:
         assert isinstance(provenance['compliance_notes'], list)
         assert len(provenance['compliance_notes']) > 0
         
-        # Check timestamp format (ISO 8601 with Z suffix)
-        assert provenance['extraction_timestamp'].endswith('Z')
+        # Deterministic metadata should not include volatile timestamps
     
     def test_provenance_metadata_not_generated_for_checkin_false(self, extractor, temp_mirror, temp_project):
         """Test that provenance metadata is not generated when checkin=False."""
