@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.3] - 2026-04-11
 
 ### Fixed
 - **macOS iCloud Drive conflict copies** - Re-installing libraries in iCloud-synced directories (e.g. `~/Documents`) could produce spurious `filename 2.sym` duplicate files. iCloud raced to restore "deleted" files while ams-compose wrote fresh copies after cleanup, causing iCloud to treat them as conflicts. Fix: pre-create the library directory and immediately set the `com.apple.fileprovider.ignore#P` extended attribute before copying any files, so iCloud never races against re-installs. No-op on non-macOS platforms.
@@ -85,6 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PyYAML >=6.0.0 - YAML configuration parsing
 - pathspec >=0.11.0 - Gitignore pattern matching
 
+[0.1.3]: https://github.com/Jianxun/ams-compose/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/Jianxun/ams-compose/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Jianxun/ams-compose/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Jianxun/ams-compose/releases/tag/v0.1.0

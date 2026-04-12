@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ams-compose"
-version = "0.1.2"
+version = "0.1.3"
 description = "Dependency management tool for analog/mixed-signal IC design repositories"
 authors = [
     {name = "ams-compose contributors"}
