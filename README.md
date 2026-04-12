@@ -250,6 +250,27 @@ ams-compose schema
 ams-compose clean
 ```
 
+**Duplicate files with ` 2` suffix on macOS (e.g. `amplifier 2.sym`)**
+
+This happens when the project lives in an iCloud Drive-synced directory (such as
+`~/Documents`). iCloud races to restore "deleted" files while ams-compose writes
+fresh copies during a re-install, and resolves the conflict by appending ` 2` to
+the restored filenames.
+
+ams-compose (v0.1.3+) automatically sets the `com.apple.fileprovider.ignore#P`
+extended attribute on each library directory immediately after creation, which
+signals iCloud to stop syncing that path. No manual action is needed for new
+installs.
+
+If you have leftover ` 2` files from a previous install, remove them manually:
+```bash
+find designs/libs -name "* 2*" -exec rm -rf {} +
+```
+Then reinstall to get a clean state:
+```bash
+ams-compose install --force
+```
+
 **Path or permission issues**
 - Ensure write permissions to `library_root` directory
 - Verify git credentials for private repositories
