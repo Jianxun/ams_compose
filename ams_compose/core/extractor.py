@@ -1,6 +1,8 @@
 """Path extraction operations for ams-compose."""
 
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 from typing import Optional, Dict, Callable, Set, List
 from dataclasses import dataclass
@@ -12,6 +14,31 @@ from .config import ImportSpec
 from ..utils.checksum import ChecksumCalculator
 from ..utils.license import LicenseDetector
 from .. import __version__
+
+
+def _exclude_from_icloud_sync(path: Path) -> None:
+    """Exclude a path from iCloud Drive sync on macOS.
+
+    Sets the com.apple.fileprovider.ignore#P extended attribute, which signals
+    iCloud Drive to stop syncing this path. This prevents conflict copies
+    (e.g. 'amplifier 2.sym') when re-installing libraries stored in iCloud-synced
+    directories such as ~/Documents.
+
+    No-op on non-macOS platforms or if xattr is unavailable.
+
+    Args:
+        path: Directory to exclude from iCloud sync
+    """
+    if sys.platform != 'darwin':
+        return
+    try:
+        subprocess.run(
+            ['xattr', '-w', 'com.apple.fileprovider.ignore#P', '1', str(path)],
+            capture_output=True,
+            check=False
+        )
+    except Exception:
+        pass  # Best-effort; never fail an installation over sync exclusion
 
 
 @dataclass
@@ -434,6 +461,14 @@ class PathExtractor:
         try:
             # Copy source to destination
             if source_full_path.is_dir():
+                # Pre-create directory and immediately exclude from iCloud sync.
+                # Setting the xattr before any files land prevents iCloud from
+                # racing to restore "deleted" files as conflict copies (e.g.
+                # 'amplifier 2.sym') when re-installing in ~/Documents or other
+                # iCloud-synced directories.
+                local_path.mkdir()
+                _exclude_from_icloud_sync(local_path)
+
                 # Create ignore function with three-tier filtering
                 # Preserve LICENSE files for legal compliance
                 # Force preservation when checkin=True, respect user patterns when checkin=False
@@ -442,14 +477,14 @@ class PathExtractor:
                     preserve_license_files=True,
                     force_preserve_license=import_spec.checkin
                 )
-                
+
                 shutil.copytree(
-                    source_full_path, 
+                    source_full_path,
                     local_path,
                     symlinks=True,  # Preserve symlinks
                     ignore_dangling_symlinks=True,
                     ignore=ignore_func,  # Apply three-tier filtering
-                    dirs_exist_ok=False  # Should not exist due to cleanup above
+                    dirs_exist_ok=True  # Pre-created above for iCloud exclusion
                 )
             else:
                 # Single file - copy to parent directory with same name

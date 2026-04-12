@@ -1,13 +1,14 @@
 """Unit tests for PathExtractor extraction operations."""
 
+import sys
 import tempfile
 import shutil
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, call
 
 import pytest
 
-from ams_compose.core.extractor import PathExtractor, ExtractionState
+from ams_compose.core.extractor import PathExtractor, ExtractionState, _exclude_from_icloud_sync
 from ams_compose.core.config import ImportSpec
 from ams_compose.utils.checksum import ChecksumCalculator
 
@@ -431,6 +432,58 @@ class TestExtractionOperations:
         assert 'readme.txt' not in ignored
         assert 'normal_file.txt' not in ignored
     
+    # --- iCloud sync exclusion tests ---
+
+    def test_extract_library_calls_icloud_exclusion(self):
+        """Test that extract_library excludes the library directory from iCloud sync."""
+        import_spec = ImportSpec(
+            repo="https://example.com/repo",
+            ref="main",
+            source_path="libs/test_lib"
+        )
+
+        with patch('ams_compose.core.extractor._exclude_from_icloud_sync') as mock_exclude:
+            self.extractor.extract_library(
+                library_name="test_lib",
+                import_spec=import_spec,
+                mirror_path=self.mock_mirror,
+                library_root="designs/libs",
+                repo_hash="abcd1234",
+                resolved_commit="commit123456"
+            )
+
+        local_path = (self.project_root / "designs" / "libs" / "test_lib").resolve()
+        mock_exclude.assert_called_once_with(local_path)
+
+    def test_exclude_from_icloud_sync_calls_xattr_on_macos(self):
+        """Test that _exclude_from_icloud_sync runs xattr on macOS."""
+        test_path = Path("/some/library")
+        with patch('sys.platform', 'darwin'), \
+             patch('subprocess.run') as mock_run:
+            _exclude_from_icloud_sync(test_path)
+
+        mock_run.assert_called_once_with(
+            ['xattr', '-w', 'com.apple.fileprovider.ignore#P', '1', '/some/library'],
+            capture_output=True,
+            check=False
+        )
+
+    def test_exclude_from_icloud_sync_noop_on_linux(self):
+        """Test that _exclude_from_icloud_sync is a no-op on non-macOS platforms."""
+        test_path = Path("/some/library")
+        with patch('sys.platform', 'linux'), \
+             patch('subprocess.run') as mock_run:
+            _exclude_from_icloud_sync(test_path)
+
+        mock_run.assert_not_called()
+
+    def test_exclude_from_icloud_sync_swallows_xattr_error(self):
+        """Test that _exclude_from_icloud_sync never raises even if xattr fails."""
+        test_path = Path("/some/library")
+        with patch('sys.platform', 'darwin'), \
+             patch('subprocess.run', side_effect=FileNotFoundError("xattr not found")):
+            _exclude_from_icloud_sync(test_path)  # must not raise
+
     def test_ignore_function_with_custom_hook(self):
         """Test the _create_ignore_function with custom ignore hook."""
         # Create custom hook that ignores backup files
